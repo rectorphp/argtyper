@@ -10,4 +10,9 @@ final class ConfigFilePath
     {
         return getcwd() . '/phpstan-collected-data.json';
     }
+
+    public static function rectorGeneratedConfig(): string
+    {
+        return getcwd() . '/rector-generated.php';
+    }
 }
