@@ -28,8 +28,8 @@ CODE_SAMPLE;
 $configurationContents = '';
 
 foreach ($phpstanResult as $singleCase) {
-    if (str_starts_with($singleCase['type'], 'object:')) {
-        $printedType = ' new \PHPStan\Type\ObjectType(' . substr($singleCase['type'], 7) . '::class)';
+    if (str_starts_with((string) $singleCase['type'], 'object:')) {
+        $printedType = ' new \PHPStan\Type\ObjectType(' . substr((string) $singleCase['type'], 7) . '::class)';
     } elseif (in_array($singleCase['type'], [ArrayType::class, ConstantArrayType::class], true)) {
         $printedType = ' new \PHPStan\Type\ArrayType(new \PHPStan\Type\MixedType(), new PHPStan\Type\MixedType())';
     } else {

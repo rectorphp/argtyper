@@ -80,7 +80,7 @@ final class PHPUnitAssertMethodCallCollector implements Collector
             $type = 'object:' . $firstArgType->getClassName();
         } else {
             $type = TypeMapper::mapConstantToGenericTypes($firstArgType);
-            $type = get_class($type);
+            $type = $type::class;
         }
 
         return [$type, $className, $methodName];
