@@ -33,7 +33,8 @@ final class GenerateRectorConfigCommand extends Command
         $configurationContents = $this->createRectorConfigFileContents($phpstanResultJson);
 
         $rectorGeneratedContents = TemplatePrinter::print(
-            __DIR__ . '/../../resources/views/rector-config-template.php', [
+            __DIR__ . '/../../resources/views/rector-config-template.php',
+            [
                 '__CONFIGURATION__' => $configurationContents,
             ]
         );
