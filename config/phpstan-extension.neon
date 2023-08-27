@@ -1,0 +1,8 @@
+services:
+    -
+        class: TomasVotruba\SherlockTypes\PHPStan\Collectors\PHPUnitAssertMethodCallCollector
+        tags:
+            - phpstan.collector
+
+rules:
+    # @todo
