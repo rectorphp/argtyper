@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace TomasVotruba\SherlockTypes\PHPStan\Rule;
 
+use Nette\Utils\FileSystem;
+use Nette\Utils\Json;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
 use PHPStan\Rules\Rule;
 use TomasVotruba\SherlockTypes\PHPStan\Collectors\PHPUnitAssertMethodCallCollector;
 
+/**
+ * @implements Rule<CollectedDataNode>
+ */
 final class DumpPHPUnitAssertTypesRule implements Rule
 {
     /**

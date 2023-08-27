@@ -61,6 +61,10 @@ final class PHPUnitAssertMethodCallCollector implements Collector
             return null;
         }
 
+        if (! $methodCall->name instanceof Identifier) {
+            return null;
+        }
+
         $methodName = $methodCall->name->toString();
 
         // unable to handle

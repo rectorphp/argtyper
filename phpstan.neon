@@ -1,0 +1,9 @@
+parameters:
+    paths:
+        - src
+        - tests
+
+    level: 8
+
+    ignoreErrors:
+        - '#Class TomasVotruba\\SherlockTypes\\PHPStan\\Collectors\\(.*?) implements generic interface PHPStan\\Collectors\\Collector but does not specify its types\: TNodeType, TValue#'
