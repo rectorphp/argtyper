@@ -47,6 +47,10 @@ final class GenerateRectorConfigCommand extends Command
     }
 
     // @todo move somehwere :)
+
+    /**
+     * @param array<string, mixed> $phpstanResult
+     */
     private function createRectorConfigFileContents(array $phpstanResult): string
     {
         $configurationContents = '';
