@@ -1,3 +1,7 @@
+parameters:
+    # avoid need of level
+    customRulesetUsed: true
+
 services:
     -
         class: TomasVotruba\SherlockTypes\PHPStan\Collectors\PHPUnitAssertMethodCallCollector
@@ -5,4 +9,4 @@ services:
             - phpstan.collector
 
 rules:
-    # @todo
+    - TomasVotruba\SherlockTypes\PHPStan\Rule\DumpPHPUnitAssertTypesRule

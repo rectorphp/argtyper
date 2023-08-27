@@ -11,5 +11,9 @@ install
 
 run
 
+```bash
+vendor/bin/phpstan analyse tests --configuration vendor/tomasvotruba/sherlock-types/config/phpstan-data-collector.neon
+```
+
 @todo
 

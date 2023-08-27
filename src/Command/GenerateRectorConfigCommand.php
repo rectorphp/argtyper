@@ -12,37 +12,40 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use TomasVotruba\SherlockTypes\Enum\ConfigFilePath;
+use TomasVotruba\SherlockTypes\TemplatePrinter;
+use Webmozart\Assert\Assert;
 
 final class GenerateRectorConfigCommand extends Command
 {
     public function __construct(
         private readonly SymfonyStyle $symfonyStyle,
-    )
-    {
+    ) {
+        parent::__construct();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $recipeFilePath = getcwd() . '/rector-recipe.json';
-        $phpstanJsonFileContents = FileSystem::read($recipeFilePath);
+        // 1. file must exist before runningthis ocmmand
+        $recipeFilePath = ConfigFilePath::phpstanCollectedData();
 
-        $phpstanResult = Json::decode($phpstanJsonFileContents, Json::FORCE_ARRAY);
+        $phpstanResultJson = $this->loadFileJson($recipeFilePath);
+        $configurationContents = $this->createRectorConfigFileContents($phpstanResultJson);
 
-        $configurationContents = $this->createRectorConfigFileContents($phpstanResult);
-
-        $templateContents = FileSystem::read(__DIR__ . '/../../resources/views/rector-config-template.php');
-
-        $rectorGeneratedContents = strtr($templateContents, [
-            '__CONFIGURATION__' => $configurationContents,
-        ]);
+        $rectorGeneratedContents = TemplatePrinter::print(
+            __DIR__ . '/../../resources/views/rector-config-template.php', [
+                '__CONFIGURATION__' => $configurationContents,
+            ]
+        );
 
         FileSystem::write(getcwd() . '/rector-generated.php', $rectorGeneratedContents);
 
-        $this->symfonyStyle->write('The "rector-generated.php" was generated');
+        $this->symfonyStyle->success('The "rector-generated.php" file was generated. Now let Rector do its magic!');
 
         return self::SUCCESS;
     }
 
+    // @todo move somehwere :)
     private function createRectorConfigFileContents(array $phpstanResult): string
     {
         $configurationContents = '';
@@ -64,5 +67,16 @@ final class GenerateRectorConfigCommand extends Command
         }
 
         return $configurationContents;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function loadFileJson(string $recipeFilePath): array
+    {
+        Assert::fileExists($recipeFilePath);
+        $fileContents = FileSystem::read($recipeFilePath);
+
+        return Json::decode($fileContents, Json::FORCE_ARRAY);
     }
 }
