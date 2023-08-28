@@ -41,7 +41,7 @@ note "Dumping Composer Autoload"
 composer dump-autoload --ansi --classmap-authoritative --no-dev
 
 # make bin runnable without "php"
-chmod 777 "bin/prefix-code"
-chmod 777 "bin/prefix-code.php"
+chmod 777 "bin/sherlock-types"
+chmod 777 "bin/sherlock-types.php"
 
 note "Finished"
