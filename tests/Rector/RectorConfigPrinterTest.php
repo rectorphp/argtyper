@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TomasVotruba\SherlockTypes\Tests\Rector;
 
+use PHPStan\Type\ArrayType;
 use PHPStan\Type\StringType;
 use TomasVotruba\SherlockTypes\Rector\RectorConfigPrinter;
 use TomasVotruba\SherlockTypes\Tests\AbstractTestCase;
@@ -24,6 +25,7 @@ final class RectorConfigPrinterTest extends AbstractTestCase
     {
         $classMethodTypes = [
             new ClassMethodType('SomeClass', 'someMethod', StringType::class),
+            new ClassMethodType('SomeClass', 'anotherMethod', ArrayType::class),
         ];
 
         $printedContents = $this->rectorConfigPrinter->print($classMethodTypes);
