@@ -50,13 +50,13 @@ final class RectorConfigPrinter
     private function printedType(ClassMethodType $classMethodType): string
     {
         if (str_starts_with($classMethodType->getType(), 'object:')) {
-            return ' new \PHPStan\Type\ObjectType(' . substr($classMethodType->getType(), 7) . '::class)';
+            return 'new \PHPStan\Type\ObjectType(' . substr($classMethodType->getType(), 7) . '::class)';
         }
 
         if (in_array($classMethodType->getType(), [ArrayType::class, ConstantArrayType::class], true)) {
-            return ' new \PHPStan\Type\ArrayType(new \PHPStan\Type\MixedType(), new PHPStan\Type\MixedType())';
+            return 'new \PHPStan\Type\ArrayType(new \PHPStan\Type\MixedType(), new PHPStan\Type\MixedType())';
         }
 
-        return 'new ' . $classMethodType->getType();
+        return 'new ' . $classMethodType->getType() . '()';
     }
 }
