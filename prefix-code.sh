@@ -1,15 +1,47 @@
 #!/usr/bin/env bash
 
-# add patches
-composer install --ansi
+# inspired from https://github.com/rectorphp/rector/blob/main/build/build-rector-scoped.sh
 
-# but skip dev dependencies
-composer update --no-dev --ansi
+# see https://stackoverflow.com/questions/66644233/how-to-propagate-colors-from-bash-script-to-github-action?noredirect=1#comment117811853_66644233
+export TERM=xterm-color
 
-# remove tests and useless files, to make downgraded, scoped and deployed codebase as small as possible
-rm -rf tests
+# show errors
+set -e
 
-# downgrade with rector
-mkdir rector-local
-composer require rector/rector --working-dir rector-local
-rector-local/vendor/bin/rector process bin src vendor --config build/rector-downgrade-php-72.php --ansi
+# script fails if trying to access to an undefined variable
+set -u
+
+
+# functions
+note()
+{
+    MESSAGE=$1;
+    printf "\n";
+    echo "\033[0;33m[NOTE] $MESSAGE\033[0m";
+}
+
+# ---------------------------
+
+# 2. scope it
+note "Downloading php-scoper 0.18.3"
+wget https://github.com/humbug/php-scoper/releases/download/0.18.3/php-scoper.phar -N --no-verbose
+
+
+note "Running php-scoper"
+
+# Work around possible PHP memory limits
+php -d memory_limit=-1 php-scoper.phar add-prefix src bin vendor composer.json --config scoper.php --force --ansi --output-dir scoped-code
+
+# the output code is in "/scoped-code", lets move it up
+# the local directories have to be empty to move easily
+rm -r src bin vendor composer.json
+mv scoped-code/* .
+
+note "Dumping Composer Autoload"
+composer dump-autoload --ansi --classmap-authoritative --no-dev
+
+# make bin runnable without "php"
+chmod 777 "bin/prefix-code"
+chmod 777 "bin/prefix-code.php"
+
+note "Finished"
