@@ -1,0 +1,8 @@
+<?php
+
+namespace SherlockTypes202308\Illuminate\Contracts\Session\Middleware;
+
+interface AuthenticatesSessions
+{
+    //
+}
