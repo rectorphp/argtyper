@@ -34,14 +34,14 @@ final class DumpPHPUnitAssertTypesRule implements Rule
 
         $data = [];
 
-        foreach ($collectedItemsByFile as $items) {
-            foreach ($items as $item) {
-                $uniqueHash = $item[1] . $item[2] . $item[0];
+        foreach ($collectedItemsByFile as $collectedItems) {
+            foreach ($collectedItems as $collectedItem) {
+                $uniqueHash = $collectedItem[1] . $collectedItem[2] . $collectedItem[0];
 
                 $data[$uniqueHash] = [
-                    'class' => $item[1],
-                    'method' => $item[2],
-                    'type' => $item[0],
+                    'class' => $collectedItem[1],
+                    'method' => $collectedItem[2],
+                    'type' => $collectedItem[0],
                 ];
             }
         }
