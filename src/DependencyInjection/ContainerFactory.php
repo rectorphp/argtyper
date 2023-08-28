@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use TomasVotruba\SherlockTypes\Command\GenerateRectorConfigCommand;
 use TomasVotruba\SherlockTypes\Helpers\PrivatesAccessor;
 
 final class ContainerFactory
@@ -39,6 +40,9 @@ final class ContainerFactory
 
         $container->singleton(Application::class, function (Container $container): Application {
             $application = new Application();
+
+            $generateRectorConfigCommand = $container->make(GenerateRectorConfigCommand::class);
+            $application->add($generateRectorConfigCommand);
 
             $this->cleanupDefaultCommands($application);
 

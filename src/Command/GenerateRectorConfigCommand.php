@@ -22,6 +22,12 @@ final class GenerateRectorConfigCommand extends Command
         parent::__construct();
     }
 
+    protected function configure(): void
+    {
+        $this->setName('generate-rector-config');
+        $this->setDescription('Load PHPStan json report and generate Rector config from it');
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $recipeFilePath = ConfigFilePath::phpstanCollectedData();

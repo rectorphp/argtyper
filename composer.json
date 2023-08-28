@@ -45,8 +45,7 @@
         "symfony/polyfill-intl-grapheme": "*",
         "symfony/polyfill-intl-normalizer": "*",
         "symfony/polyfill-mbstring": "*",
-        "symfony/deprecation-contracts": "*",
-        "symfony/service-contracts": "*"
+        "symfony/deprecation-contracts": "*"
     },
     "scripts": {
         "check-cs": "vendor/bin/ecs check --ansi",
