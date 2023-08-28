@@ -11,13 +11,17 @@ composer require tomasvotruba/sherlock-types --dev
 
 ## Usage
 
-1. First, run PHPStan to generate 
+1. First, run PHPStan to generate `phpstan-collected-data.json`
 
 ```bash
 vendor/bin/phpstan analyse tests --configuration vendor/tomasvotruba/sherlock-types/config/phpstan-data-collector.neon
 ```
 
+2. Then run Sherlock Types to generate `rector-sherlock-types.php` config for Rector
 
+```bash
+vendor/bin/sherloc
+```
 
 @todo
 
