@@ -31,7 +31,7 @@ note "Starts"
 
 # 2. scope it
 note "Running scoper with '$RESULT_DIRECTORY' output directory"
-wget https://github.com/humbug/php-scoper/releases/download/0.17.5/php-scoper.phar -N --no-verbose
+wget https://github.com/humbug/php-scoper/releases/download/0.18.3/php-scoper.phar -N --no-verbose
 
 # create directory
 mkdir "$RESULT_DIRECTORY" -p
@@ -46,7 +46,7 @@ note "Dumping Composer Autoload"
 composer dump-autoload --working-dir "$RESULT_DIRECTORY" --ansi --classmap-authoritative --no-dev
 
 # make bin/class-leak runnable without "php"
-chmod 777 "$RESULT_DIRECTORY/bin/class-leak"
-chmod 777 "$RESULT_DIRECTORY/bin/class-leak.php"
+chmod 777 "$RESULT_DIRECTORY/bin/sherlock-types"
+chmod 777 "$RESULT_DIRECTORY/bin/sherlock-types.php"
 
 note "Finished"
