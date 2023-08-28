@@ -32,27 +32,31 @@ final class RectorConfigPrinter
      */
     private function createRectorConfigFileContents(array $classMethodTypes): string
     {
-        var_dump($classMethodTypes);
-        die;
-
         $configurationContents = '';
-        foreach ($phpstanResult as $singleCase) {
-            if (str_starts_with((string) $singleCase['type'], 'object:')) {
-                $printedType = ' new \PHPStan\Type\ObjectType(' . substr((string) $singleCase['type'], 7) . '::class)';
-            } elseif (in_array($singleCase['type'], [ArrayType::class, ConstantArrayType::class], true)) {
-                $printedType = ' new \PHPStan\Type\ArrayType(new \PHPStan\Type\MixedType(), new PHPStan\Type\MixedType())';
-            } else {
-                $printedType = 'new ' . $singleCase['type'];
-            }
+        foreach ($classMethodTypes as $classMethodType) {
+            $printedType = $this->printedType($classMethodType);
 
             $configurationContents .= sprintf(
                 '         new AddReturnTypeDeclaration(%s, "%s", %s),' . PHP_EOL,
-                $singleCase['class'] . '::class',
-                $singleCase['method'],
+                $classMethodType->getClass() . '::class',
+                $classMethodType->getMethod(),
                 $printedType
             );
         }
 
         return $configurationContents;
+    }
+
+    private function printedType(ClassMethodType $classMethodType): string
+    {
+        if (str_starts_with($classMethodType->getType(), 'object:')) {
+            return ' new \PHPStan\Type\ObjectType(' . substr($classMethodType->getType(), 7) . '::class)';
+        }
+
+        if (in_array($classMethodType->getType(), [ArrayType::class, ConstantArrayType::class], true)) {
+            return ' new \PHPStan\Type\ArrayType(new \PHPStan\Type\MixedType(), new PHPStan\Type\MixedType())';
+        }
+
+        return 'new ' . $classMethodType->getType();
     }
 }
