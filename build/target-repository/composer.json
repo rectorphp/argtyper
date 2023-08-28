@@ -1,17 +1,17 @@
 {
-    "name": "tomasvotruba/class-leak",
-    "description": "Detect leaking classes",
+    "name": "tomasvotruba/sherlock-types",
+    "description": "Deduce types like Sherlock Holmes with PHPStan and fill them with Rector",
     "license": "MIT",
     "require": {
         "php": ">=7.2"
     },
     "bin": [
-        "bin/class-leak",
-        "bin/class-leak.php"
+        "bin/sherlock-types",
+        "bin/sherlock-types.php"
     ],
     "autoload": {
         "psr-4": {
-            "TomasVotruba\\ClassLeak\\": "app"
+            "TomasVotruba\\SherlockTypes\\": "app"
         }
     }
 }
