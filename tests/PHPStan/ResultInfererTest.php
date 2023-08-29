@@ -16,6 +16,9 @@ use TomasVotruba\SherlockTypes\PHPStan\Collectors\PHPUnitAssertMethodCallCollect
 use TomasVotruba\SherlockTypes\PHPStan\Rule\DumpPHPUnitAssertTypesRule;
 use TomasVotruba\SherlockTypes\Tests\PHPStan\Source\SomeObject;
 
+/**
+ * @extends RuleTestCase<DumpPHPUnitAssertTypesRule>
+ */
 final class ResultInfererTest extends RuleTestCase
 {
     public static function getAdditionalConfigFiles(): array

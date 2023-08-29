@@ -6,10 +6,13 @@ parameters:
     level: 8
 
     ignoreErrors:
-        - '#Class TomasVotruba\\SherlockTypes\\PHPStan\\Collectors\\(.*?) implements generic interface PHPStan\\Collectors\\Collector but does not specify its types\: TNodeType, TValue#'
-
         # phsptan BC
         - '#Calling PHPStan\\(.*?) is not covered by backward compatibility promise\. The method might change in a minor PHPStan version#'
+
+        # collector superfluous generics
+        - '#Method TomasVotruba\\SherlockTypes\\Tests\\PHPStan\\ResultInfererTest\:\:getCollectors\(\) return type with generic interface PHPStan\\Collectors\\Collector does not specify its types\: TNodeType, TValue#'
+
+        - '#Offset (.*?) does not exist on array<string, mixed>\|null#'
 
     excludePaths:
         - "*/Fixture/*"

@@ -6,6 +6,9 @@ namespace TomasVotruba\SherlockTypes\Helpers;
 
 use ReflectionProperty;
 
+/**
+ * @api
+ */
 final class PrivatesAccessor
 {
     public static function propertyClosure(object $object, string $propertyName, callable $closure): void
