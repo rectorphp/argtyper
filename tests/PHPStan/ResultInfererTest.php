@@ -26,8 +26,6 @@ final class ResultInfererTest extends RuleTestCase
     {
         $fixtureFilePath = __DIR__ . '/Fixture/SomeTest.php';
 
-        
-
         $analyser = PrivatesAccessor::callMethod($this, 'getAnalyser');
 
         /** @var AnalyserResult $analyserResult */
