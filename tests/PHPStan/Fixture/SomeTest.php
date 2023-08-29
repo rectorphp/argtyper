@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace TomasVotruba\SherlockTypes\Tests\PHPStan\Fixture;
 
 use PHPUnit\Framework\TestCase;

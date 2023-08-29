@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Tracy\Dumper;
 
 function d(mixed $variables): void {

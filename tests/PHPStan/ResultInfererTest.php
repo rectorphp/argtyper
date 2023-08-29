@@ -17,23 +17,21 @@ final class ResultInfererTest extends RuleTestCase
     public static function getAdditionalConfigFiles(): array
     {
         return [
-            __DIR__ . '/../../config/phpstan-data-collector.neon'
+            __DIR__ . '/../../config/phpstan-data-collector.neon',
         ];
     }
-
 
     // run PHPStan on test case file and extract types
     public function test(): void
     {
         $fixtureFilePath = __DIR__ . '/Fixture/SomeTest.php';
 
-        // get analyser
+        
 
-        $analyser =PrivatesAccessor::callMethod($this, 'getAnalyser');
+        $analyser = PrivatesAccessor::callMethod($this, 'getAnalyser');
 
         /** @var AnalyserResult $analyserResult */
         $analyserResult = $analyser->analyse([$fixtureFilePath], null, null, true);
-
 
         $collectedData = $analyserResult->getCollectedData();
 
