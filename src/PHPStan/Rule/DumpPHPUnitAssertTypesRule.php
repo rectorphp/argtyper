@@ -52,6 +52,8 @@ final class DumpPHPUnitAssertTypesRule implements Rule
         $json = Json::encode($data, Json::PRETTY);
         FileSystem::write(getcwd() . '/rector-recipe.json', $json);
 
-        return [];
+        return [
+            'Some error',
+        ];
     }
 }
