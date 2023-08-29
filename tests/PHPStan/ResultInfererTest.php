@@ -25,11 +25,8 @@ final class ResultInfererTest extends RuleTestCase
         ];
     }
 
-    // run PHPStan on test case file and extract types
     public function test(): void
     {
-        $fixtureFilePath = __DIR__ . '/Fixture/SomeTest.php';
-
         $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/SomeTest.php');
 
         $this->assertSame([

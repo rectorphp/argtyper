@@ -9,6 +9,7 @@
     <testsuites>
         <testsuite name="unit">
             <directory>tests</directory>
+            <exclude>tests/PHPStan/Fixture</exclude>
         </testsuite>
     </testsuites>
 </phpunit>
