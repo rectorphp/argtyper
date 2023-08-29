@@ -8,5 +8,9 @@ parameters:
     ignoreErrors:
         - '#Class TomasVotruba\\SherlockTypes\\PHPStan\\Collectors\\(.*?) implements generic interface PHPStan\\Collectors\\Collector but does not specify its types\: TNodeType, TValue#'
 
+        # phsptan BC
+        - '#Calling PHPStan\\Analyser\\Analyser\:\:analyse\(\) is not covered by backward compatibility promise\. The method might change in a minor PHPStan version#'
+
     excludePaths:
         - "*/Fixture/*"
+        - "*/Source/*"

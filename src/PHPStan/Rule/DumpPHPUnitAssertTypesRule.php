@@ -49,6 +49,8 @@ final class DumpPHPUnitAssertTypesRule implements Rule
         // reset keys
         $data = array_values($data);
 
+        var_dump('11111');
+
         $json = Json::encode($data, Json::PRETTY);
         FileSystem::write(getcwd() . '/rector-recipe.json', $json);
 

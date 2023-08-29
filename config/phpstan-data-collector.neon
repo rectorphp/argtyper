@@ -1,6 +1,7 @@
 parameters:
     # avoid need of level
-    customRulesetUsed: true
+    # customRulesetUsed: true
+    level: 8
 
 services:
     -
