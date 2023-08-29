@@ -14,11 +14,13 @@ use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
 use TomasVotruba\SherlockTypes\Types\TypeMapper;
 
+/**
+ * @implements Collector<MethodCall, array<string, mixed>|null>
+ */
 final class PHPUnitAssertMethodCallCollector implements Collector
 {
     public function getNodeType(): string
     {
-        var_dump('111');
         return MethodCall::class;
     }
 
@@ -31,9 +33,6 @@ final class PHPUnitAssertMethodCallCollector implements Collector
         if (! $node->name instanceof Identifier) {
             return null;
         }
-
-        var_dump(222);
-        die;
 
         $methodCallName = $node->name->toString();
         if (! in_array($methodCallName, ['assertSame', 'assertEquals'], true)) {

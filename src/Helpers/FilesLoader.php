@@ -19,9 +19,6 @@ final class FilesLoader
         Assert::fileExists($filePath);
         $fileContents = FileSystem::read($filePath);
 
-        $json = Json::decode($fileContents, Json::FORCE_ARRAY);
-
-        var_dump($json);
-        die;
+        return Json::decode($fileContents, Json::FORCE_ARRAY);
     }
 }

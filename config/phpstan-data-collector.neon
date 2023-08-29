@@ -1,13 +1,14 @@
 parameters:
     # avoid need of level
-    # customRulesetUsed: true
-    level: 8
+    customRulesetUsed: true
 
 services:
+    -
+        class: TomasVotruba\SherlockTypes\PHPStan\Rule\DumpPHPUnitAssertTypesRule
+        tags:
+            - phpstan.rules.rule
+
     -
         class: TomasVotruba\SherlockTypes\PHPStan\Collectors\PHPUnitAssertMethodCallCollector
         tags:
             - phpstan.collector
-
-rules:
-    - TomasVotruba\SherlockTypes\PHPStan\Rule\DumpPHPUnitAssertTypesRule

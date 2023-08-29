@@ -33,4 +33,11 @@ final class PrivatesAccessor
 
         $reflectionProperty->setValue($object, $value);
     }
+
+    public static function callMethod(object $object, string $methodName): mixed
+    {
+        $reflectionMethod = new \ReflectionMethod($object, $methodName);
+        $reflectionMethod->setAccessible(true);
+        return $reflectionMethod->invoke($object);
+    }
 }

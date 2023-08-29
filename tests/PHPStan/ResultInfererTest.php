@@ -4,49 +4,61 @@ declare(strict_types=1);
 
 namespace TomasVotruba\SherlockTypes\Tests\PHPStan;
 
-use PhpParser\Node\Expr\MethodCall;
-use PHPStan\Analyser\Analyser;
-use PHPStan\Collectors\Registry;
-use PHPStan\DependencyInjection\ContainerFactory;
-use PHPStan\Node\CollectedDataNode;
-use TomasVotruba\SherlockTypes\Tests\AbstractTestCase;
-use Tracy\Dumper;
+use PHPStan\Analyser\AnalyserResult;
+use PHPStan\Collectors\Collector;
+use PHPStan\Rules\Rule;
+use PHPStan\Testing\RuleTestCase;
+use TomasVotruba\SherlockTypes\Helpers\PrivatesAccessor;
+use TomasVotruba\SherlockTypes\PHPStan\Collectors\PHPUnitAssertMethodCallCollector;
+use TomasVotruba\SherlockTypes\PHPStan\Rule\DumpPHPUnitAssertTypesRule;
 
-final class ResultInfererTest extends AbstractTestCase
+final class ResultInfererTest extends RuleTestCase
 {
+    public static function getAdditionalConfigFiles(): array
+    {
+        return [
+            __DIR__ . '/../../config/phpstan-data-collector.neon'
+        ];
+    }
+
+
     // run PHPStan on test case file and extract types
     public function test(): void
     {
         $fixtureFilePath = __DIR__ . '/Fixture/SomeTest.php';
 
-        $phpstanContainerFactory = new ContainerFactory(getcwd());
+        // get analyser
 
-        $phpstanContainer = $phpstanContainerFactory->create(
-            tempDirectory: sys_get_temp_dir() . '/shelock-types-phpstan-5',
-            additionalConfigFiles: [__DIR__ . '/../../config/phpstan-data-collector.neon'],
-            analysedPaths: [__DIR__ . '/Fixture'],
-        );
+        $analyser =PrivatesAccessor::callMethod($this, 'getAnalyser');
 
-        /** @var Analyser $analyser */
-        $analyser = $phpstanContainer->getByType(Analyser::class);
+        /** @var AnalyserResult $analyserResult */
         $analyserResult = $analyser->analyse([$fixtureFilePath], null, null, true);
 
-        /** @var Registry $collectorRegistry */
-        $collectorRegistry = $phpstanContainer->getByType(Registry::class);
-        dump($collectorRegistry->getCollectors(MethodCall::class));
 
-        /** @var \PHPStan\Rules\Registry $ruleRegistry */
-        $ruleRegistry = $phpstanContainer->getByType(\PHPStan\Rules\Registry::class);
-        Dumper::dump($ruleRegistry->getRules(CollectedDataNode::class), [
-            'depth' => 2,
-        ]);
+        $collectedData = $analyserResult->getCollectedData();
 
-        dump($analyserResult->getCollectedData());
-        die();
+        d($analyserResult->getCollectedData()[0]->getData());
+
+        $this->assertNotEmpty($collectedData);
 
         // create PHSPtan here too :)
         // get file analyser
         // run rule and ocllector
         // compare expected json
+    }
+
+    protected function getRule(): Rule
+    {
+        return self::getContainer()->getByType(DumpPHPUnitAssertTypesRule::class);
+    }
+
+    /**
+     * @return Collector[]
+     */
+    protected function getCollectors(): array
+    {
+        return [
+            self::getContainer()->getByType(PHPUnitAssertMethodCallCollector::class),
+        ];
     }
 }

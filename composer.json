@@ -9,7 +9,7 @@
         "php": "^8.1",
         "illuminate/container": "^10.20",
         "nette/utils": "^4.0",
-        "phpstan/phpstan": "^1.10",
+        "phpstan/phpstan": "^1.10.32",
         "symfony/console": "^6.3",
         "webmozart/assert": "^1.11"
     },
@@ -32,7 +32,10 @@
     "autoload-dev": {
         "psr-4": {
             "TomasVotruba\\SherlockTypes\\Tests\\": "tests"
-        }
+        },
+        "files": [
+            "tests/functions.php"
+        ]
     },
     "config": {
         "sort-packages": true,
