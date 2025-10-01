@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\PHPStan\Collectors;
 
-use PHPStan\Collectors\Collector;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\ErrorType;
 use PHPStan\Type\IntersectionType;

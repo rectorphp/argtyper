@@ -9,11 +9,7 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
-use PHPStan\Type\ErrorType;
-use PHPStan\Type\IntersectionType;
-use PHPStan\Type\MixedType;
 use PHPStan\Type\TypeWithClassName;
-use PHPStan\Type\UnionType;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
 /**

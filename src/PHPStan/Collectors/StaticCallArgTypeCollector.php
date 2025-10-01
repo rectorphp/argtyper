@@ -99,9 +99,4 @@ final class StaticCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
 
         return $classNameTypes;
     }
-
-
-
-
-
 }
