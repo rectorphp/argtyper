@@ -39,6 +39,8 @@ final class AddParamTypeRector extends AbstractRector
             return null;
         }
 
+        $hasChanged = false;
+
         foreach ($node->getMethods() as $classMethod) {
             if ($classMethod->isMagic()) {
                 continue;
@@ -49,11 +51,31 @@ final class AddParamTypeRector extends AbstractRector
                     continue;
                 }
 
-                // match type
+                foreach ($classMethod->getParams() as $position => $param) {
+                    $isNullable = $param->type instanceof Node\NullableType && $param->default instanceof Node\Expr\ConstFetch && $this->isName($param->default, 'null');
+
+                    if ($classMethodType->getPosition() !== $position) {
+                        continue 2;
+                    }
+
+                    $typeNode = $this->resolveTypeNode($classMethodType->getType());
+
+                    if ($isNullable) {
+                        $param->type = new Node\NullableType($typeNode);
+                        $hasChanged = true;
+                    } else {
+                        $param->type = $typeNode;
+                        $hasChanged = true;
+                    }
+                }
             }
         }
 
-        return null;
+        if (! $hasChanged) {
+            return null;
+        }
+
+        return $node;
     }
 
     private function resolveTypeNode(string $type): \PhpParser\Node
