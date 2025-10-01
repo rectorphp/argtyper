@@ -10,12 +10,12 @@ use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
 use PHPStan\Rules\Rule;
-use Rector\ArgTyper\PHPStan\Collectors\PHPUnitAssertMethodCallCollector;
+use Rector\ArgTyper\PHPStan\Collectors\MethodCallArgTypeCollector;
 
 /**
  * @implements Rule<CollectedDataNode>
  */
-final class DumpPHPUnitAssertTypesRule implements Rule
+final class DumpMethodCallArgTypesRule implements Rule
 {
     /**
      * @return class-string<Node>
@@ -30,18 +30,22 @@ final class DumpPHPUnitAssertTypesRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        $collectedItemsByFile = $node->get(PHPUnitAssertMethodCallCollector::class);
+        $collectedItemsByFile = $node->get(MethodCallArgTypeCollector::class);
+
+        dump($collectedItemsByFile);
+        die;
 
         $data = [];
 
         foreach ($collectedItemsByFile as $collectedItems) {
             foreach ($collectedItems as $collectedItem) {
-                $uniqueHash = $collectedItem[1] . $collectedItem[2] . $collectedItem[0];
+                $uniqueHash = $collectedItem[1] . $collectedItem[2] . $collectedItem[3];
 
                 $data[$uniqueHash] = [
                     'class' => $collectedItem[1],
                     'method' => $collectedItem[2],
-                    'type' => $collectedItem[0],
+                    'position' => $collectedItem[3],
+                    'type' => $collectedItem[4],
                 ];
             }
         }
@@ -52,8 +56,7 @@ final class DumpPHPUnitAssertTypesRule implements Rule
         $json = Json::encode($data, Json::PRETTY);
         FileSystem::write(getcwd() . '/rector-recipe.json', $json);
 
-        return [
-            'Some error',
-        ];
+        // comply with contract, but never used
+        return [];
     }
 }

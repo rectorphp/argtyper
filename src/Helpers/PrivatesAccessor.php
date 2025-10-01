@@ -21,17 +21,15 @@ final class PrivatesAccessor
         self::setPrivateProperty($object, $propertyName, $property);
     }
 
-    public static function callMethod(object $object, string $methodName): mixed
+    public static function callMethod(object $object, string $methodName, ...$args): mixed
     {
         $reflectionMethod = new \ReflectionMethod($object, $methodName);
-        $reflectionMethod->setAccessible(true);
-        return $reflectionMethod->invoke($object);
+        return $reflectionMethod->invoke($object, ...$args);
     }
 
     private static function getPrivateProperty(object $object, string $propertyName): mixed
     {
         $reflectionProperty = new ReflectionProperty($object, $propertyName);
-        $reflectionProperty->setAccessible(true);
 
         return $reflectionProperty->getValue($object);
     }
@@ -39,8 +37,6 @@ final class PrivatesAccessor
     private static function setPrivateProperty(object $object, string $propertyName, mixed $value): void
     {
         $reflectionProperty = new ReflectionProperty($object, $propertyName);
-        $reflectionProperty->setAccessible(true);
-
         $reflectionProperty->setValue($object, $value);
     }
 }

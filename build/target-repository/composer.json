@@ -1,13 +1,13 @@
 {
-    "name": "tomasvotruba/sherlock-types",
+    "name": "tomasvotruba/argtyper",
     "description": "Deduce types like Sherlock Holmes with PHPStan and fill them with Rector",
     "license": "MIT",
     "require": {
         "php": ">=7.2"
     },
     "bin": [
-        "bin/sherlock-types",
-        "bin/sherlock-types.php"
+        "bin/argtyper",
+        "bin/argtyper.php"
     ],
     "autoload": {
         "psr-4": {

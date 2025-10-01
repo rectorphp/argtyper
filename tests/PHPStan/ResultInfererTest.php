@@ -6,18 +6,18 @@ namespace Rector\ArgTyper\Tests\PHPStan;
 
 use PHPStan\Analyser\Analyser;
 use PHPStan\Analyser\AnalyserResult;
-use PHPStan\Collectors\CollectedData;
 use PHPStan\Collectors\Collector;
+use PHPStan\Rules\DirectRegistry;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPStan\Type\StringType;
 use Rector\ArgTyper\Helpers\PrivatesAccessor;
-use Rector\ArgTyper\PHPStan\Collectors\PHPUnitAssertMethodCallCollector;
-use Rector\ArgTyper\PHPStan\Rule\DumpPHPUnitAssertTypesRule;
+use Rector\ArgTyper\PHPStan\Collectors\MethodCallArgTypeCollector;
+use Rector\ArgTyper\PHPStan\Rule\DumpMethodCallArgTypesRule;
 use Rector\ArgTyper\Tests\PHPStan\Source\SomeObject;
 
 /**
- * @extends RuleTestCase<DumpPHPUnitAssertTypesRule>
+ * @extends RuleTestCase<DumpMethodCallArgTypesRule>
  */
 final class ResultInfererTest extends RuleTestCase
 {
@@ -30,18 +30,21 @@ final class ResultInfererTest extends RuleTestCase
 
     public function test(): void
     {
-        $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/SomeTest.php');
+        $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/SomeTest.php', MethodCallArgTypeCollector::class);
+
+        dump($collectedData);
+        die;
 
         $this->assertSame([
             StringType::class,
             SomeObject::class,
             'getName',
-        ], $collectedData->getData());
+        ], $collectedData);
     }
 
     protected function getRule(): Rule
     {
-        return self::getContainer()->getByType(DumpPHPUnitAssertTypesRule::class);
+        return self::getContainer()->getByType(DumpMethodCallArgTypesRule::class);
     }
 
     /**
@@ -50,21 +53,32 @@ final class ResultInfererTest extends RuleTestCase
     protected function getCollectors(): array
     {
         return [
-            self::getContainer()->getByType(PHPUnitAssertMethodCallCollector::class),
+            self::getContainer()->getByType(MethodCallArgTypeCollector::class),
         ];
     }
 
-    private function collectDataInFile(string $fixtureFilePath): CollectedData
+    /**
+     * @return array<array{0: string, 1: string, 2: string, 3: string}>
+     */
+    private function collectDataInFile(string $fixtureFilePath, string $collectorClass): array
     {
+        $rule = $this->getRule();
+
+        $directRegistry = new DirectRegistry([$rule]);
+
         /** @var Analyser $analyser */
-        $analyser = PrivatesAccessor::callMethod($this, 'getAnalyser');
+        $analyser = PrivatesAccessor::callMethod($this, 'getAnalyser', $directRegistry);
 
         /** @var AnalyserResult $analyserResult */
         $analyserResult = $analyser->analyse([$fixtureFilePath], null, null, true);
 
         $collectedDatas = $analyserResult->getCollectedData();
+
+        dump($collectedDatas);
+        die;
+
         $this->assertNotEmpty($collectedDatas);
 
-        return $collectedDatas[0];
+        return $collectedDatas[$fixtureFilePath][$collectorClass];
     }
 }

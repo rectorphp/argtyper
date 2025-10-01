@@ -5,6 +5,8 @@ parameters:
 
     level: 8
 
+    reportUnmatchedIgnoredErrors: false
+
     ignoreErrors:
         # phsptan BC
         - '#Calling PHPStan\\(.*?) is not covered by backward compatibility promise\. The method might change in a minor PHPStan version#'
@@ -12,7 +14,7 @@ parameters:
         # collector superfluous generics
         - '#Method Rector\\ArgTyper\\Tests\\PHPStan\\ResultInfererTest\:\:getCollectors\(\) return type with generic interface PHPStan\\Collectors\\Collector does not specify its types\: TNodeType, TValue#'
 
-        - '#Offset (.*?) does not exist on array<string, mixed>\|null#'
+        - identifier: phpstanApi.instanceofType
 
     excludePaths:
         - "*/Fixture/*"

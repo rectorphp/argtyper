@@ -13,6 +13,6 @@ final class ConfigFilePath
 
     public static function rectorGeneratedConfig(): string
     {
-        return getcwd() . '/rector-sherlock-types.php';
+        return getcwd() . '/rector-argtyper.php';
     }
 }

@@ -1,7 +1,6 @@
-# Sherlock Types
+# Arg Typer
 
-There are more known types in your project then it meets the eye. Sherlock Types is a tool that deduces hidden types from your PHP project with help of PHPStan and Rector.
-
+There are more known types in your project then it meets the eye. This tool finds real argument types in method calls and functions call in your PHP project. Then dumps Rector config to autocomplete them. That's it.
 
 ## Install
 
@@ -17,11 +16,19 @@ composer require rector/argtyper --dev
 vendor/bin/phpstan analyse tests --configuration vendor/tomasvotruba/argtyper/config/phpstan-data-collector.neon
 ```
 
-2. Then run Sherlock Types to generate `rector-argtyper.php` config for Rector
+2. Then generate `rector-argtyper.php` config for Rector
 
 ```bash
-vendor/bin/sherloc
+vendor/bin/argtyper
 ```
 
-@todo
+3. Last, run Rector with this config and see new type declarations in your code
 
+```bash
+vendor/bin/rector --config rector-argtyper.php
+```
+
+
+<br>
+
+Happy coding!

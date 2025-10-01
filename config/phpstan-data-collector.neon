@@ -4,9 +4,9 @@ parameters:
 
 services:
     -
-        class: TomasVotruba\SherlockTypes\PHPStan\Collectors\PHPUnitAssertMethodCallCollector
+        class: Rector\ArgTyper\PHPStan\Collectors\MethodCallArgTypeCollector
         tags:
             - phpstan.collector
 
 rules:
-    - TomasVotruba\SherlockTypes\PHPStan\Rule\DumpPHPUnitAssertTypesRule
+    - Rector\ArgTyper\PHPStan\Rule\DumpMethodCallArgTypesRule

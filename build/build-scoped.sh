@@ -46,7 +46,7 @@ note "Dumping Composer Autoload"
 composer dump-autoload --working-dir "$RESULT_DIRECTORY" --ansi --classmap-authoritative --no-dev
 
 # make bin/class-leak runnable without "php"
-chmod 777 "$RESULT_DIRECTORY/bin/sherlock-types"
-chmod 777 "$RESULT_DIRECTORY/bin/sherlock-types.php"
+chmod 777 "$RESULT_DIRECTORY/bin/argtyper"
+chmod 777 "$RESULT_DIRECTORY/bin/argtyper.php"
 
 note "Finished"
