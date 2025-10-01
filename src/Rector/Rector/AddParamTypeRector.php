@@ -21,6 +21,8 @@ use Rector\ArgTyper\Exception\NotImplementedException;
 use Rector\Rector\AbstractRector;
 
 /**
+ * @api used in Rector config
+ *
  * Load data from phpstan-collected-data and add types to parameters if not nullable
  */
 final class AddParamTypeRector extends AbstractRector

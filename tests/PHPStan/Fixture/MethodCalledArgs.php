@@ -13,7 +13,7 @@ final class MethodCalledArgs
         $someObject->setName('some name');
     }
 
-    public function go()
+    public function go(): void
     {
         SomeObject::setAge(100);
     }

@@ -42,9 +42,9 @@ final class DumpMethodCallArgTypesRule implements Rule
 
         $data = [];
 
-        foreach ($callLikeCollectedItemsByFile as $collectedItems) {
-            foreach ($collectedItems as $collectedItem) {
-                foreach ($collectedItem as $collectedMethodCallArgType) {
+        foreach ($callLikeCollectedItemsByFile as $callLikeCollectedItems) {
+            foreach ($callLikeCollectedItems as $callLikeCollectedItem) {
+                foreach ($callLikeCollectedItem as $collectedMethodCallArgType) {
                     $uniqueHash = $collectedMethodCallArgType[0] . $collectedMethodCallArgType[1] . $collectedMethodCallArgType[2];
 
                     $data[$uniqueHash] = [

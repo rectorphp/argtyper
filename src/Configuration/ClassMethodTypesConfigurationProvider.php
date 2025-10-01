@@ -28,8 +28,8 @@ final class ClassMethodTypesConfigurationProvider
 
         $dataGroupedByPositionMethodAndClassNames = [];
 
-        foreach ($phpstanResultsData as $singleItemData) {
-            $dataGroupedByPositionMethodAndClassNames[$singleItemData['class']][$singleItemData['method']][$singleItemData['position']][] = $singleItemData['type'];
+        foreach ($phpstanResultsData as $phpstanResultData) {
+            $dataGroupedByPositionMethodAndClassNames[$phpstanResultData['class']][$phpstanResultData['method']][$phpstanResultData['position']][] = $phpstanResultData['type'];
         }
 
         $classMethodTypes = [];
@@ -46,7 +46,8 @@ final class ClassMethodTypesConfigurationProvider
                             $position,
                             $types[0]
                         );
-                    }  
+                    }
+
                         // @todo add support if all the same
                         // use unique types method
 
