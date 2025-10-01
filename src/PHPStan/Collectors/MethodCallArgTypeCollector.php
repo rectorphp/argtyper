@@ -19,7 +19,7 @@ use Rector\ArgTyper\PHPStan\TypeMapper;
 /**
  * @implements Collector<MethodCall, array<array{0: string, 1: string, 2: string, 3: string}>>
  */
-final class MethodCallArgTypeCollector implements Collector
+final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector
 {
     public function getNodeType(): string
     {
@@ -83,20 +83,7 @@ final class MethodCallArgTypeCollector implements Collector
                 }
 
                 $argType = $scope->getType($arg->value);
-                // unable to move to json for now, handle later
-                if ($argType instanceof ErrorType) {
-                    continue;
-                }
-
-                if ($argType instanceof MixedType) {
-                    continue;
-                }
-
-                if ($argType instanceof UnionType) {
-                    continue;
-                }
-
-                if ($argType instanceof IntersectionType) {
+                if ($this->shouldSkipType($argType)) {
                     continue;
                 }
 
