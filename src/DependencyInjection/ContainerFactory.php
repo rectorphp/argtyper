@@ -8,7 +8,6 @@ use Illuminate\Container\Container;
 use PhpParser\Parser;
 use PhpParser\ParserFactory;
 use Rector\ArgTyper\Command\GenerateRectorConfigCommand;
-use Rector\ArgTyper\Helpers\PrivatesAccessor;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
