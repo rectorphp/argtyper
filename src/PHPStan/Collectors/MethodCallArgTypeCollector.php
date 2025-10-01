@@ -12,7 +12,7 @@ use PHPStan\Collectors\Collector;
 use PHPStan\Type\IntersectionType;
 use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
-use Rector\ArgTyper\Types\TypeMapper;
+use Rector\ArgTyper\PHPStan\TypeMapper;
 
 /**
  * @implements Collector<MethodCall, array<array{0: string, 1: string, 2: string, 3: string}>>

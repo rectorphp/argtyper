@@ -7,8 +7,8 @@ namespace Rector\ArgTyper\Tests\Rector;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\StringType;
 use Rector\ArgTyper\Rector\RectorConfigPrinter;
+use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\ArgTyper\Tests\AbstractTestCase;
-use Rector\ArgTyper\ValueObject\ClassMethodType;
 
 final class RectorConfigPrinterTest extends AbstractTestCase
 {

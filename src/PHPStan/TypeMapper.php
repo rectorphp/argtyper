@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\Types;
+namespace Rector\ArgTyper\PHPStan;
 
 use PHPStan\Type\BooleanType;
 use PHPStan\Type\Constant\ConstantBooleanType;

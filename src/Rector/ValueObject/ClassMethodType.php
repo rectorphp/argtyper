@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\ValueObject;
+namespace Rector\ArgTyper\Rector\ValueObject;
 
 final class ClassMethodType
 {

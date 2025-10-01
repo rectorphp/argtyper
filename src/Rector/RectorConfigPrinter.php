@@ -7,7 +7,7 @@ namespace Rector\ArgTyper\Rector;
 use Nette\Utils\FileSystem;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
-use Rector\ArgTyper\ValueObject\ClassMethodType;
+use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 
 /**
  * @see \Rector\ArgTyper\Tests\Rector\RectorConfigPrinterTest
