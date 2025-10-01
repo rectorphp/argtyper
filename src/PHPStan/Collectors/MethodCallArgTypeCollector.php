@@ -52,7 +52,6 @@ final class MethodCallArgTypeCollector implements Collector
 
         $classNameTypes = [];
 
-
         $objectClassReflections = $callerType->getObjectClassReflections();
 
         foreach ($objectClassReflections as $objectClassReflection) {
@@ -91,7 +90,6 @@ final class MethodCallArgTypeCollector implements Collector
                     $type = TypeMapper::mapConstantToGenericTypes($argType);
                     $type = $type::class;
                 }
-
 
                 $classNameTypes[] = [$className, $methodCallName, $key, $type];
             }
