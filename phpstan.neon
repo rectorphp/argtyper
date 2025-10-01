@@ -6,6 +6,8 @@ parameters:
     level: 8
 
     reportUnmatchedIgnoredErrors: false
+    # make sure iterable docblock are checked
+    treatPhpDocTypesAsCertain: false
 
     ignoreErrors:
         # irelevant
