@@ -15,7 +15,7 @@ use PHPStan\Type\UnionType;
 use Rector\ArgTyper\Types\TypeMapper;
 
 /**
- * @implements Collector<MethodCall, array<string, array<array{0: string, 1: string, 2: string, 3: string}>|null>
+ * @implements Collector<MethodCall, array<array{0: string, 1: string, 2: string, 3: string}>>
  */
 final class MethodCallArgTypeCollector implements Collector
 {
@@ -26,7 +26,6 @@ final class MethodCallArgTypeCollector implements Collector
 
     /**
      * @param MethodCall $node
-     * @return string[]|null
      */
     public function processNode(Node $node, Scope $scope): ?array
     {
@@ -44,7 +43,7 @@ final class MethodCallArgTypeCollector implements Collector
         }
 
         $callerType = $scope->getType($node->var);
-        if (! $callerType->isObject()) {
+        if (! $callerType->isObject()->yes()) {
             return null;
         }
 
@@ -63,8 +62,12 @@ final class MethodCallArgTypeCollector implements Collector
                 continue;
             }
 
-            // skip vendor calls, askips we cannot modify those
+            // skip vendor calls, skips we cannot modify those
             $fileName = $objectClassReflection->getFileName();
+            if ($fileName === null) {
+                continue;
+            }
+
             if (str_contains($fileName, '/vendor')) {
                 continue;
             }

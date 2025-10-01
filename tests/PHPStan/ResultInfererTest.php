@@ -22,17 +22,9 @@ use Webmozart\Assert\Assert;
  */
 final class ResultInfererTest extends RuleTestCase
 {
-    public static function getAdditionalConfigFiles(): array
-    {
-        return [
-            __DIR__ . '/../../config/phpstan-data-collector.neon',
-        ];
-    }
-
     public function test(): void
     {
         $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/MethodCalledArgs.php', MethodCallArgTypeCollector::class);
-
         $firstItem = $collectedData[0];
 
         $this->assertSame([
@@ -58,19 +50,23 @@ final class ResultInfererTest extends RuleTestCase
         ];
     }
 
+    public static function getAdditionalConfigFiles(): array
+    {
+        return [
+            __DIR__ . '/../../config/phpstan-data-collector.neon',
+        ];
+    }
+
     /**
+     * @param class-string<Collector> $collectorClass
+     *
      * @return array<array{0: string, 1: string, 2: string, 3: string}>
      */
     private function collectDataInFile(string $fixtureFilePath, string $collectorClass): array
     {
         Assert::fileExists($fixtureFilePath);
 
-        $rule = $this->getRule();
-
-        $directRegistry = new DirectRegistry([$rule]);
-
-        /** @var Analyser $analyser */
-        $analyser = PrivatesAccessor::callMethod($this, 'getAnalyser', $directRegistry);
+        $analyser = $this->createAnalyser();
 
         /** @var AnalyserResult $analyserResult */
         $analyserResult = $analyser->analyse([$fixtureFilePath], null, null, true);
@@ -79,5 +75,15 @@ final class ResultInfererTest extends RuleTestCase
         $this->assertNotEmpty($collectedDatas);
 
         return $collectedDatas[$fixtureFilePath][$collectorClass][0];
+    }
+
+    private function createAnalyser(): Analyser
+    {
+        $directRegistry = new DirectRegistry([$this->getRule()]);
+
+        /** @var Analyser $analyser */
+        $analyser = PrivatesAccessor::callMethod($this, 'getAnalyser', $directRegistry);
+
+        return $analyser;
     }
 }

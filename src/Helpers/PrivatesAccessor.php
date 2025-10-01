@@ -21,7 +21,7 @@ final class PrivatesAccessor
         self::setPrivateProperty($object, $propertyName, $property);
     }
 
-    public static function callMethod(object $object, string $methodName, ...$args): mixed
+    public static function callMethod(object $object, string $methodName, mixed ...$args): mixed
     {
         $reflectionMethod = new \ReflectionMethod($object, $methodName);
         return $reflectionMethod->invoke($object, ...$args);
