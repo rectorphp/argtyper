@@ -2,6 +2,10 @@
 
 There are more known types in your project then it meets the eye. This tool finds real argument types in method calls and functions call in your PHP project. Then dumps Rector config to autocomplete them. That's it.
 
+## Todo
+
+* [ ] add function param type support
+
 ## Install
 
 ```bash
