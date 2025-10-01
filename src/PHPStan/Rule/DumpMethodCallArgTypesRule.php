@@ -12,6 +12,7 @@ use PHPStan\Node\CollectedDataNode;
 use PHPStan\Rules\Rule;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\PHPStan\Collectors\MethodCallArgTypeCollector;
+use Rector\ArgTyper\PHPStan\Collectors\StaticCallArgTypeCollector;
 
 /**
  * @implements Rule<CollectedDataNode>
@@ -31,11 +32,17 @@ final class DumpMethodCallArgTypesRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        $collectedItemsByFile = $node->get(MethodCallArgTypeCollector::class);
+        $methodCallCollectedItemsByFile = $node->get(MethodCallArgTypeCollector::class);
+        $staticCallCollectedItemsByFile = $node->get(StaticCallArgTypeCollector::class);
+
+        $callLikeCollectedItemsByFile = array_merge(
+            $methodCallCollectedItemsByFile ?? [],
+            $staticCallCollectedItemsByFile ?? []
+        );
 
         $data = [];
 
-        foreach ($collectedItemsByFile as $collectedItems) {
+        foreach ($callLikeCollectedItemsByFile as $collectedItems) {
             foreach ($collectedItems as $collectedItem) {
                 foreach ($collectedItem as $collectedMethodCallArgType) {
                     $uniqueHash = $collectedMethodCallArgType[0] . $collectedMethodCallArgType[1] . $collectedMethodCallArgType[2];
