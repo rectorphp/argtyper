@@ -33,4 +33,9 @@ final readonly class ClassMethodType
     {
         return $this->type;
     }
+
+    public function isObjectType(): bool
+    {
+        return str_starts_with($this->type, 'object:');
+    }
 }
