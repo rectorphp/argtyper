@@ -66,7 +66,7 @@ final class MethodCallArgTypeCollector implements Collector
 
             // skip vendor calls, askips we cannot modify those
             $fileName = $objectClassReflection->getFileName();
-            if (! str_contains($fileName, '/vendor')) {
+            if (str_contains($fileName, '/vendor')) {
                 continue;
             }
 
@@ -82,7 +82,7 @@ final class MethodCallArgTypeCollector implements Collector
 
                 // unable to move to json for now, handle later
                 if ($argType instanceof UnionType || $argType instanceof IntersectionType) {
-                    return null;
+                    continue;
                 }
 
                 if ($argType instanceof TypeWithClassName) {

@@ -32,9 +32,6 @@ final class DumpMethodCallArgTypesRule implements Rule
     {
         $collectedItemsByFile = $node->get(MethodCallArgTypeCollector::class);
 
-        dump($collectedItemsByFile);
-        die;
-
         $data = [];
 
         foreach ($collectedItemsByFile as $collectedItems) {

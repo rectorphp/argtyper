@@ -15,6 +15,7 @@ use Rector\ArgTyper\Helpers\PrivatesAccessor;
 use Rector\ArgTyper\PHPStan\Collectors\MethodCallArgTypeCollector;
 use Rector\ArgTyper\PHPStan\Rule\DumpMethodCallArgTypesRule;
 use Rector\ArgTyper\Tests\PHPStan\Source\SomeObject;
+use Webmozart\Assert\Assert;
 
 /**
  * @extends RuleTestCase<DumpMethodCallArgTypesRule>
@@ -30,16 +31,16 @@ final class ResultInfererTest extends RuleTestCase
 
     public function test(): void
     {
-        $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/SomeTest.php', MethodCallArgTypeCollector::class);
+        $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/MethodCalledArgs.php', MethodCallArgTypeCollector::class);
 
-        dump($collectedData);
-        die;
+        $firstItem = $collectedData[0];
 
         $this->assertSame([
-            StringType::class,
             SomeObject::class,
-            'getName',
-        ], $collectedData);
+            'setName',
+            0,
+            StringType::class,
+        ], $firstItem);
     }
 
     protected function getRule(): Rule
@@ -62,6 +63,8 @@ final class ResultInfererTest extends RuleTestCase
      */
     private function collectDataInFile(string $fixtureFilePath, string $collectorClass): array
     {
+        Assert::fileExists($fixtureFilePath);
+
         $rule = $this->getRule();
 
         $directRegistry = new DirectRegistry([$rule]);
@@ -73,12 +76,8 @@ final class ResultInfererTest extends RuleTestCase
         $analyserResult = $analyser->analyse([$fixtureFilePath], null, null, true);
 
         $collectedDatas = $analyserResult->getCollectedData();
-
-        dump($collectedDatas);
-        die;
-
         $this->assertNotEmpty($collectedDatas);
 
-        return $collectedDatas[$fixtureFilePath][$collectorClass];
+        return $collectedDatas[$fixtureFilePath][$collectorClass][0];
     }
 }
