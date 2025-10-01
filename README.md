@@ -5,6 +5,7 @@ There are more known types in your project then it meets the eye. This tool find
 ## Todo
 
 * [ ] add function param type support
+* [ ] add static call type support
 
 ## Install
 
