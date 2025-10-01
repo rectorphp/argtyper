@@ -2,34 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\Command;
+namespace Rector\ArgTyper\Configuration;
 
-use Nette\Utils\FileSystem;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
-use Rector\ArgTyper\Rector\RectorConfigPrinter;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
+use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 
-final class GenerateRectorConfigCommand extends Command
+final class ClassMethodTypesConfigurationProvider
 {
-    public function __construct(
-        private readonly SymfonyStyle $symfonyStyle,
-        private readonly RectorConfigPrinter $rectorConfigPrinter,
-    ) {
-        parent::__construct();
-    }
+    /**
+     * @var array<ClassMethodType>
+     */
+    private array $classMethodTypes = [];
 
-    protected function configure(): void
+    /**
+     * @return array<ClassMethodType>
+     */
+    public function provide(): array
     {
-        $this->setName('generate-rector-config');
-        $this->setDescription('Load PHPStan json report and generate Rector config from it');
-    }
+        if ($this->classMethodTypes !== []) {
+            return $this->classMethodTypes;
+        }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
         $phpstanResultsData = FilesLoader::loadFileJson(
             ConfigFilePath::phpstanCollectedData()
         );
@@ -63,7 +57,8 @@ final class GenerateRectorConfigCommand extends Command
             }
         }
 
+        $this->classMethodTypes = $classMethodTypes;
 
-        return self::SUCCESS;
+        return $classMethodTypes;
     }
 }
