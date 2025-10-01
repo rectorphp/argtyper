@@ -24,22 +24,18 @@ final class ResultInfererTest extends RuleTestCase
 {
     public function test(): void
     {
-        $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/MethodCalledArgs.php', MethodCallArgTypeCollector::class);
+        $collectedData = $this->collectDataInFile(
+            __DIR__ . '/Fixture/MethodCalledArgs.php',
+            MethodCallArgTypeCollector::class
+        );
         $firstItem = $collectedData[0];
 
-        $this->assertSame([
-            SomeObject::class,
-            'setName',
-            0,
-            StringType::class,
-        ], $firstItem);
+        $this->assertSame([SomeObject::class, 'setName', 0, StringType::class], $firstItem);
     }
 
     public static function getAdditionalConfigFiles(): array
     {
-        return [
-            __DIR__ . '/../../config/phpstan-data-collector.neon',
-        ];
+        return [__DIR__ . '/../../config/phpstan-data-collector.neon'];
     }
 
     protected function getRule(): Rule
@@ -52,9 +48,7 @@ final class ResultInfererTest extends RuleTestCase
      */
     protected function getCollectors(): array
     {
-        return [
-            self::getContainer()->getByType(MethodCallArgTypeCollector::class),
-        ];
+        return [self::getContainer()->getByType(MethodCallArgTypeCollector::class)];
     }
 
     /**

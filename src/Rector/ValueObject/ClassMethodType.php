@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\Rector\ValueObject;
 
-final class ClassMethodType
+final readonly class ClassMethodType
 {
     public function __construct(
-        private readonly string $class,
-        private readonly string $method,
-        private readonly string $type,
+        private string $class,
+        private string $method,
+        private string $type,
     ) {
     }
 

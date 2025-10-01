@@ -53,7 +53,9 @@ final class ContainerFactory
 
     private function cleanupDefaultCommands(Application $application): void
     {
-        $application->get('completion')->setHidden();
-        $application->get('help')->setHidden();
+        $application->get('completion')
+            ->setHidden();
+        $application->get('help')
+            ->setHidden();
     }
 }

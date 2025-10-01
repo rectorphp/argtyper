@@ -8,7 +8,7 @@ use Rector\ArgTyper\Tests\PHPStan\Source\SomeObject;
 
 final class MethodCalledArgs
 {
-    public function run(SomeObject $someObject)
+    public function run(SomeObject $someObject): void
     {
         $someObject->setName('some name');
     }
