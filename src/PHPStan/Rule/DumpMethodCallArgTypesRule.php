@@ -35,14 +35,7 @@ final class DumpMethodCallArgTypesRule implements Rule
         $data = [];
 
         foreach ($collectedItemsByFile as $collectedItems) {
-
-            var_dump($collectedItems);
-            die;
-
             foreach ($collectedItems as $collectedItem) {
-
-                var_dump($collectedItem);
-
                 $uniqueHash = $collectedItem[1] . $collectedItem[2] . $collectedItem[3];
 
                 $data[$uniqueHash] = [
