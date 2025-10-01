@@ -7,9 +7,7 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Class_;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
-use PHPStan\Type\MixedType;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
-use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\Rector\AbstractRector;
 
 /**

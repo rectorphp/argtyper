@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\Command;
 
-use Nette\Utils\FileSystem;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Rector\RectorConfigPrinter;
@@ -30,9 +29,7 @@ final class GenerateRectorConfigCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $phpstanResultsData = FilesLoader::loadFileJson(
-            ConfigFilePath::phpstanCollectedData()
-        );
+        $phpstanResultsData = FilesLoader::loadFileJson(ConfigFilePath::phpstanCollectedData());
 
         $dataGroupedByPositionMethodAndClassNames = [];
 
@@ -54,15 +51,14 @@ final class GenerateRectorConfigCommand extends Command
                             $position,
                             $types[0]
                         );
-                    } else {
+                    }  
                         // @todo add support if all the same
                         // use unique types method
-                    }
+
                 }
 
             }
         }
-
 
         return self::SUCCESS;
     }

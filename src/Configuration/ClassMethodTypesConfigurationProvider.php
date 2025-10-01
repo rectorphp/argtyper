@@ -24,9 +24,7 @@ final class ClassMethodTypesConfigurationProvider
             return $this->classMethodTypes;
         }
 
-        $phpstanResultsData = FilesLoader::loadFileJson(
-            ConfigFilePath::phpstanCollectedData()
-        );
+        $phpstanResultsData = FilesLoader::loadFileJson(ConfigFilePath::phpstanCollectedData());
 
         $dataGroupedByPositionMethodAndClassNames = [];
 
@@ -48,10 +46,10 @@ final class ClassMethodTypesConfigurationProvider
                             $position,
                             $types[0]
                         );
-                    } else {
+                    }  
                         // @todo add support if all the same
                         // use unique types method
-                    }
+
                 }
 
             }
