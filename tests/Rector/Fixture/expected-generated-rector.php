@@ -11,7 +11,7 @@ return static function (RectorConfig $rectorConfig): void {
         new AddReturnTypeDeclaration(SomeClass::class, 'someMethod', new PHPStan\Type\StringType()),
         new AddReturnTypeDeclaration(SomeClass::class, 'anotherMethod', new \PHPStan\Type\ArrayType(
             new \PHPStan\Type\MixedType(),
-            new PHPStan\Type\MixedType()
+            new \PHPStan\Type\MixedType()
         )),
     ]);
 };
