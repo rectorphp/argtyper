@@ -8,13 +8,15 @@ final class SomeObject
 {
     private $name;
 
+    private static $age;
+
     public function setName($name): void
     {
         $this->name = $name;
     }
 
-    public function getName(): string
+    public static function setAge($age): void
     {
-        return 'some name';
+        self::$age = $age;
     }
 }

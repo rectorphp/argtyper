@@ -32,10 +32,7 @@
     "autoload-dev": {
         "psr-4": {
             "Rector\\ArgTyper\\Tests\\": "tests"
-        },
-        "files": [
-            "tests/functions.php"
-        ]
+        }
     },
     "config": {
         "sort-packages": true,
@@ -45,10 +42,8 @@
         }
     },
     "replace": {
-        "symfony/polyfill-ctype": "*",
         "symfony/polyfill-intl-grapheme": "*",
         "symfony/polyfill-intl-normalizer": "*",
-        "symfony/polyfill-mbstring": "*",
         "symfony/deprecation-contracts": "*"
     },
     "scripts": {

@@ -8,5 +8,10 @@ services:
         tags:
             - phpstan.collector
 
+    -
+        class: Rector\ArgTyper\PHPStan\Collectors\StaticCallArgTypeCollector
+        tags:
+            - phpstan.collector
+
 rules:
     - Rector\ArgTyper\PHPStan\Rule\DumpMethodCallArgTypesRule

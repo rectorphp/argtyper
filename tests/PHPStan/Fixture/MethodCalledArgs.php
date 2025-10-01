@@ -12,4 +12,9 @@ final class MethodCalledArgs
     {
         $someObject->setName('some name');
     }
+
+    public function go()
+    {
+        SomeObject::setAge(100);
+    }
 }
