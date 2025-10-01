@@ -35,6 +35,13 @@ final class ResultInfererTest extends RuleTestCase
         ], $firstItem);
     }
 
+    public static function getAdditionalConfigFiles(): array
+    {
+        return [
+            __DIR__ . '/../../config/phpstan-data-collector.neon',
+        ];
+    }
+
     protected function getRule(): Rule
     {
         return self::getContainer()->getByType(DumpMethodCallArgTypesRule::class);
@@ -47,13 +54,6 @@ final class ResultInfererTest extends RuleTestCase
     {
         return [
             self::getContainer()->getByType(MethodCallArgTypeCollector::class),
-        ];
-    }
-
-    public static function getAdditionalConfigFiles(): array
-    {
-        return [
-            __DIR__ . '/../../config/phpstan-data-collector.neon',
         ];
     }
 
