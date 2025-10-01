@@ -98,6 +98,11 @@ final class MethodCallArgTypeCollector implements Collector
             }
         }
 
+        // avoid empty array processing in the rule
+        if ($classNameTypes === []) {
+            return null;
+        }
+
         return $classNameTypes;
     }
 }

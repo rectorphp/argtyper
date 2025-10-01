@@ -54,12 +54,7 @@ final class ContainerFactory
 
     private function cleanupDefaultCommands(Application $application): void
     {
-        PrivatesAccessor::propertyClosure($application, 'commands', static function (array $commands): array {
-            // remove default commands, as not needed here
-            unset($commands['completion']);
-            unset($commands['help']);
-
-            return $commands;
-        });
+        $application->get('completion')->setHidden();
+        $application->get('help')->setHidden();
     }
 }

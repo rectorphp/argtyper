@@ -1,0 +1,56 @@
+[
+    {
+        "class": null,
+        "method": null,
+        "position": null,
+        "type": null
+    },
+    {
+        "class": [
+            "AppBundle\\Service\\Tickets\\TicketService",
+            "createAvailabilitySearch",
+            1,
+            "object:AppBundle\\ValueObject\\Tickets\\MultiTicketSearch"
+        ],
+        "method": null,
+        "position": null,
+        "type": null
+    },
+    {
+        "class": [
+            "AppBundle\\Service\\Messaging\\OrderMessageLogger",
+            "logWithOrderContext",
+            2,
+            "PHPStan\\Type\\Constant\\ConstantArrayType"
+        ],
+        "method": [
+            "AppBundle\\Service\\Messaging\\OrderMessageLogger",
+            "logWithOrderContext",
+            3,
+            "PHPStan\\Type\\ErrorType"
+        ],
+        "position": null,
+        "type": null
+    },
+    {
+        "class": [
+            "AppBundle\\Service\\PackageEngine\\PackageEngineService",
+            "gatherWebserviceParams",
+            1,
+            "PHPStan\\Type\\ArrayType"
+        ],
+        "method": [
+            "AppBundle\\Service\\PackageEngine\\PackageEngineService",
+            "gatherWebserviceParams",
+            2,
+            "PHPStan\\Type\\ArrayType"
+        ],
+        "position": [
+            "AppBundle\\Service\\PackageEngine\\PackageEngineService",
+            "gatherWebserviceParams",
+            3,
+            "PHPStan\\Type\\IntegerType"
+        ],
+        "type": null
+    }
+]
