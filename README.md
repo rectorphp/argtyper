@@ -5,7 +5,6 @@ There are more known types in your project then it meets the eye. This tool find
 ## Todo
 
 * [ ] add function param type support
-* [ ] add static call type support
 * [ ] handle New_ nodes
 
 ## Install
@@ -22,16 +21,18 @@ composer require rector/argtyper --dev
 vendor/bin/phpstan analyse tests --configuration vendor/tomasvotruba/argtyper/config/phpstan-data-collector.neon
 ```
 
-2. Then generate `rector-argtyper.php` config for Rector
+2. Run Rector with this rule to add new type declarations in your code:
 
-```bash
-vendor/bin/argtyper
+```php
+use Rector\ArgTyper\Rector\Rector\AddParamTypeRector;
+use Rector\Config\RectorConfig;
+
+return RectorConfig::configure()
+    ->withRules([AddParamTypeRector::class]);
 ```
 
-3. Last, run Rector with this config and see new type declarations in your code
-
 ```bash
-vendor/bin/rector --config rector-argtyper.php
+vendor/bin/rector --config rector.php
 ```
 
 

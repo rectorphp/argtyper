@@ -49,6 +49,11 @@ final class AddParamTypeRector extends AbstractRector
             return null;
         }
 
+        // we need FQN class name
+        if (! $node->namespacedName instanceof Name) {
+            return null;
+        }
+
         $className = $node->namespacedName->toString();
 
         $hasChanged = false;
@@ -98,7 +103,7 @@ final class AddParamTypeRector extends AbstractRector
         return $node;
     }
 
-    private function resolveTypeNode(string $type): \PhpParser\Node
+    private function resolveTypeNode(string $type): FullyQualified|Identifier
     {
         if (str_starts_with($type, 'object:')) {
             return new FullyQualified(substr($type, 7));
