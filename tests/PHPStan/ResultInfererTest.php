@@ -57,8 +57,6 @@ final class ResultInfererTest extends RuleTestCase
     }
 
     /**
-     * @param class-string<Collector> $collectorClass
-     *
      * @return array<array{0: string, 1: string, 2: string, 3: string}>
      */
     private function collectDataInFile(string $fixtureFilePath): array
