@@ -64,18 +64,11 @@ final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
                 continue;
             }
 
-            // skip vendor calls, skips we cannot modify those
-            $fileName = $objectClassReflection->getFileName();
-            if ($fileName === null) {
-                continue;
-            }
-
-            if (str_contains($fileName, '/vendor')) {
+            if ($this->isVendorClass($objectClassReflection)) {
                 continue;
             }
 
             $className = $objectClassReflection->getName();
-
             foreach ($node->getArgs() as $key => $arg) {
                 // handle later, now work with order
                 if ($arg->name instanceof Identifier) {

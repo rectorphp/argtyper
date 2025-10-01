@@ -11,11 +11,7 @@ use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Type\ErrorType;
-use PHPStan\Type\IntersectionType;
-use PHPStan\Type\MixedType;
 use PHPStan\Type\TypeWithClassName;
-use PHPStan\Type\UnionType;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
 /**
@@ -104,19 +100,7 @@ final class StaticCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
         return $classNameTypes;
     }
 
-    private function isVendorClass(\PHPStan\Reflection\ClassReflection $classReflection): bool
-    {
-        $fileName = $classReflection->getFileName();
-        if ($fileName === null) {
-            return true;
-        }
 
-        if (str_contains($fileName, '/vendor')) {
-            return true;
-        }
-
-        return false;
-    }
 
 
 

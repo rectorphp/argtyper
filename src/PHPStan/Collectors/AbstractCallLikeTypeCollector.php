@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\PHPStan\Collectors;
 
 use PHPStan\Collectors\Collector;
+use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\ErrorType;
 use PHPStan\Type\IntersectionType;
 use PHPStan\Type\MixedType;
@@ -29,5 +30,15 @@ abstract class AbstractCallLikeTypeCollector
         }
 
         return $type instanceof IntersectionType;
+    }
+
+    protected function isVendorClass(ClassReflection $classReflection): bool
+    {
+        $fileName = $classReflection->getFileName();
+        if ($fileName === null) {
+            return true;
+        }
+
+        return str_contains($fileName, '/vendor');
     }
 }
