@@ -18,4 +18,5 @@ return RectorConfig::configure()
         typeDeclarations: true,
         naming: true,
         phpunitCodeQuality: true,
-    );
+    )
+    ->withSkipPath(__DIR__ . '/tests/PHPStan/Source');
