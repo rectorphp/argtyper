@@ -6,4 +6,4 @@ composer.lock
 .phpunit.result.cache
 
 # local metadata
-rector-recipe.json
+phpstan-collected-data.json

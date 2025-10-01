@@ -10,6 +10,7 @@ use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
 use PHPStan\Rules\Rule;
+use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\PHPStan\Collectors\MethodCallArgTypeCollector;
 
 /**
@@ -52,8 +53,8 @@ final class DumpMethodCallArgTypesRule implements Rule
         // reset keys
         $data = array_values($data);
 
-        $json = Json::encode($data, Json::PRETTY);
-        FileSystem::write(getcwd() . '/rector-recipe.json', $json);
+        $jsonString = Json::encode($data, pretty: true);
+        FileSystem::write(ConfigFilePath::phpstanCollectedData(), $jsonString);
 
         // comply with contract, but never used
         return [];
