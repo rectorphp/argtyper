@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\Tests\PHPStan\Source;
+namespace Rector\ArgTyper\Tests\PHPStan\Source;
 
 final class SomeObject
 {

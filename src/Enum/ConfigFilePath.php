@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\Enum;
+namespace Rector\ArgTyper\Enum;
 
 final class ConfigFilePath
 {

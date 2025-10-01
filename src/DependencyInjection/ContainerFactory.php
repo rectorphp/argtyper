@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\DependencyInjection;
+namespace Rector\ArgTyper\DependencyInjection;
 
 use Illuminate\Container\Container;
 use PhpParser\Parser;
@@ -12,8 +12,8 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use TomasVotruba\SherlockTypes\Command\GenerateRectorConfigCommand;
-use TomasVotruba\SherlockTypes\Helpers\PrivatesAccessor;
+use Rector\ArgTyper\Command\GenerateRectorConfigCommand;
+use Rector\ArgTyper\Helpers\PrivatesAccessor;
 
 final class ContainerFactory
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\ValueObject;
+namespace Rector\ArgTyper\ValueObject;
 
 final class ClassMethodType
 {

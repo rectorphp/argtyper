@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\Command;
+namespace Rector\ArgTyper\Command;
 
 use Nette\Utils\FileSystem;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use TomasVotruba\SherlockTypes\Enum\ConfigFilePath;
-use TomasVotruba\SherlockTypes\Helpers\FilesLoader;
-use TomasVotruba\SherlockTypes\Rector\RectorConfigPrinter;
+use Rector\ArgTyper\Enum\ConfigFilePath;
+use Rector\ArgTyper\Helpers\FilesLoader;
+use Rector\ArgTyper\Rector\RectorConfigPrinter;
 
 final class GenerateRectorConfigCommand extends Command
 {

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\Tests;
+namespace Rector\ArgTyper\Tests;
 
 use PHPUnit\Framework\TestCase;
-use TomasVotruba\SherlockTypes\DependencyInjection\ContainerFactory;
+use Rector\ArgTyper\DependencyInjection\ContainerFactory;
 use Webmozart\Assert\Assert;
 
 abstract class AbstractTestCase extends TestCase

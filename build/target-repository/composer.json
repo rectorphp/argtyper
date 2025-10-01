@@ -11,7 +11,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "TomasVotruba\\SherlockTypes\\": "app"
+            "Rector\\ArgTyper\\": "app"
         }
     }
 }

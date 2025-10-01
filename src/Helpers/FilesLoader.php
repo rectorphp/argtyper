@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\Helpers;
+namespace Rector\ArgTyper\Helpers;
 
 use Nette\Utils\FileSystem;
 use Nette\Utils\Json;
-use TomasVotruba\SherlockTypes\ValueObject\ClassMethodType;
+use Rector\ArgTyper\ValueObject\ClassMethodType;
 use Webmozart\Assert\Assert;
 
 final class FilesLoader

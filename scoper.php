@@ -6,7 +6,7 @@ require __DIR__ . '/vendor/autoload.php';
 
 // see https://github.com/humbug/php-scoper
 return [
-    'prefix' => 'SherlockTypes' . date('Ym'),
+    'prefix' => 'ArgTyper' . date('Ym'),
     'expose-constants' => ['#^SYMFONY\_[\p{L}_]+$#'],
-    'exclude-namespaces' => ['#^TomasVotruba\\\\SherlockTypes#', '#^Symfony\\\\Polyfill#'],
+    'exclude-namespaces' => ['#^TomasVotruba\\\\ArgTyper#', '#^Symfony\\\\Polyfill#'],
 ];

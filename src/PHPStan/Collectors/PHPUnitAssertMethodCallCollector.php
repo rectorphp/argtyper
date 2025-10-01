@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\PHPStan\Collectors;
+namespace Rector\ArgTyper\PHPStan\Collectors;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
@@ -12,7 +12,7 @@ use PHPStan\Collectors\Collector;
 use PHPStan\Type\IntersectionType;
 use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
-use TomasVotruba\SherlockTypes\Types\TypeMapper;
+use Rector\ArgTyper\Types\TypeMapper;
 
 /**
  * @implements Collector<MethodCall, array<string, mixed>|null>

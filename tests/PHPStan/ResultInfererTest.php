@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\Tests\PHPStan;
+namespace Rector\ArgTyper\Tests\PHPStan;
 
 use PHPStan\Analyser\Analyser;
 use PHPStan\Analyser\AnalyserResult;
@@ -11,10 +11,10 @@ use PHPStan\Collectors\Collector;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPStan\Type\StringType;
-use TomasVotruba\SherlockTypes\Helpers\PrivatesAccessor;
-use TomasVotruba\SherlockTypes\PHPStan\Collectors\PHPUnitAssertMethodCallCollector;
-use TomasVotruba\SherlockTypes\PHPStan\Rule\DumpPHPUnitAssertTypesRule;
-use TomasVotruba\SherlockTypes\Tests\PHPStan\Source\SomeObject;
+use Rector\ArgTyper\Helpers\PrivatesAccessor;
+use Rector\ArgTyper\PHPStan\Collectors\PHPUnitAssertMethodCallCollector;
+use Rector\ArgTyper\PHPStan\Rule\DumpPHPUnitAssertTypesRule;
+use Rector\ArgTyper\Tests\PHPStan\Source\SomeObject;
 
 /**
  * @extends RuleTestCase<DumpPHPUnitAssertTypesRule>

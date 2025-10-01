@@ -6,7 +6,7 @@ There are more known types in your project then it meets the eye. Sherlock Types
 ## Install
 
 ```bash
-composer require tomasvotruba/sherlock-types --dev
+composer require rector/argtyper --dev
 ```
 
 ## Usage
@@ -14,10 +14,10 @@ composer require tomasvotruba/sherlock-types --dev
 1. First, run PHPStan to generate `phpstan-collected-data.json`
 
 ```bash
-vendor/bin/phpstan analyse tests --configuration vendor/tomasvotruba/sherlock-types/config/phpstan-data-collector.neon
+vendor/bin/phpstan analyse tests --configuration vendor/tomasvotruba/argtyper/config/phpstan-data-collector.neon
 ```
 
-2. Then run Sherlock Types to generate `rector-sherlock-types.php` config for Rector
+2. Then run Sherlock Types to generate `rector-argtyper.php` config for Rector
 
 ```bash
 vendor/bin/sherloc

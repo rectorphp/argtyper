@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\Helpers;
+namespace Rector\ArgTyper\Helpers;
 
 use ReflectionProperty;
 

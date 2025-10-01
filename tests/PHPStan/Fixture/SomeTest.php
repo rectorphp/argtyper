@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\Tests\PHPStan\Fixture;
+namespace Rector\ArgTyper\Tests\PHPStan\Fixture;
 
 use PHPUnit\Framework\TestCase;
-use TomasVotruba\SherlockTypes\Tests\PHPStan\Source\SomeObject;
+use Rector\ArgTyper\Tests\PHPStan\Source\SomeObject;
 
 final class SomeTest extends TestCase
 {

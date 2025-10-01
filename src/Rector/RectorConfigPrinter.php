@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\Rector;
+namespace Rector\ArgTyper\Rector;
 
 use Nette\Utils\FileSystem;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
-use TomasVotruba\SherlockTypes\ValueObject\ClassMethodType;
+use Rector\ArgTyper\ValueObject\ClassMethodType;
 
 /**
- * @see \TomasVotruba\SherlockTypes\Tests\Rector\RectorConfigPrinterTest
+ * @see \Rector\ArgTyper\Tests\Rector\RectorConfigPrinterTest
  */
 final class RectorConfigPrinter
 {

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace TomasVotruba\SherlockTypes\Tests\Rector;
+namespace Rector\ArgTyper\Tests\Rector;
 
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\StringType;
-use TomasVotruba\SherlockTypes\Rector\RectorConfigPrinter;
-use TomasVotruba\SherlockTypes\Tests\AbstractTestCase;
-use TomasVotruba\SherlockTypes\ValueObject\ClassMethodType;
+use Rector\ArgTyper\Rector\RectorConfigPrinter;
+use Rector\ArgTyper\Tests\AbstractTestCase;
+use Rector\ArgTyper\ValueObject\ClassMethodType;
 
 final class RectorConfigPrinterTest extends AbstractTestCase
 {
