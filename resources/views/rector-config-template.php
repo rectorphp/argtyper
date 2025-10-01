@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
-use Rector\TypeDeclaration\Rector\ClassMethod\AddReturnTypeDeclarationRector;
-use Rector\TypeDeclaration\ValueObject\AddReturnTypeDeclaration;
+use Rector\TypeDeclaration\Rector\ClassMethod\AddParamTypeDeclarationRector;
+use Rector\TypeDeclaration\ValueObject\AddParamTypeDeclaration;
 
 return static function (RectorConfig $rectorConfig): void {
-    $rectorConfig->ruleWithConfiguration(AddReturnTypeDeclarationRector::class, [
+    $rectorConfig->ruleWithConfiguration(AddParamTypeDeclarationRector::class, [
 __CONFIGURATION__
     ]);
 };

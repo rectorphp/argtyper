@@ -42,9 +42,10 @@ final class RectorConfigPrinter
             $printedType = $this->printedType($classMethodType);
 
             $configurationContents .= sprintf(
-                "        new AddReturnTypeDeclaration(\\%s, '%s', %s)," . PHP_EOL,
+                "        new AddParamTypeDeclaration(\\%s, '%s', %d, %s)," . PHP_EOL,
                 $classMethodType->getClass() . '::class',
                 $classMethodType->getMethod(),
+                $classMethodType->getPosition(),
                 $printedType
             );
         }

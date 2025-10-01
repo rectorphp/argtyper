@@ -24,8 +24,8 @@ final class RectorConfigPrinterTest extends AbstractTestCase
     public function test(): void
     {
         $classMethodTypes = [
-            new ClassMethodType('SomeClass', 'someMethod', StringType::class),
-            new ClassMethodType('SomeClass', 'anotherMethod', ArrayType::class),
+            new ClassMethodType('SomeClass', 'someMethod', 0, StringType::class),
+            new ClassMethodType('SomeClass', 'anotherMethod', 0, ArrayType::class),
         ];
 
         $printedContents = $this->rectorConfigPrinter->print($classMethodTypes);
