@@ -21,7 +21,7 @@ use Rector\ArgTyper\PHPStan\TypeMapper;
 /**
  * @implements Collector<StaticCall, array<array{0: string, 1: string, 2: string, 3: string}>>
  */
-final class StaticCallArgTypeCollector extends AbstractCallLikeTypeCollector
+final class StaticCallArgTypeCollector extends AbstractCallLikeTypeCollector implements Collector
 {
     public function __construct(
         private readonly ReflectionProvider $reflectionProvider

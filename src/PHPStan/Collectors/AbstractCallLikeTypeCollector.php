@@ -11,7 +11,7 @@ use PHPStan\Type\MixedType;
 use PHPStan\Type\Type;
 use PHPStan\Type\UnionType;
 
-abstract class AbstractCallLikeTypeCollector implements Collector
+abstract class AbstractCallLikeTypeCollector
 {
     protected function shouldSkipType(Type $type): bool
     {

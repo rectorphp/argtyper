@@ -19,7 +19,7 @@ use Rector\ArgTyper\PHPStan\TypeMapper;
 /**
  * @implements Collector<MethodCall, array<array{0: string, 1: string, 2: string, 3: string}>>
  */
-final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector
+final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector implements Collector
 {
     public function getNodeType(): string
     {
