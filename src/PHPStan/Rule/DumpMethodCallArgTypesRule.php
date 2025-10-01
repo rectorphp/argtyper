@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\PHPStan\Rule;
 
+use Nette\Utils\Arrays;
 use Nette\Utils\FileSystem;
 use Nette\Utils\Json;
 use PhpParser\Node;
@@ -36,14 +37,16 @@ final class DumpMethodCallArgTypesRule implements Rule
 
         foreach ($collectedItemsByFile as $collectedItems) {
             foreach ($collectedItems as $collectedItem) {
-                $uniqueHash = $collectedItem[1] . $collectedItem[2] . $collectedItem[3];
+                foreach ($collectedItem as $collectedMethodCallArgType) {
+                    $uniqueHash = $collectedMethodCallArgType[0] . $collectedMethodCallArgType[1] . $collectedMethodCallArgType[2];
 
-                $data[$uniqueHash] = [
-                    'class' => $collectedItem[1],
-                    'method' => $collectedItem[2],
-                    'position' => $collectedItem[3],
-                    'type' => $collectedItem[4],
-                ];
+                    $data[$uniqueHash] = [
+                        'class' => $collectedMethodCallArgType[0],
+                        'method' => $collectedMethodCallArgType[1],
+                        'position' => $collectedMethodCallArgType[2],
+                        'type' => $collectedMethodCallArgType[3],
+                    ];
+                }
             }
         }
 

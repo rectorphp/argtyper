@@ -1,56 +1,140 @@
 [
     {
-        "class": null,
-        "method": null,
-        "position": null,
-        "type": null
+        "class": "AppBundle\\Repository\\RateTypeRepository",
+        "method": "isWholesaleRate",
+        "position": 0,
+        "type": "PHPStan\\Type\\IntegerType"
     },
     {
-        "class": [
-            "AppBundle\\Service\\Tickets\\TicketService",
-            "createAvailabilitySearch",
-            1,
-            "object:AppBundle\\ValueObject\\Tickets\\MultiTicketSearch"
-        ],
-        "method": null,
-        "position": null,
-        "type": null
+        "class": "AppBundle\\Repository\\MarketingRegionRepository",
+        "method": "formatMarketingRegionArray",
+        "position": 1,
+        "type": "PHPStan\\Type\\BooleanType"
     },
     {
-        "class": [
-            "AppBundle\\Service\\Messaging\\OrderMessageLogger",
-            "logWithOrderContext",
-            2,
-            "PHPStan\\Type\\Constant\\ConstantArrayType"
-        ],
-        "method": [
-            "AppBundle\\Service\\Messaging\\OrderMessageLogger",
-            "logWithOrderContext",
-            3,
-            "PHPStan\\Type\\ErrorType"
-        ],
-        "position": null,
-        "type": null
+        "class": "AppBundle\\Repository\\MarketingRegionRepository",
+        "method": "organizeByProductType",
+        "position": 0,
+        "type": "PHPStan\\Type\\ArrayType"
     },
     {
-        "class": [
-            "AppBundle\\Service\\PackageEngine\\PackageEngineService",
-            "gatherWebserviceParams",
-            1,
-            "PHPStan\\Type\\ArrayType"
-        ],
-        "method": [
-            "AppBundle\\Service\\PackageEngine\\PackageEngineService",
-            "gatherWebserviceParams",
-            2,
-            "PHPStan\\Type\\ArrayType"
-        ],
-        "position": [
-            "AppBundle\\Service\\PackageEngine\\PackageEngineService",
-            "gatherWebserviceParams",
-            3,
-            "PHPStan\\Type\\IntegerType"
-        ],
-        "type": null
+        "class": "AppBundle\\Repository\\MarketingRegionRepository",
+        "method": "separateRegionTiers",
+        "position": 1,
+        "type": "PHPStan\\Type\\BooleanType"
+    },
+    {
+        "class": "AppBundle\\Repository\\MarketingRegionRepository",
+        "method": "formatRegionTiers",
+        "position": 0,
+        "type": "PHPStan\\Type\\ArrayType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Product\\CodePoolRepository",
+        "method": "getCodeByOwnerKey",
+        "position": 0,
+        "type": "PHPStan\\Type\\StringType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Product\\CodePoolRepository",
+        "method": "getCodeByOwnerKey",
+        "position": 1,
+        "type": "PHPStan\\Type\\StringType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Product\\ProductRepository",
+        "method": "productsThatCanBeSold",
+        "position": 0,
+        "type": "PHPStan\\Type\\StringType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Product\\ProductRepository",
+        "method": "productsThatCanBeSold",
+        "position": 1,
+        "type": "PHPStan\\Type\\IntegerType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Product\\ProductRepository",
+        "method": "productsThatCanBeSold",
+        "position": 2,
+        "type": "PHPStan\\Type\\IntegerType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Product\\ProductRepository",
+        "method": "productsThatCanBeSold",
+        "position": 3,
+        "type": "PHPStan\\Type\\ArrayType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Product\\ProductRepository",
+        "method": "canAllProductsBeSold",
+        "position": 0,
+        "type": "PHPStan\\Type\\ArrayType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Tickets\\SellOptionsRepository",
+        "method": "createSellOptions",
+        "position": 0,
+        "type": "PHPStan\\Type\\ArrayType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Tickets\\TicketInventoryRepository",
+        "method": "createTicketInventory",
+        "position": 0,
+        "type": "PHPStan\\Type\\ArrayType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Tickets\\TicketRepository",
+        "method": "buildAttractionsTicketsSql",
+        "position": 0,
+        "type": "PHPStan\\Type\\ArrayType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Tickets\\TicketShowtimeRepository",
+        "method": "createShowtime",
+        "position": 0,
+        "type": "PHPStan\\Type\\ArrayType"
+    },
+    {
+        "class": "AppBundle\\Repository\\OrderMessageRepository",
+        "method": "getEmailAction",
+        "position": 0,
+        "type": "object:AppBundle\\Enum\\OrderMessageType"
+    },
+    {
+        "class": "AppBundle\\Repository\\OrderMessageRepository",
+        "method": "getFaxAction",
+        "position": 0,
+        "type": "object:AppBundle\\Enum\\OrderMessageType"
+    },
+    {
+        "class": "AppBundle\\Repository\\AttractionRepository",
+        "method": "addTicketInformationToAttractions",
+        "position": 0,
+        "type": "PHPStan\\Type\\ArrayType"
+    },
+    {
+        "class": "AppBundle\\Repository\\AttractionRepository",
+        "method": "addTicketInformationToAttractions",
+        "position": 2,
+        "type": "PHPStan\\Type\\BooleanType"
+    },
+    {
+        "class": "AppBundle\\Repository\\AttractionRepository",
+        "method": "addPackageInformationToAttractions",
+        "position": 0,
+        "type": "PHPStan\\Type\\ArrayType"
+    },
+    {
+        "class": "AppBundle\\Repository\\Tickets\\TicketRepository",
+        "method": "getTicketGroups",
+        "position": 0,
+        "type": "PHPStan\\Type\\IntegerType"
+    },
+    {
+        "class": "AppBundle\\Repository\\AttractionRepository",
+        "method": "injectAttractionMinPrice",
+        "position": 1,
+        "type": "PHPStan\\Type\\ArrayType"
     }
 ]

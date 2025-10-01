@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\PHPStan;
 
+use PHPStan\Type\ArrayType;
 use PHPStan\Type\BooleanType;
+use PHPStan\Type\Constant\ConstantArrayType;
 use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\Constant\ConstantFloatType;
 use PHPStan\Type\Constant\ConstantIntegerType;
 use PHPStan\Type\Constant\ConstantStringType;
 use PHPStan\Type\IntegerType;
+use PHPStan\Type\MixedType;
 use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
 
@@ -18,6 +21,10 @@ final class TypeMapper
     public static function mapConstantToGenericTypes(Type $type): Type
     {
         // correct to generic types
+        if ($type instanceof ConstantArrayType) {
+            return new ArrayType(new MixedType(), new MixedType());
+        }
+
         if ($type instanceof ConstantStringType) {
             return new StringType();
         }

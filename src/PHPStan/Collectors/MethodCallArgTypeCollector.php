@@ -9,7 +9,9 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
+use PHPStan\Type\ErrorType;
 use PHPStan\Type\IntersectionType;
+use PHPStan\Type\MixedType;
 use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
 use Rector\ArgTyper\PHPStan\TypeMapper;
@@ -83,7 +85,7 @@ final class MethodCallArgTypeCollector implements Collector
                 $argType = $scope->getType($arg->value);
 
                 // unable to move to json for now, handle later
-                if ($argType instanceof UnionType || $argType instanceof IntersectionType) {
+                if ($argType instanceof ErrorType || $argType instanceof MixedType || $argType instanceof UnionType || $argType instanceof IntersectionType) {
                     continue;
                 }
 
