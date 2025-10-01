@@ -1,7 +1,7 @@
 {
     "name": "tomasvotruba/argtyper",
-    "description": "Deduce types like Sherlock Holmes with PHPStan and fill them with Rector",
-    "license": "MIT",
+    "description": "Analyze real method argument types, and add them as type declarations",
+    "license": "proprietary",
     "require": {
         "php": ">=7.2"
     },
@@ -11,7 +11,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "Rector\\ArgTyper\\": "app"
+            "Rector\\ArgTyper\\": "src"
         }
     }
 }
