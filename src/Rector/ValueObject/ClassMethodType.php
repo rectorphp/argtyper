@@ -9,8 +9,14 @@ final readonly class ClassMethodType
     public function __construct(
         private string $class,
         private string $method,
+        private int $position,
         private string $type,
     ) {
+    }
+
+    public function getPosition(): int
+    {
+        return $this->position;
     }
 
     public function getClass(): string

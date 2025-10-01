@@ -11,6 +11,7 @@ use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\Constant\ConstantFloatType;
 use PHPStan\Type\Constant\ConstantIntegerType;
 use PHPStan\Type\Constant\ConstantStringType;
+use PHPStan\Type\IntegerRangeType;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\StringType;
@@ -21,6 +22,10 @@ final class TypeMapper
     public static function mapConstantToGenericTypes(Type $type): Type
     {
         // correct to generic types
+        if ($type instanceof IntegerRangeType) {
+            return new IntegerType();
+        }
+
         if ($type instanceof ConstantArrayType) {
             return new ArrayType(new MixedType(), new MixedType());
         }

@@ -8,6 +8,7 @@ use Nette\Utils\FileSystem;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
+use Webmozart\Assert\Assert;
 
 /**
  * @see \Rector\ArgTyper\Tests\Rector\RectorConfigPrinterTest
@@ -19,6 +20,8 @@ final class RectorConfigPrinter
      */
     public function print(array $classMethodTypes): string
     {
+        Assert::allIsInstanceOf($classMethodTypes, ClassMethodType::class);
+
         $configurationContents = $this->createRectorConfigFileContents($classMethodTypes);
         $templateContents = FileSystem::read(__DIR__ . '/../../resources/views/rector-config-template.php');
 
@@ -32,12 +35,14 @@ final class RectorConfigPrinter
      */
     private function createRectorConfigFileContents(array $classMethodTypes): string
     {
+        Assert::allIsInstanceOf($classMethodTypes, ClassMethodType::class);
+
         $configurationContents = '';
         foreach ($classMethodTypes as $classMethodType) {
             $printedType = $this->printedType($classMethodType);
 
             $configurationContents .= sprintf(
-                "        new AddReturnTypeDeclaration(%s, '%s', %s)," . PHP_EOL,
+                "        new AddReturnTypeDeclaration(\\%s, '%s', %s)," . PHP_EOL,
                 $classMethodType->getClass() . '::class',
                 $classMethodType->getMethod(),
                 $printedType

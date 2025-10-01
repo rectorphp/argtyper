@@ -6,13 +6,12 @@ namespace Rector\ArgTyper\Helpers;
 
 use Nette\Utils\FileSystem;
 use Nette\Utils\Json;
-use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Webmozart\Assert\Assert;
 
 final class FilesLoader
 {
     /**
-     * @return ClassMethodType[]
+     * @return array<string, mixed>
      */
     public static function loadFileJson(string $filePath): array
     {

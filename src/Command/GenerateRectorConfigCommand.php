@@ -33,7 +33,37 @@ final class GenerateRectorConfigCommand extends Command
         $recipeFilePath = ConfigFilePath::phpstanCollectedData();
 
         $phpstanResultsData = FilesLoader::loadFileJson($recipeFilePath);
-        $rectorConfigContents = $this->rectorConfigPrinter->print($phpstanResultsData);
+
+        $dataGroupedByPositionMethodAndClassNames = [];
+
+        foreach ($phpstanResultsData as $singleItemData) {
+            $dataGroupedByPositionMethodAndClassNames[$singleItemData['class']][$singleItemData['method']][$singleItemData['position']][] = $singleItemData['type'];
+        }
+
+        $classMethodTypes = [];
+
+        foreach ($dataGroupedByPositionMethodAndClassNames as $className => $typesByPositionByMethodNames) {
+            foreach ($typesByPositionByMethodNames as $methodName => $typesByPosition) {
+                foreach ($typesByPosition as $position => $types) {
+                    if (count($types) === 1) {
+                        // easy path, pick sole type
+
+                        $classMethodTypes[] = new \Rector\ArgTyper\Rector\ValueObject\ClassMethodType(
+                            $className,
+                            $methodName,
+                            $position,
+                            $types[0]
+                        );
+                    }  
+                        // @todo add support if all the same
+                        // use unique types method
+
+                }
+
+            }
+        }
+
+        $rectorConfigContents = $this->rectorConfigPrinter->print($classMethodTypes);
 
         FileSystem::write(ConfigFilePath::rectorGeneratedConfig(), $rectorConfigContents);
 
