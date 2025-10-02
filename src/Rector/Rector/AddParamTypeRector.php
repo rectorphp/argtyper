@@ -47,16 +47,10 @@ final class AddParamTypeRector extends AbstractRector
         // load *.json configuration
         $classMethodTypes = $this->classMethodTypesConfigurationProvider->provide();
 
-        if ($node->isAnonymous()) {
+        $className = $this->resolveClassName($node);
+        if (! is_string($className)) {
             return null;
         }
-
-        // we need FQN class name
-        if (! $node->namespacedName instanceof Name) {
-            return null;
-        }
-
-        $className = $node->namespacedName->toString();
 
         $hasChanged = false;
 
@@ -145,5 +139,19 @@ final class AddParamTypeRector extends AbstractRector
         }
 
         return $this->isName($param->default, 'null');
+    }
+
+    private function resolveClassName(Class_ $class): ?string
+    {
+        if ($class->isAnonymous()) {
+            return null;
+        }
+
+        // we need FQN class name
+        if (! $class->namespacedName instanceof Name) {
+            return null;
+        }
+
+        return $class->namespacedName->toString();
     }
 }
