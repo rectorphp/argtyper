@@ -22,6 +22,7 @@ use PHPStan\Type\IntegerType;
 use PHPStan\Type\StringType;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Exception\NotImplementedException;
+use Rector\ArgTyper\Rector\TypeResolver;
 use Rector\Rector\AbstractRector;
 
 /**
@@ -47,11 +48,6 @@ final class AddParamTypeRector extends AbstractRector
      */
     public function refactor(Node $node): ?Class_
     {
-        $className = $this->resolveClassName($node);
-        if (! is_string($className)) {
-            return null;
-        }
-
         $hasChanged = false;
 
         foreach ($node->getMethods() as $classMethod) {
@@ -72,8 +68,10 @@ final class AddParamTypeRector extends AbstractRector
 
                 $classMethodTypes = $classMethodTypesByPosition[$position];
 
+                $classMethodType = $classMethodTypes[0];
+
                 $isNullable = $this->isNullable($param);
-                $typeNode = $this->resolveTypeNode($classMethodType->getType());
+                $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
 
                 if ($classMethodType->isObjectType() && $param->type instanceof Name) {
                     // already has a type
@@ -97,35 +95,6 @@ final class AddParamTypeRector extends AbstractRector
         return $node;
     }
 
-    private function resolveTypeNode(string $type): FullyQualified|Identifier
-    {
-        if (str_starts_with($type, 'object:')) {
-            return new FullyQualified(substr($type, 7));
-        }
-
-        if (in_array($type, [ArrayType::class, ConstantArrayType::class], true)) {
-            return new Identifier('array');
-        }
-
-        if ($type === StringType::class) {
-            return new Identifier('string');
-        }
-
-        if ($type === IntegerType::class) {
-            return new Identifier('int');
-        }
-
-        if ($type === FloatType::class) {
-            return new Identifier('float');
-        }
-
-        if ($type === BooleanType::class) {
-            return new Identifier('bool');
-        }
-
-        throw new NotImplementedException($type);
-    }
-
     private function isNullable(Param $param): bool
     {
         if ($param->type instanceof NullableType) {
@@ -137,19 +106,5 @@ final class AddParamTypeRector extends AbstractRector
         }
 
         return $this->isName($param->default, 'null');
-    }
-
-    private function resolveClassName(Class_ $class): ?string
-    {
-        if ($class->isAnonymous()) {
-            return null;
-        }
-
-        // we need FQN class name
-        if (! $class->namespacedName instanceof Name) {
-            return null;
-        }
-
-        return $class->namespacedName->toString();
     }
 }

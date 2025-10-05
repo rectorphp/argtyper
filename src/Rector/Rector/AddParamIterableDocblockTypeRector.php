@@ -22,6 +22,7 @@ use PHPStan\Type\IntegerType;
 use PHPStan\Type\StringType;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Exception\NotImplementedException;
+use Rector\ArgTyper\Rector\TypeResolver;
 use Rector\Rector\AbstractRector;
 
 /**
@@ -46,11 +47,6 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
      */
     public function refactor(Node $node): ?Class_
     {
-        $className = $this->resolveClassName($node);
-        if (! is_string($className)) {
-            return null;
-        }
-
         $hasChanged = false;
 
         foreach ($node->getMethods() as $classMethod) {
@@ -63,34 +59,29 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                 continue;
             }
 
-            foreach ($classMethodTypes as $classMethodType) {
-                foreach ($classMethod->getParams() as $position => $param) {
-                    // skip as already has complex type
-                    if ($param->type instanceof UnionType || $param->type instanceof IntersectionType) {
-                        continue;
-                    }
+            foreach ($classMethod->getParams() as $position => $param) {
+                // skip as already has complex type
+                if ($param->type instanceof UnionType || $param->type instanceof IntersectionType) {
+                    continue;
+                }
 
-                    if ($classMethodType->getPosition() !== $position) {
-                        continue 2;
-                    }
+                $classMethodTypes = $classMethodTypesByPosition[$position] ?? [];
+                $classMethodType = $classMethodTypes[0];
 
-                    $isNullable = $this->isNullable($param);
-                    $typeNode = $this->resolveTypeNode($classMethodType->getType());
+                $isNullable = $this->isNullable($param);
+                $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
 
-                    if ($classMethodType->isObjectType() && $param->type instanceof Name) {
-                        // already has a type
-                        continue 2;
-                    }
+                if ($classMethodType->isObjectType() && $param->type instanceof Name) {
+                    // already has a type
+                    continue;
+                }
 
-                    if ($isNullable) {
-                        $param->type = new NullableType($typeNode);
-                        $hasChanged = true;
-                    } else {
-                        $param->type = $typeNode;
-                        $hasChanged = true;
-                    }
-
-                    continue 2;
+                if ($isNullable) {
+                    $param->type = new NullableType($typeNode);
+                    $hasChanged = true;
+                } else {
+                    $param->type = $typeNode;
+                    $hasChanged = true;
                 }
             }
         }
@@ -100,35 +91,6 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
         }
 
         return $node;
-    }
-
-    private function resolveTypeNode(string $type): FullyQualified|Identifier
-    {
-        if (str_starts_with($type, 'object:')) {
-            return new FullyQualified(substr($type, 7));
-        }
-
-        if (in_array($type, [ArrayType::class, ConstantArrayType::class], true)) {
-            return new Identifier('array');
-        }
-
-        if ($type === StringType::class) {
-            return new Identifier('string');
-        }
-
-        if ($type === IntegerType::class) {
-            return new Identifier('int');
-        }
-
-        if ($type === FloatType::class) {
-            return new Identifier('float');
-        }
-
-        if ($type === BooleanType::class) {
-            return new Identifier('bool');
-        }
-
-        throw new NotImplementedException($type);
     }
 
     private function isNullable(Param $param): bool
@@ -142,19 +104,5 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
         }
 
         return $this->isName($param->default, 'null');
-    }
-
-    private function resolveClassName(Class_ $class): ?string
-    {
-        if ($class->isAnonymous()) {
-            return null;
-        }
-
-        // we need FQN class name
-        if (! $class->namespacedName instanceof Name) {
-            return null;
-        }
-
-        return $class->namespacedName->toString();
     }
 }
