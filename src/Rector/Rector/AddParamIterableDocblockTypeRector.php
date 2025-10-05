@@ -51,7 +51,7 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
 
             foreach ($classMethod->getParams() as $position => $param) {
                 // only look for array types
-                if ($this->isParamTypeArray($param)) {
+                if (! $this->isParamTypeArray($param)) {
                     continue;
                 }
 
