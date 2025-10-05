@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\Configuration;
 
+use PhpParser\Node\Stmt\ClassMethod;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
+use Rector\PHPStan\ScopeFetcher;
 
 final class ClassMethodTypesConfigurationProvider
 {
@@ -16,9 +18,31 @@ final class ClassMethodTypesConfigurationProvider
     private array $classMethodTypes = [];
 
     /**
+     * @return ClassMethodType[]
+     */
+    public function match(ClassMethod $classMethod): array
+    {
+        $scope = ScopeFetcher::fetch($classMethod);
+
+        $classReflection = $scope->getClassReflection();
+        if ($classReflection->isAnonymous()) {
+            return [];
+        }
+
+        $classMethodTypes = $this->provide();
+
+        $className = $classReflection->getName();
+
+        dump($className);
+        dump($classMethodTypes);
+
+        die;
+    }
+
+    /**
      * @return array<ClassMethodType>
      */
-    public function provide(): array
+    private function provide(): array
     {
         if ($this->classMethodTypes !== []) {
             return $this->classMethodTypes;

@@ -13,6 +13,7 @@ use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\UnionType;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\BooleanType;
@@ -22,6 +23,7 @@ use PHPStan\Type\IntegerType;
 use PHPStan\Type\StringType;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Exception\NotImplementedException;
+use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\Rector\AbstractRector;
 
 /**
@@ -46,9 +48,6 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
      */
     public function refactor(Node $node): ?Class_
     {
-        // load *.json configuration
-        $classMethodTypes = $this->classMethodTypesConfigurationProvider->provide();
-
         $className = $this->resolveClassName($node);
         if (! is_string($className)) {
             return null;
@@ -61,13 +60,13 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                 continue;
             }
 
+            $classMethodTypes = $this->classMethodTypesConfigurationProvider->match($classMethod);
+            if ($classMethodTypes !== []) {
+                continue;
+            }
+
             foreach ($classMethodTypes as $classMethodType) {
                 if (! $this->isName($classMethod, $classMethodType->getMethod())) {
-                    continue;
-                }
-
-                // temporary
-                if ($classMethod->name->toString() !== 'createSellOptions') {
                     continue;
                 }
 

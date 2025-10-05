@@ -47,9 +47,6 @@ final class AddParamTypeRector extends AbstractRector
      */
     public function refactor(Node $node): ?Class_
     {
-        // load *.json configuration
-        $classMethodTypes = $this->classMethodTypesConfigurationProvider->provide();
-
         $className = $this->resolveClassName($node);
         if (! is_string($className)) {
             return null;
@@ -59,6 +56,11 @@ final class AddParamTypeRector extends AbstractRector
 
         foreach ($node->getMethods() as $classMethod) {
             if ($classMethod->isMagic()) {
+                continue;
+            }
+
+            $classMethodTypes = $this->classMethodTypesConfigurationProvider->match($classMethod);
+            if ($classMethodTypes === []) {
                 continue;
             }
 
