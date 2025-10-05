@@ -84,7 +84,7 @@ final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
                 } else {
                     $type = TypeMapper::mapConstantToGenericTypes($argType);
                     if ($type instanceof ArrayType || $type instanceof ConstantArrayType) {
-                        $type = $type->describe(VerbosityLevel::value());
+                        $type = $type->describe(VerbosityLevel::typeOnly());
                     } else {
                         $type = $type::class;
                     }
