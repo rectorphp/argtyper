@@ -26,8 +26,8 @@ final class TypeMapper
             return new IntegerType();
         }
 
-        if ($type instanceof ConstantArrayType) {
-            return new ArrayType(new MixedType(), new MixedType());
+        if ($type instanceof ConstantArrayType || $type instanceof ArrayType) {
+            return $type;
         }
 
         if ($type instanceof ConstantStringType) {

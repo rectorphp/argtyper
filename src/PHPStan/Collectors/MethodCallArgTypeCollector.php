@@ -9,7 +9,10 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
+use PHPStan\Type\ArrayType;
+use PHPStan\Type\Constant\ConstantArrayType;
 use PHPStan\Type\TypeWithClassName;
+use PHPStan\Type\VerbosityLevel;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
 /**
@@ -80,7 +83,11 @@ final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
                     $type = 'object:' . $argType->getClassName();
                 } else {
                     $type = TypeMapper::mapConstantToGenericTypes($argType);
-                    $type = $type::class;
+                    if ($type instanceof ArrayType || $type instanceof ConstantArrayType) {
+                        $type = $type->describe(VerbosityLevel::value());
+                    } else {
+                        $type = $type::class;
+                    }
                 }
 
                 $classNameTypes[] = [$className, $methodCallName, $key, $type];
