@@ -6,22 +6,13 @@ namespace Rector\ArgTyper\Rector\Rector;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\ConstFetch;
-use PhpParser\Node\Identifier;
 use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
-use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\UnionType;
-use PHPStan\Type\ArrayType;
-use PHPStan\Type\BooleanType;
-use PHPStan\Type\Constant\ConstantArrayType;
-use PHPStan\Type\FloatType;
-use PHPStan\Type\IntegerType;
-use PHPStan\Type\StringType;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
-use Rector\ArgTyper\Exception\NotImplementedException;
 use Rector\ArgTyper\Rector\TypeResolver;
 use Rector\Rector\AbstractRector;
 
