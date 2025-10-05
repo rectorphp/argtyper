@@ -53,8 +53,8 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
             }
 
             foreach ($classMethod->getParams() as $position => $param) {
-                // skip as already has complex type
-                if ($param->type instanceof UnionType || $param->type instanceof IntersectionType) {
+                // only look for array types
+                if ($this->isParamTypeArray($param)) {
                     continue;
                 }
 
@@ -65,21 +65,12 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
 
                 $classMethodType = $paramClassMethodTypes[0];
 
-                $isNullable = $this->isNullable($param);
                 $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
 
-                if ($classMethodType->isObjectType() && $param->type instanceof Name) {
-                    // skip already set object type
-                    continue;
-                }
+                $classMethodPhpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($classMethod);
 
-                if ($isNullable) {
-                    $param->type = new NullableType($typeNode);
-                    $hasChanged = true;
-                } else {
-                    $param->type = $typeNode;
-                    $hasChanged = true;
-                }
+                dump($classMethodPhpDocInfo);
+                die;
             }
         }
 
@@ -90,16 +81,12 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
         return $node;
     }
 
-    private function isNullable(Param $param): bool
+    private function isParamTypeArray(Param $param): bool
     {
-        if ($param->type instanceof NullableType) {
-            return true;
-        }
-
-        if (! $param->default instanceof ConstFetch) {
+        if (! $param->type instanceof Node) {
             return false;
         }
 
-        return $this->isName($param->default, 'null');
+        return $this->isName($param->type, 'array');
     }
 }
