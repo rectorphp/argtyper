@@ -10,5 +10,5 @@ return ECSConfig::configure()
         __DIR__ . '/src',
         __DIR__ . '/tests',
     ])
-    ->withPreparedSets(symplify: true, common: true)
+    ->withPreparedSets(symplify: true, common: true, psr12: true)
     ->withSkip([__DIR__ . '/tests/Rector/Fixture']);

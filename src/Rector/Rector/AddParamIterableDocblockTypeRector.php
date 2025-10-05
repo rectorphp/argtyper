@@ -29,12 +29,11 @@ use Rector\Rector\AbstractRector;
  *
  * Load data from phpstan-collected-data and add types to parameters if not nullable
  */
-final class AddParamTypeRector extends AbstractRector
+final class AddParamIterableDocblockTypeRector extends AbstractRector
 {
     public function __construct(
         private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider
     ) {
-
     }
 
     public function getNodeTypes(): array

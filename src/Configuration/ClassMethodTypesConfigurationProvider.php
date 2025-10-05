@@ -46,13 +46,13 @@ final class ClassMethodTypesConfigurationProvider
                             $position,
                             $types[0]
                         );
-                    }
-
+                    } else {
                         // @todo add support if all the same
                         // use unique types method
-
+                        dump($types);
+                        die;
+                    }
                 }
-
             }
         }
 
