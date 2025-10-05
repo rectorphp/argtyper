@@ -33,9 +33,12 @@ final class ClassMethodTypesConfigurationProvider
         $classMethodTypes = $this->provide();
 
         $className = $classReflection->getName();
-        $methodName =  $classMethod->name->toString();
+        $methodName = $classMethod->name->toString();
 
-        $matchingClassMethodTypes = array_filter($classMethodTypes, function (ClassMethodType $classMethodType) use ($className, $methodName): bool {
+        $matchingClassMethodTypes = array_filter($classMethodTypes, function (ClassMethodType $classMethodType) use (
+            $className,
+            $methodName
+        ): bool {
             if ($classMethodType->getClass() !== $className) {
                 return false;
             }

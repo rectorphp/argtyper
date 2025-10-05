@@ -13,7 +13,6 @@ use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\UnionType;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\BooleanType;
@@ -23,7 +22,6 @@ use PHPStan\Type\IntegerType;
 use PHPStan\Type\StringType;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Exception\NotImplementedException;
-use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\Rector\AbstractRector;
 
 /**
