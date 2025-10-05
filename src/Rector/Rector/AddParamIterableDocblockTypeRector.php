@@ -41,12 +41,12 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
         $hasChanged = false;
 
         foreach ($node->getMethods() as $classMethod) {
-            if ($classMethod->isMagic()) {
+            if ($classMethod->isMagic() || $classMethod->getParams() === []) {
                 continue;
             }
 
-            $classMethodTypes = $this->classMethodTypesConfigurationProvider->matchByPosition($classMethod);
-            if ($classMethodTypes !== []) {
+            $classMethodTypesByPosition = $this->classMethodTypesConfigurationProvider->matchByPosition($classMethod);
+            if ($classMethodTypesByPosition !== []) {
                 continue;
             }
 
@@ -56,14 +56,18 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                     continue;
                 }
 
-                $classMethodTypes = $classMethodTypesByPosition[$position] ?? [];
-                $classMethodType = $classMethodTypes[0];
+                $paramClassMethodTypes = $classMethodTypesByPosition[$position] ?? null;
+                if ($paramClassMethodTypes === null) {
+                    continue;
+                }
+
+                $classMethodType = $classMethodTypesByPosition[0];
 
                 $isNullable = $this->isNullable($param);
                 $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
 
                 if ($classMethodType->isObjectType() && $param->type instanceof Name) {
-                    // already has a type
+                    // skip already set object type
                     continue;
                 }
 

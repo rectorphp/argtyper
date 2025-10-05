@@ -14,6 +14,7 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\UnionType;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\TypeResolver;
+use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\Rector\AbstractRector;
 
 /**
@@ -42,7 +43,7 @@ final class AddParamTypeRector extends AbstractRector
         $hasChanged = false;
 
         foreach ($node->getMethods() as $classMethod) {
-            if ($classMethod->isMagic()) {
+            if ($classMethod->isMagic() || $classMethod->getParams() === []) {
                 continue;
             }
 
@@ -57,16 +58,19 @@ final class AddParamTypeRector extends AbstractRector
                     continue;
                 }
 
-                $classMethodTypes = $classMethodTypesByPosition[$position];
+                $paramClassMethodTypes = $classMethodTypesByPosition[$position] ?? null;
+                if ($paramClassMethodTypes === null) {
+                    continue;
+                }
 
-                $classMethodType = $classMethodTypes[0];
+                $classMethodType = $paramClassMethodTypes[0];
 
                 $isNullable = $this->isNullable($param);
                 $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
 
                 if ($classMethodType->isObjectType() && $param->type instanceof Name) {
-                    // already has a type
-                    continue 2;
+                    // skip already set object type
+                    continue;
                 }
 
                 if ($isNullable) {
