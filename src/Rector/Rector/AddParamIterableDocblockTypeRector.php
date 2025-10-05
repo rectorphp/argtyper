@@ -11,6 +11,7 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\TypeResolver;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
+use Rector\Comments\NodeDocBlock\DocBlockUpdater;
 use Rector\Rector\AbstractRector;
 
 /**
@@ -23,6 +24,7 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
     public function __construct(
         private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
+        private readonly DocBlockUpdater $docBlockUpdater,
     ) {
     }
 
@@ -69,9 +71,20 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                     continue;
                 }
 
-                $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
-                dump($classMethodPhpDocInfo);
+                dump($classMethodType->getType());
                 die;
+
+                $paramTagValueNode = new ParamTagValueNode(
+                    $typeNode,
+                    false,
+                    '$' . $paramName,
+                    '',
+                    false
+                );
+                $classMethodPhpDocInfo->addPhpDocTagNode($paramTagValueNode);
+
+                $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($node);
+                $hasChanged = true;
             }
         }
 
