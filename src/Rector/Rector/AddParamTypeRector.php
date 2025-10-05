@@ -59,52 +59,33 @@ final class AddParamTypeRector extends AbstractRector
                 continue;
             }
 
-            $classMethodTypes = $this->classMethodTypesConfigurationProvider->match($classMethod);
-            if ($classMethodTypes === []) {
+            $classMethodTypesByPosition = $this->classMethodTypesConfigurationProvider->matchByPosition($classMethod);
+            if ($classMethodTypesByPosition === []) {
                 continue;
             }
 
-            foreach ($classMethodTypes as $classMethodType) {
-                if (! $this->isName($classMethod, $classMethodType->getMethod())) {
+            foreach ($classMethod->getParams() as $position => $param) {
+                // skip as already has complex type
+                if ($param->type instanceof UnionType || $param->type instanceof IntersectionType) {
                     continue;
                 }
 
-                // temporary
-                if ($classMethod->name->toString() !== 'createSellOptions') {
-                    continue;
-                }
+                $classMethodTypes = $classMethodTypesByPosition[$position];
 
-                if ($className !== $classMethodType->getClass()) {
-                    continue;
-                }
+                $isNullable = $this->isNullable($param);
+                $typeNode = $this->resolveTypeNode($classMethodType->getType());
 
-                foreach ($classMethod->getParams() as $position => $param) {
-                    // skip as already has complex type
-                    if ($param->type instanceof UnionType || $param->type instanceof IntersectionType) {
-                        continue;
-                    }
-
-                    if ($classMethodType->getPosition() !== $position) {
-                        continue 2;
-                    }
-
-                    $isNullable = $this->isNullable($param);
-                    $typeNode = $this->resolveTypeNode($classMethodType->getType());
-
-                    if ($classMethodType->isObjectType() && $param->type instanceof Name) {
-                        // already has a type
-                        continue 2;
-                    }
-
-                    if ($isNullable) {
-                        $param->type = new NullableType($typeNode);
-                        $hasChanged = true;
-                    } else {
-                        $param->type = $typeNode;
-                        $hasChanged = true;
-                    }
-
+                if ($classMethodType->isObjectType() && $param->type instanceof Name) {
+                    // already has a type
                     continue 2;
+                }
+
+                if ($isNullable) {
+                    $param->type = new NullableType($typeNode);
+                    $hasChanged = true;
+                } else {
+                    $param->type = $typeNode;
+                    $hasChanged = true;
                 }
             }
         }

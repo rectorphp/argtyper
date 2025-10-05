@@ -60,20 +60,12 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                 continue;
             }
 
-            $classMethodTypes = $this->classMethodTypesConfigurationProvider->match($classMethod);
+            $classMethodTypes = $this->classMethodTypesConfigurationProvider->matchByPosition($classMethod);
             if ($classMethodTypes !== []) {
                 continue;
             }
 
             foreach ($classMethodTypes as $classMethodType) {
-                if (! $this->isName($classMethod, $classMethodType->getMethod())) {
-                    continue;
-                }
-
-                if ($className !== $classMethodType->getClass()) {
-                    continue;
-                }
-
                 foreach ($classMethod->getParams() as $position => $param) {
                     // skip as already has complex type
                     if ($param->type instanceof UnionType || $param->type instanceof IntersectionType) {

@@ -9,6 +9,7 @@ use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\PHPStan\ScopeFetcher;
+use Webmozart\Assert\Assert;
 
 final class ClassMethodTypesConfigurationProvider
 {
@@ -18,9 +19,9 @@ final class ClassMethodTypesConfigurationProvider
     private array $classMethodTypes = [];
 
     /**
-     * @return ClassMethodType[]
+     * @return array<int, ClassMethodType[]>
      */
-    public function match(ClassMethod $classMethod): array
+    public function matchByPosition(ClassMethod $classMethod): array
     {
         $scope = ScopeFetcher::fetch($classMethod);
 
@@ -32,11 +33,24 @@ final class ClassMethodTypesConfigurationProvider
         $classMethodTypes = $this->provide();
 
         $className = $classReflection->getName();
+        $methodName =  $classMethod->name->toString();
 
-        dump($className);
-        dump($classMethodTypes);
+        $matchingClassMethodTypes = array_filter($classMethodTypes, function (ClassMethodType $classMethodType) use ($className, $methodName): bool {
+            if ($classMethodType->getClass() !== $className) {
+                return false;
+            }
 
-        die;
+            return $classMethodType->getMethod() === $methodName;
+        });
+
+        Assert::allIsInstanceOf($matchingClassMethodTypes, ClassMethodType::class);
+
+        $classMethodTypesByPosition = [];
+        foreach ($matchingClassMethodTypes as $matchingClassMethodType) {
+            $classMethodTypesByPosition[$matchingClassMethodType->getPosition()][] = $matchingClassMethodType;
+        }
+
+        return $classMethodTypesByPosition;
     }
 
     /**
