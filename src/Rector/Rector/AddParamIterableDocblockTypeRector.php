@@ -46,7 +46,7 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
             }
 
             $classMethodTypesByPosition = $this->classMethodTypesConfigurationProvider->matchByPosition($classMethod);
-            if ($classMethodTypesByPosition !== []) {
+            if ($classMethodTypesByPosition === []) {
                 continue;
             }
 
