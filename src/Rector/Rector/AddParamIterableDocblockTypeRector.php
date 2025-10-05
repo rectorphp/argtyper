@@ -14,7 +14,6 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\UnionType;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\TypeResolver;
-use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\Rector\AbstractRector;
 
 /**
