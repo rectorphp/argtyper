@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\Configuration;
 
 use PhpParser\Node\Stmt\ClassMethod;
+use PHPStan\Reflection\ClassReflection;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
@@ -26,6 +27,10 @@ final class ClassMethodTypesConfigurationProvider
         $scope = ScopeFetcher::fetch($classMethod);
 
         $classReflection = $scope->getClassReflection();
+        if (! $classReflection instanceof ClassReflection) {
+            return [];
+        }
+
         if ($classReflection->isAnonymous()) {
             return [];
         }
