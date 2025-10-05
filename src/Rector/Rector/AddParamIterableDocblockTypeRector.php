@@ -12,6 +12,7 @@ use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\UnionType;
+use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\TypeResolver;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
@@ -65,10 +66,15 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
 
                 $classMethodType = $paramClassMethodTypes[0];
 
-                $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
-
                 $classMethodPhpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($classMethod);
+                $paramName = $this->getName($param->var);
 
+                // already known
+                if ($classMethodPhpDocInfo->getParamType($paramName) instanceof ParamTagValueNode) {
+                    continue;
+                }
+
+                $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
                 dump($classMethodPhpDocInfo);
                 die;
             }
