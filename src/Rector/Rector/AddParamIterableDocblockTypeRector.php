@@ -14,6 +14,7 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\UnionType;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\TypeResolver;
+use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\Rector\AbstractRector;
 
 /**
@@ -24,7 +25,8 @@ use Rector\Rector\AbstractRector;
 final class AddParamIterableDocblockTypeRector extends AbstractRector
 {
     public function __construct(
-        private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider
+        private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider,
+        private readonly PhpDocInfoFactory $phpDocInfoFactory,
     ) {
     }
 
