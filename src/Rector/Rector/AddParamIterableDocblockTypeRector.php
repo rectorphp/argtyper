@@ -76,8 +76,10 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                 $paramTagValueNode = new ParamTagValueNode($typeNode, false, '$' . $paramName, '', false);
                 $classMethodPhpDocInfo->addPhpDocTagNode($paramTagValueNode);
 
-                $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($node);
+                $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($classMethod);
                 $hasChanged = true;
+
+                $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($classMethod);
             }
         }
 
