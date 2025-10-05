@@ -12,6 +12,7 @@ use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\Comments\NodeDocBlock\DocBlockUpdater;
 use Rector\Rector\AbstractRector;
+use Rector\StaticTypeMapper\StaticTypeMapper;
 
 /**
  * @api used in Rector config
@@ -24,6 +25,7 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
         private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
         private readonly DocBlockUpdater $docBlockUpdater,
+        private readonly StaticTypeMapper $staticTypeMapper
     ) {
     }
 
@@ -70,7 +72,15 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                     continue;
                 }
 
-                dump($classMethodType->getType());
+                if (! str_starts_with($classMethodType->getType(), 'array')) {
+                    continue;
+                }
+
+                if ($classMethodType->getType() === 'array') {
+                    continue;
+                }
+
+                // map array{int, string} to type node somehow
                 die;
 
                 $paramTagValueNode = new ParamTagValueNode($typeNode, false, '$' . $paramName, '', false);
