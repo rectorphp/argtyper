@@ -18,7 +18,7 @@ namespace Rector\ArgTyper\Tests\Rector\Rector\AddParamIterableDocblockTypeRector
 final class SomeClass
 {
     /**
-     * @param string[] $items
+     * @param array<int, string> $items
      */
     public function run(array $items)
     {

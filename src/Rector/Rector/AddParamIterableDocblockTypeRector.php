@@ -8,9 +8,19 @@ use PhpParser\Node;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
+use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
+use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagValueNode;
+use PHPStan\PhpDocParser\Lexer\Lexer;
+use PHPStan\PhpDocParser\Parser\ConstExprParser;
+use PHPStan\PhpDocParser\Parser\PhpDocParser;
+use PHPStan\PhpDocParser\Parser\TokenIterator;
+use PHPStan\PhpDocParser\Parser\TypeParser;
+use PHPStan\PhpDocParser\ParserConfig;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
+use Rector\BetterPhpDocParser\PhpDocParser\BetterPhpDocParser;
+use Rector\BetterPhpDocParser\ValueObject\Parser\BetterTokenIterator;
 use Rector\Comments\NodeDocBlock\DocBlockUpdater;
 use Rector\Rector\AbstractRector;
 use Rector\StaticTypeMapper\StaticTypeMapper;
@@ -26,7 +36,8 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
         private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
         private readonly DocBlockUpdater $docBlockUpdater,
-        private readonly StaticTypeMapper $staticTypeMapper
+        private readonly StaticTypeMapper $staticTypeMapper,
+        private readonly BetterPhpDocParser $betterPhpDocParser,
     ) {
     }
 
@@ -77,14 +88,11 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                     continue;
                 }
 
-                // how to convert array string to PHPStan type?
-                dump($classMethodType->getType());
-
-                // @todo map array{int, string} to type/type node somehow
-                die;
+                $typeNode = $this->parseStringTypeToTypeNode($classMethodType->getType());
+                dump($typeNode);
 
                 $paramTagValueNode = new ParamTagValueNode($typeNode, false, '$' . $paramName, '', false);
-                $classMethodPhpDocInfo->addPhpDocTagNode($paramTagValueNode);
+                $classMethodPhpDocInfo->addTagValueNode($paramTagValueNode);
 
                 $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($classMethod);
                 $hasChanged = true;
@@ -117,5 +125,26 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
 
         // not detailed much
         return $classMethodType->getType() !== 'array';
+    }
+
+    private function parseStringTypeToTypeNode(string $typeString): ?\PHPStan\PhpDocParser\Ast\Type\TypeNode
+    {
+        $config = new ParserConfig(usedAttributes: []);
+        $lexer = new Lexer($config);
+        $tokens = $lexer->tokenize('@param ' . $typeString . '$someParam');
+
+        $constExprParser = new ConstExprParser($config);
+        $typeParser = new TypeParser($config, $constExprParser);
+
+        $phpDocParser = new PhpDocParser($config, $typeParser, $constExprParser);
+
+        $phpDocTagNode = $phpDocParser->parseTag(new TokenIterator($tokens));
+
+//        $phpDocTagNode = $this->betterPhpDocParser->parseTag(new TokenIterator($tokens));
+        if (! $phpDocTagNode->value instanceof ParamTagValueNode) {
+            return null;
+        }
+
+        return $phpDocTagNode->value->type;
     }
 }
