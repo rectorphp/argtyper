@@ -18,7 +18,6 @@ use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\TypeMapper\DocStringTypeMapper;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
-use Rector\BetterPhpDocParser\PhpDocParser\BetterPhpDocParser;
 use Rector\Comments\NodeDocBlock\DocBlockUpdater;
 use Rector\Rector\AbstractRector;
 
@@ -120,24 +119,5 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
 
         // not detailed much
         return $classMethodType->getType() !== 'array';
-    }
-
-    private function parseStringTypeToTypeNode(string $typeString): ?\PHPStan\PhpDocParser\Ast\Type\TypeNode
-    {
-        $config = new ParserConfig(usedAttributes: []);
-        $lexer = new Lexer($config);
-        $tokens = $lexer->tokenize('@param ' . $typeString . '$someParam');
-
-        $constExprParser = new ConstExprParser($config);
-        $typeParser = new TypeParser($config, $constExprParser);
-
-        $phpDocParser = new PhpDocParser($config, $typeParser, $constExprParser);
-
-        $phpDocTagNode = $phpDocParser->parseTag(new TokenIterator($tokens));
-        if (! $phpDocTagNode->value instanceof ParamTagValueNode) {
-            return null;
-        }
-
-        return $phpDocTagNode->value->type;
     }
 }

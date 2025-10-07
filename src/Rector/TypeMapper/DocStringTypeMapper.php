@@ -19,14 +19,14 @@ final class DocStringTypeMapper
 {
     public function mapToTypeNode(string $typeString): ?\PHPStan\PhpDocParser\Ast\Type\TypeNode
     {
-        $config = new ParserConfig(usedAttributes: []);
-        $lexer = new Lexer($config);
+        $parserConfig = new ParserConfig(usedAttributes: []);
+        $lexer = new Lexer($parserConfig);
         $tokens = $lexer->tokenize('@param ' . $typeString . '$someParam');
 
-        $constExprParser = new ConstExprParser($config);
-        $typeParser = new TypeParser($config, $constExprParser);
+        $constExprParser = new ConstExprParser($parserConfig);
+        $typeParser = new TypeParser($parserConfig, $constExprParser);
 
-        $phpDocParser = new PhpDocParser($config, $typeParser, $constExprParser);
+        $phpDocParser = new PhpDocParser($parserConfig, $typeParser, $constExprParser);
 
         $phpDocTagNode = $phpDocParser->parseTag(new TokenIterator($tokens));
         if (! $phpDocTagNode->value instanceof ParamTagValueNode) {
