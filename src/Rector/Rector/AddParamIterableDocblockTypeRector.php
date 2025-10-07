@@ -8,8 +8,6 @@ use PhpParser\Node;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
-use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
-use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagValueNode;
 use PHPStan\PhpDocParser\Lexer\Lexer;
 use PHPStan\PhpDocParser\Parser\ConstExprParser;
 use PHPStan\PhpDocParser\Parser\PhpDocParser;
@@ -20,10 +18,8 @@ use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\BetterPhpDocParser\PhpDocParser\BetterPhpDocParser;
-use Rector\BetterPhpDocParser\ValueObject\Parser\BetterTokenIterator;
 use Rector\Comments\NodeDocBlock\DocBlockUpdater;
 use Rector\Rector\AbstractRector;
-use Rector\StaticTypeMapper\StaticTypeMapper;
 
 /**
  * @api used in Rector config
@@ -137,7 +133,7 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
 
         $phpDocTagNode = $phpDocParser->parseTag(new TokenIterator($tokens));
 
-//        $phpDocTagNode = $this->betterPhpDocParser->parseTag(new TokenIterator($tokens));
+        //        $phpDocTagNode = $this->betterPhpDocParser->parseTag(new TokenIterator($tokens));
         if (! $phpDocTagNode->value instanceof ParamTagValueNode) {
             return null;
         }

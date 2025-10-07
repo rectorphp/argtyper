@@ -27,7 +27,7 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
             'class' => \Rector\ArgTyper\Tests\Rector\Rector\AddParamIterableDocblockTypeRector\Fixture\SomeClass::class,
             'method' => 'run',
             'position' => 0,
-            'type' => 'array<int, string>'
+            'type' => 'array<int, string>',
         ];
 
         $collectedDataJson = Json::encode([$singleCollectedData], Json::PRETTY);

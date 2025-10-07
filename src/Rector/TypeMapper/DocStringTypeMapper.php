@@ -35,5 +35,4 @@ final class DocStringTypeMapper
 
         return $phpDocTagNode->value->type;
     }
-
 }
