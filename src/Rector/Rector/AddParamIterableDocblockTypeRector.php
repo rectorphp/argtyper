@@ -15,6 +15,7 @@ use PHPStan\PhpDocParser\Parser\TokenIterator;
 use PHPStan\PhpDocParser\Parser\TypeParser;
 use PHPStan\PhpDocParser\ParserConfig;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
+use Rector\ArgTyper\Rector\TypeMapper\DocStringTypeMapper;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\BetterPhpDocParser\PhpDocParser\BetterPhpDocParser;
@@ -32,6 +33,7 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
         private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
         private readonly DocBlockUpdater $docBlockUpdater,
+        private readonly DocStringTypeMapper $docStringTypeMapper
     ) {
     }
 
@@ -82,7 +84,7 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                     continue;
                 }
 
-                $typeNode = $this->parseStringTypeToTypeNode($classMethodType->getType());
+                $typeNode = $this->docStringTypeMapper->map($classMethodType->getType());
 
                 $paramTagValueNode = new ParamTagValueNode($typeNode, false, '$' . $paramName, '', false);
                 $classMethodPhpDocInfo->addTagValueNode($paramTagValueNode);
@@ -132,8 +134,6 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
         $phpDocParser = new PhpDocParser($config, $typeParser, $constExprParser);
 
         $phpDocTagNode = $phpDocParser->parseTag(new TokenIterator($tokens));
-
-        //        $phpDocTagNode = $this->betterPhpDocParser->parseTag(new TokenIterator($tokens));
         if (! $phpDocTagNode->value instanceof ParamTagValueNode) {
             return null;
         }

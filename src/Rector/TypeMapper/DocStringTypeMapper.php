@@ -17,7 +17,7 @@ use PHPStan\PhpDocParser\ParserConfig;
  */
 final class DocStringTypeMapper
 {
-    private function mapToTypeNode(string $typeString): ?\PHPStan\PhpDocParser\Ast\Type\TypeNode
+    public function mapToTypeNode(string $typeString): ?\PHPStan\PhpDocParser\Ast\Type\TypeNode
     {
         $config = new ParserConfig(usedAttributes: []);
         $lexer = new Lexer($config);
