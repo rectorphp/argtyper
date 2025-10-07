@@ -24,7 +24,7 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
         // 2. create temp dump
 
         $singleCollectedData = [
-            'class' => \Rector\ArgTyper\Tests\Rector\Rector\AddParamIterableDocblockTypeRector\Fixture\SomeClass::class,
+            'class' => 'Rector\ArgTyper\Tests\Rector\Rector\AddParamIterableDocblockTypeRector\Fixture\SomeClass',
             'method' => 'run',
             'position' => 0,
             'type' => 'array<int, string>',

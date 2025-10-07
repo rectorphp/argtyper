@@ -8,6 +8,7 @@ use PhpParser\Node;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
+use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\PhpDocParser\Lexer\Lexer;
 use PHPStan\PhpDocParser\Parser\ConstExprParser;
 use PHPStan\PhpDocParser\Parser\PhpDocParser;
@@ -72,6 +73,8 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                 $classMethodType = $paramClassMethodTypes[0];
 
                 $classMethodPhpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($classMethod);
+
+                /** @var string $paramName */
                 $paramName = $this->getName($param->var);
 
                 // already known
@@ -84,6 +87,9 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                 }
 
                 $typeNode = $this->docStringTypeMapper->mapToTypeNode($classMethodType->getType());
+                if (! $typeNode instanceof TypeNode) {
+                    continue;
+                }
 
                 $paramTagValueNode = new ParamTagValueNode($typeNode, false, '$' . $paramName, '', false);
                 $classMethodPhpDocInfo->addTagValueNode($paramTagValueNode);
