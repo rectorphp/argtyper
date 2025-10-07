@@ -16,18 +16,23 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
     public function test(string $filePath): void
     {
         // 1. backup current phpstan dump
-        $phpstanCollectedDataFilePath = getcwd() . '/' . ConfigFilePath::phpstanCollectedData();
-
-        if (file_exists($phpstanCollectedDataFilePath)) {
-            FileSystem::copy($phpstanCollectedDataFilePath, $phpstanCollectedDataFilePath . '-temp');
+        if (file_exists(ConfigFilePath::phpstanCollectedData())) {
+            FileSystem::copy(ConfigFilePath::phpstanCollectedData(), ConfigFilePath::phpstanCollectedData() . '-temp');
         }
 
         // 2. create temp dump
 
-        Json::encode([
+        $singleCollectedData = [
+            'class' => \Rector\ArgTyper\Tests\Rector\Rector\AddParamIterableDocblockTypeRector\Fixture\SomeClass::class,
+            'method' => 'run',
+            'position' => 0,
+            'type' => 'array<int, string>'
+        ];
 
-        ]);
+        $collectedDataJson = Json::encode([$singleCollectedData]);
 
+        dump($collectedDataJson);
+        die;
 
         // 3.
 
