@@ -83,7 +83,7 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                     continue;
                 }
 
-                $typeNode = $this->docStringTypeMapper->map($classMethodType->getType());
+                $typeNode = $this->docStringTypeMapper->mapToTypeNode($classMethodType->getType());
 
                 $paramTagValueNode = new ParamTagValueNode($typeNode, false, '$' . $paramName, '', false);
                 $classMethodPhpDocInfo->addTagValueNode($paramTagValueNode);
