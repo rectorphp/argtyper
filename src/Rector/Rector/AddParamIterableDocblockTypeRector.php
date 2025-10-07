@@ -79,7 +79,8 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
 
                 // how to convert array string to PHPStan type?
                 dump($classMethodType->getType());
-                // map array{int, string} to type node somehow
+
+                // @todo map array{int, string} to type/type node somehow
                 die;
 
                 $paramTagValueNode = new ParamTagValueNode($typeNode, false, '$' . $paramName, '', false);
