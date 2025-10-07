@@ -9,6 +9,7 @@ use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
+use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\Comments\NodeDocBlock\DocBlockUpdater;
 use Rector\Rector\AbstractRector;
@@ -72,14 +73,11 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                     continue;
                 }
 
-                if (! str_starts_with($classMethodType->getType(), 'array')) {
+                if (! $this->isUsefulArrayType($classMethodType)) {
                     continue;
                 }
 
-                if ($classMethodType->getType() === 'array') {
-                    continue;
-                }
-
+                dump($classMethodType->getType());
                 // map array{int, string} to type node somehow
                 die;
 
@@ -107,5 +105,15 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
         }
 
         return $this->isName($param->type, 'array');
+    }
+
+    private function isUsefulArrayType(ClassMethodType $classMethodType): bool
+    {
+        if (! str_starts_with($classMethodType->getType(), 'array')) {
+            return false;
+        }
+
+        // not detailed much
+        return $classMethodType->getType() !== 'array';
     }
 }
