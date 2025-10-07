@@ -41,7 +41,6 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
             FileSystem::copy($tempFilePath, ConfigFilePath::phpstanCollectedData());
             FileSystem::delete($tempFilePath);
         }
-
     }
 
     public static function provideData(): \Iterator
