@@ -36,8 +36,6 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
         private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
         private readonly DocBlockUpdater $docBlockUpdater,
-        private readonly StaticTypeMapper $staticTypeMapper,
-        private readonly BetterPhpDocParser $betterPhpDocParser,
     ) {
     }
 
@@ -89,7 +87,6 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                 }
 
                 $typeNode = $this->parseStringTypeToTypeNode($classMethodType->getType());
-                dump($typeNode);
 
                 $paramTagValueNode = new ParamTagValueNode($typeNode, false, '$' . $paramName, '', false);
                 $classMethodPhpDocInfo->addTagValueNode($paramTagValueNode);
