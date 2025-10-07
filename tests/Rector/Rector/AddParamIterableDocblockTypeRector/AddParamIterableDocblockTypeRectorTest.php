@@ -30,7 +30,7 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
             'type' => 'array<int, string>',
         ];
 
-        $collectedDataJson = Json::encode([$singleCollectedData], Json::PRETTY);
+        $collectedDataJson = Json::encode([$singleCollectedData], pretty: true);
         FileSystem::write(ConfigFilePath::phpstanCollectedData(), $collectedDataJson);
 
         // 2. test here
