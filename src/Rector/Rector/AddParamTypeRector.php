@@ -18,16 +18,18 @@ use PHPStan\Type\ResourceType;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\TypeResolver;
 use Rector\Rector\AbstractRector;
+use Rector\VendorLocker\ParentClassMethodTypeOverrideGuard;
 
 /**
- * @api used in Rector config
+ * @api used in rector custom config
  *
  * Load data from phpstan-collected-data and add types to parameters if not nullable
  */
 final class AddParamTypeRector extends AbstractRector
 {
     public function __construct(
-        private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider
+        private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider,
+        private readonly ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard
     ) {
 
     }
@@ -51,6 +53,10 @@ final class AddParamTypeRector extends AbstractRector
 
             $classMethodTypesByPosition = $this->classMethodTypesConfigurationProvider->matchByPosition($classMethod);
             if ($classMethodTypesByPosition === []) {
+                continue;
+            }
+
+            if ($this->parentClassMethodTypeOverrideGuard->hasParentClassMethod($classMethod)) {
                 continue;
             }
 
