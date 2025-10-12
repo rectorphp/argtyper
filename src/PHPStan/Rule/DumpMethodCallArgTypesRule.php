@@ -42,16 +42,10 @@ final class DumpMethodCallArgTypesRule implements Rule
             $staticCallCollectedItemsByFile ?? []
         );
 
-        var_dump($callLikeCollectedItemsByFile);
-        var_dump($staticCallCollectedItemsByFile);
-        die;
-
         // nothing to process
         if ($callLikeCollectedItemsByFile === []) {
             return [];
         }
-
-        $typeCount = count(Arrays::flatten($callLikeCollectedItemsByFile));
 
         $data = [];
 
@@ -75,10 +69,9 @@ final class DumpMethodCallArgTypesRule implements Rule
         $data = array_values($data);
 
         if ($data === []) {
-            throw new ShouldNotHappenException(sprintf(
-                'We collected %d data about types, but rule could not parse it properly to the json',
-                $typeCount
-            ));
+            throw new ShouldNotHappenException(
+                'We collected some data about types , but rule could not store properly to the json',
+            );
         }
 
         $jsonString = Json::encode($data, pretty: true);
