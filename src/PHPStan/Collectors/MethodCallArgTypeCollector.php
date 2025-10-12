@@ -9,8 +9,11 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
+use PHPStan\Reflection\ClassReflection;
+use PHPStan\ShouldNotHappenException;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
+use PHPStan\Type\ObjectType;
 use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\VerbosityLevel;
 use Rector\ArgTyper\PHPStan\TypeMapper;
@@ -43,17 +46,26 @@ final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
             return null;
         }
 
+        $methodCallName = $node->name->toString();
+
         $callerType = $scope->getType($node->var);
         if (! $callerType->isObject()->yes()) {
             return null;
         }
 
-        $methodCallName = $node->name->toString();
+        if ($methodCallName !== 'SortDataItemsWithParams') {
+            return null;
+        }
 
         $classNameTypes = [];
 
-        $objectClassReflections = $callerType->getObjectClassReflections();
+        if ($callerType instanceof ObjectType && $callerType->getClassReflection() === null) {
 
+            throw new ShouldNotHappenException('Class reflection not found. Make sure you included the project autoload. --autoload-file=project/vendor/autoload.php');
+        }
+
+
+        $objectClassReflections = $callerType->getObjectClassReflections();
         foreach ($objectClassReflections as $objectClassReflection) {
             if (! $objectClassReflection->hasMethod($methodCallName)) {
                 continue;

@@ -97,6 +97,11 @@ final class StaticCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
             $classNameTypes[] = [$className, $methodCallName, $key, $type];
         }
 
+        // nothing to return
+        if ($classNameTypes === []) {
+            return null;
+        }
+
         return $classNameTypes;
     }
 }

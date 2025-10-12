@@ -18,7 +18,13 @@ composer require rector/argtyper --dev
 1. First, run PHPStan to generate `phpstan-collected-data.json`
 
 ```bash
-vendor/bin/phpstan analyse tests --configuration vendor/tomasvotruba/argtyper/config/phpstan-data-collector.neon
+vendor/bin/phpstan analyse src tests --configuration vendor/tomasvotruba/argtyper/config/phpstan-data-collector.neon
+```
+
+or from non-root directory:
+
+```bash
+vendor/bin/phpstan analyse ../project/src --configuration config/phpstan-data-collector.neon --autoload-file ../project/vendor/autoload.php
 ```
 
 2. Run Rector with this rule to add new type declarations in your code:
