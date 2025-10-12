@@ -27,6 +27,19 @@ or from non-root directory, but this project:
 vendor/bin/phpstan analyse ../project/src --configuration config/phpstan-data-collector.neon --autoload-file ../project/vendor/autoload.php
 ```
 
+It will dump data to `phpstan-collected-data.json` file:
+
+```json
+[
+    {
+        "class": "App\\SomePackage\\SomeService",
+        "method": "addName",
+        "position": 0,
+        "type": "PHPStan\\Type\\StringType"
+    }
+]
+```
+
 2. Run Rector with rules that fill known types based on collected data:
 
 ```bash
@@ -37,6 +50,18 @@ or from non-root directory, but this project:
 
 ```bash
 vendor/bin/rector p ../project/src --config rector-arg-typer.php
+```
+
+```diff
+ namespace App\SomePackage;
+
+ class SomeService
+ {
+-    public function addName($name)
++    public function addName(string $name)
+     {
+     }
+ }
 ```
 
 <br>
