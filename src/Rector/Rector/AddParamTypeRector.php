@@ -12,6 +12,7 @@ use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\UnionType;
+use PHPStan\Type\NullType;
 use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\TypeResolver;
 use Rector\Rector\AbstractRector;
@@ -63,6 +64,11 @@ final class AddParamTypeRector extends AbstractRector
                 }
 
                 $classMethodType = $paramClassMethodTypes[0];
+
+                // nothing useful
+                if ($classMethodType->getType() === NullType::class) {
+                    continue;
+                }
 
                 $isNullable = $this->isNullable($param);
                 $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());

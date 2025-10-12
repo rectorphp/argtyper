@@ -18,29 +18,26 @@ composer require rector/argtyper --dev
 1. First, run PHPStan to generate `phpstan-collected-data.json`
 
 ```bash
-vendor/bin/phpstan analyse src tests --configuration vendor/tomasvotruba/argtyper/config/phpstan-data-collector.neon
+vendor/bin/phpstan analyse src tests --configuration vendor/tomasvotruba/argtyper/phpstan-data-collector.neon
 ```
 
-or from non-root directory:
+or from non-root directory, but this project:
 
 ```bash
 vendor/bin/phpstan analyse ../project/src --configuration config/phpstan-data-collector.neon --autoload-file ../project/vendor/autoload.php
 ```
 
-2. Run Rector with this rule to add new type declarations in your code:
-
-```php
-use Rector\ArgTyper\Rector\Rector\AddParamTypeRector;
-use Rector\Config\RectorConfig;
-
-return RectorConfig::configure()
-    ->withRules([AddParamTypeRector::class]);
-```
+2. Run Rector with rules that fill known types based on collected data:
 
 ```bash
-vendor/bin/rector --config rector.php
+vendor/bin/rector src tests --config vendor/tomasvotruba/argtyper/rector-arg-typer.php
 ```
 
+or from non-root directory, but this project:
+
+```bash
+vendor/bin/rector p ../project/src --config rector-arg-typer.php
+```
 
 <br>
 

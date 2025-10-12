@@ -22,7 +22,7 @@ final class TypeResolver
             return new FullyQualified(substr($type, 7));
         }
 
-        if (in_array($type, [ArrayType::class, ConstantArrayType::class], true)) {
+        if (in_array($type, ['array', ArrayType::class, ConstantArrayType::class], true)) {
             return new Identifier('array');
         }
 
