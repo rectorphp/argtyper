@@ -46,8 +46,6 @@ final class DumpMethodCallArgTypesRule implements Rule
         var_dump($staticCallCollectedItemsByFile);
         die;
 
-
-
         // nothing to process
         if ($callLikeCollectedItemsByFile === []) {
             return [];
