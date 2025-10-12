@@ -40,11 +40,6 @@
             "phpstan/extension-installer": true
         }
     },
-    "replace": {
-        "symfony/polyfill-intl-grapheme": "*",
-        "symfony/polyfill-intl-normalizer": "*",
-        "symfony/deprecation-contracts": "*"
-    },
     "scripts": {
         "check-cs": "vendor/bin/ecs check --ansi",
         "fix-cs": "vendor/bin/ecs check --fix --ansi",
