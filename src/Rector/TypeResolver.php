@@ -26,6 +26,10 @@ final class TypeResolver
             return new Identifier('array');
         }
 
+        if (str_starts_with($type, 'array')) {
+            return new Identifier('array');
+        }
+
         if ($type === StringType::class) {
             return new Identifier('string');
         }
