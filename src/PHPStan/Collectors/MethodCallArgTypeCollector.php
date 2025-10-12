@@ -47,18 +47,16 @@ final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
         }
 
         $methodCallName = $node->name->toString();
-
         $callerType = $scope->getType($node->var);
+
+        // @todo check if this can be less strict
         if (! $callerType->isObject()->yes()) {
             return null;
         }
 
+        $this->ensureProjectAutoloadFileIsLoaded($callerType);
+
         $classNameTypes = [];
-        if ($callerType instanceof ObjectType && ! $callerType->getClassReflection() instanceof ClassReflection) {
-            throw new ShouldNotHappenException(
-                'Class reflection not found. Make sure you included the project autoload. --autoload-file=project/vendor/autoload.php'
-            );
-        }
 
         $objectClassReflections = $callerType->getObjectClassReflections();
         foreach ($objectClassReflections as $objectClassReflection) {
@@ -107,5 +105,22 @@ final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
         }
 
         return $classNameTypes;
+    }
+
+    private function ensureProjectAutoloadFileIsLoaded(\PHPStan\Type\Type $callerType): void
+    {
+        if (! $callerType instanceof ObjectType) {
+            return;
+        }
+
+        // call reflection is loaded properly
+        if ($callerType->getClassReflection() instanceof ClassReflection) {
+            return;
+        }
+
+        throw new ShouldNotHappenException(sprintf(
+            'Class reflection for "%s" class not found. Make sure you included the project autoload. --autoload-file=project/vendor/autoload.php',
+            $callerType->getClassName()
+        ));
     }
 }
