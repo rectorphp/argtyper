@@ -73,7 +73,7 @@ final class DumpMethodCallArgTypesRule implements Rule
             );
         }
 
-        $jsonString = Json::encode($data, pretty: true);
+        $jsonString = Json::encode($data, Json::PRETTY);
 
         FileSystem::write(ConfigFilePath::phpstanCollectedData(), $jsonString);
 

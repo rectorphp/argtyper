@@ -5,25 +5,27 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 // run on project: bin/argtyper.php project
-
-// take 1st arg from console and verify the path exits
-die;
-
+// 1. take 1st arg from console and verify the path exits
 $projectPath = $argv[1] ?? null;
 \Webmozart\Assert\Assert::notNull($projectPath, 'Give path to existing directory as 1st argument');
 \Webmozart\Assert\Assert::directory($projectPath, 'Give path to existing directory as 1st argument');
 
-// 1. run phpstan with local config on obvious code directories - use symfony/finder
-
+// 2. run phpstan with local config on obvious code directories - use symfony/finder
 $projectDirFinder = new ProjectDirFinder();
 $projectDirs = $projectDirFinder->findProjectCodeDirs($projectPath);
 
-dump($projectDirs);
-die;
+echo 'Found project code directories:' . PHP_EOL;
+foreach ($projectDirs as $projectDir) {
+    echo '- ' . $projectDir . PHP_EOL;
+}
+
+echo PHP_EOL;
 
 echo '1. Running PHPStan to collect data...' . PHP_EOL . PHP_EOL;
 
-exec('vendor/bin/phpstan analyse ' . implode(' ', $projectDirs) . ' --configuration=phpstan-data-collector.neon');
+$command = sprintf('vendor/bin/phpstan analyse ' . implode(' ', $projectDirs) . ' --configuration=phpstan-data-collector.neon --autoload-file=%s/vendor/autoload.php', $projectPath);
+echo "Command: " . $command;
+exec($command);
 
 
 final class ProjectDirFinder
