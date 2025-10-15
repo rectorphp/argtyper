@@ -26,10 +26,15 @@ echo PHP_EOL;
 
 echo '1. Running PHPStan to collect data...' . PHP_EOL . PHP_EOL;
 
-$command = sprintf('vendor/bin/phpstan analyse ' . implode(' ', $projectDirs) . ' --configuration=phpstan-data-collector.neon --autoload-file=%s/vendor/autoload.php', $projectPath);
-echo "Command: " . $command;
+$command = sprintf(
+    'vendor/bin/phpstan analyse ' . implode(
+        ' ',
+        $projectDirs
+    ) . ' --configuration=phpstan-data-collector.neon --autoload-file=%s/vendor/autoload.php',
+    $projectPath
+);
+echo 'Command: ' . $command;
 exec($command);
-
 
 echo 'Finished!' . PHP_EOL . PHP_EOL;
 
@@ -38,11 +43,12 @@ $collectedFileItems = \Nette\Utils\Json::decode($collectedFileContents);
 
 echo 'Found ' . count($collectedFileItems) . ' type items' . PHP_EOL . PHP_EOL;
 
-
-$command = sprintf('vendor/bin/rector process ' . implode(' ', $projectDirs) . ' --config=rector-argtyper.php', $projectPath);
-echo "Command: " . $command;
+$command = sprintf(
+    'vendor/bin/rector process ' . implode(' ', $projectDirs) . ' --config=rector-argtyper.php',
+    $projectPath
+);
+echo 'Command: ' . $command;
 exec($command);
-
 
 final class ProjectDirFinder
 {
@@ -66,7 +72,7 @@ final class ProjectDirFinder
         $dirs = [];
         foreach ($fileInfos as $fileInfo) {
             $dirs[] = $fileInfo->getPathname();
-        };
+        }
 
         \Webmozart\Assert\Assert::notEmpty($dirs);
         \Webmozart\Assert\Assert::allString($dirs);
@@ -74,6 +80,5 @@ final class ProjectDirFinder
         return $dirs;
     }
 }
-
 
 // 2. run rector with local config
