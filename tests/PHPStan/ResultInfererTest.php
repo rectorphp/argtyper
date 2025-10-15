@@ -85,8 +85,14 @@ final class ResultInfererTest extends RuleTestCase
         $directRegistry = new DirectRegistry([$this->getRule()]);
 
         /** @var Analyser $analyser */
-        $analyser = PrivatesAccessor::callMethod($this, 'getAnalyser', $directRegistry);
+        $analyser = $this->callPrivateMethod($this, 'getAnalyser', $directRegistry);
 
         return $analyser;
+    }
+
+    private function callPrivateMethod(object $object, string $methodName, mixed ...$args): mixed
+    {
+        $reflectionMethod = new \ReflectionMethod($object, $methodName);
+        return $reflectionMethod->invoke($object, ...$args);
     }
 }
