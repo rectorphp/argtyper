@@ -52,7 +52,7 @@ $command = sprintf(
 //echo 'Command: ' . $command;
 exec($command);
 
-echo PHP_EOL.
+echo PHP_EOL;
 echo 'Finished! Now go check the project types!' . PHP_EOL;
 
 final class ProjectDirFinder
