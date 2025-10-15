@@ -31,11 +31,7 @@
         }
     },
     "config": {
-        "sort-packages": true,
-        "platform-check": false,
-        "allow-plugins": {
-            "phpstan/extension-installer": true
-        }
+        "sort-packages": true
     },
     "scripts": {
         "check-cs": "vendor/bin/ecs check --ansi",
