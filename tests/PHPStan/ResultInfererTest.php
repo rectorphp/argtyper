@@ -12,7 +12,6 @@ use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\StringType;
-use Rector\ArgTyper\Helpers\PrivatesAccessor;
 use Rector\ArgTyper\PHPStan\Collectors\MethodCallArgTypeCollector;
 use Rector\ArgTyper\PHPStan\Collectors\StaticCallArgTypeCollector;
 use Rector\ArgTyper\PHPStan\Rule\DumpMethodCallArgTypesRule;

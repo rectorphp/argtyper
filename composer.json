@@ -3,7 +3,7 @@
     "description": "Analyze real method argument types, and add them as type declarations",
     "license": "proprietary",
     "bin": [
-        "bin/argtyper.php",
+        "bin/argtyper.php"
     ],
     "require": {
         "php": "^8.2",
