@@ -33,7 +33,7 @@ $command = sprintf(
     ) . ' --configuration=phpstan-data-collector.neon --autoload-file=%s/vendor/autoload.php',
     $projectPath
 );
-echo 'Command: ' . $command;
+//echo 'Command: ' . $command;
 exec($command);
 
 echo 'Finished!' . PHP_EOL . PHP_EOL;
@@ -43,12 +43,17 @@ $collectedFileItems = \Nette\Utils\Json::decode($collectedFileContents);
 
 echo 'Found ' . count($collectedFileItems) . ' type items' . PHP_EOL . PHP_EOL;
 
+echo '2. Running Rector to add types...' . PHP_EOL . PHP_EOL;
+
 $command = sprintf(
     'vendor/bin/rector process ' . implode(' ', $projectDirs) . ' --config=rector-argtyper.php',
     $projectPath
 );
-echo 'Command: ' . $command;
+//echo 'Command: ' . $command;
 exec($command);
+
+echo PHP_EOL.
+echo 'Finished! Now go check the project types!' . PHP_EOL;
 
 final class ProjectDirFinder
 {
