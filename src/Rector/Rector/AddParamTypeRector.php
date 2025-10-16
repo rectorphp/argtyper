@@ -83,7 +83,7 @@ final class AddParamTypeRector extends AbstractRector
                 $isNullable = $this->isNullable($param);
                 $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
 
-                if ($classMethodType->isObjectType() && $param->type instanceof Name) {
+                if ($classMethodType->isObjectType() && ($param->type instanceof Name || ($param->type instanceof NullableType && $param->type->type instanceof Name))) {
                     // skip already set object type
                     continue;
                 }

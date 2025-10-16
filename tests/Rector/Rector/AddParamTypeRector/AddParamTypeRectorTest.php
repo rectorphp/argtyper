@@ -31,6 +31,18 @@ final class AddParamTypeRectorTest extends AbstractRectorTestCase
                 'position' => 0,
                 'type' => IntegerType::class,
             ],
+            [
+                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\AddParamTypeRector\Fixture\KeepNullableDateTimeInterface',
+                'method' => 'record',
+                'position' => 0,
+                'type' => 'object:' . \DateTime::class,
+            ],
+            [
+                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\AddParamTypeRector\Fixture\KeepDateTimeInterface',
+                'method' => 'record',
+                'position' => 0,
+                'type' => 'object:' . \DateTime::class,
+            ],
         ];
 
         $collectedDataJson = Json::encode($collectedData, pretty: true);

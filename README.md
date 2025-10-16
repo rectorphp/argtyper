@@ -8,7 +8,6 @@ There are more known types in your project then it meets the eye. This tool find
 * [ ] handle New_ nodes
 * [ ] simpler run with `vendor/bin/argtyper`
 * [ ] also add `--dry-run`
-* [ ] avoid `DateTime` vs `DateTimeInteface` override
 * [ ] avoid specific name type override with short clas
 
 
