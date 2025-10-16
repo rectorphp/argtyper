@@ -24,6 +24,8 @@ use Rector\VendorLocker\ParentClassMethodTypeOverrideGuard;
  * @api used in rector custom config
  *
  * Load data from phpstan-collected-data and add types to parameters if not nullable
+ *
+ * @see \Rector\ArgTyper\Tests\Rector\Rector\AddParamTypeRector\AddParamTypeRectorTest
  */
 final class AddParamTypeRector extends AbstractRector
 {
