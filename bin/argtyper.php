@@ -89,7 +89,6 @@ final class ArgTyper
     }
 }
 
-
 $argTyper = new ArgTyper();
 $projectPath = $argv[1] ?? null;
 $argTyper->process($projectPath);
