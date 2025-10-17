@@ -21,7 +21,7 @@ final class FilesLoader
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param array<mixed, mixed> $data
      */
     public static function dumpJsonToFile(string $filePath, array $data): void
     {
