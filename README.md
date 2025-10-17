@@ -12,6 +12,8 @@ That's it.
 composer require rector/argtyper --dev
 ```
 
+<br>
+
 ## Usage
 
 Run on your project directory:
