@@ -18,7 +18,7 @@ use Rector\ArgTyper\PHPStan\Collectors\StaticCallArgTypeCollector;
 /**
  * @implements Rule<CollectedDataNode>
  */
-final class DumpMethodCallArgTypesRule implements Rule
+final class DumpCallLikeArgTypesRule implements Rule
 {
     /**
      * @return class-string<Node>

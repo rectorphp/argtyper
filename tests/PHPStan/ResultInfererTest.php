@@ -14,12 +14,12 @@ use PHPStan\Type\IntegerType;
 use PHPStan\Type\StringType;
 use Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector;
 use Rector\ArgTyper\PHPStan\Collectors\StaticCallArgTypeCollector;
-use Rector\ArgTyper\PHPStan\Rule\DumpMethodCallArgTypesRule;
+use Rector\ArgTyper\PHPStan\Rule\DumpCallLikeArgTypesRule;
 use Rector\ArgTyper\Tests\PHPStan\Source\SomeObject;
 use Webmozart\Assert\Assert;
 
 /**
- * @extends RuleTestCase<DumpMethodCallArgTypesRule>
+ * @extends RuleTestCase<DumpCallLikeArgTypesRule>
  */
 final class ResultInfererTest extends RuleTestCase
 {
@@ -41,7 +41,7 @@ final class ResultInfererTest extends RuleTestCase
 
     protected function getRule(): Rule
     {
-        return new DumpMethodCallArgTypesRule();
+        return new DumpCallLikeArgTypesRule();
     }
 
     /**

@@ -6,7 +6,9 @@ namespace Rector\ArgTyper\PHPStan\Collectors;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\CallLike;
+use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
@@ -51,38 +53,84 @@ final class CallLikeArgTypeCollector implements Collector
      */
     public function processNode(Node $node, Scope $scope): ?array
     {
-        // nothing magic here
-        if ($node->isFirstClassCallable()) {
+        // nothing to find here
+        if ($node->isFirstClassCallable() || $node->getArgs() === []) {
+            return null;
+        }
+
+        if ($node instanceof FuncCall) {
+            // @todo handle somewhere else
             return null;
         }
 
         // 1.
-        if ($node instanceof MethodCall || $node instanceof NullsafeMethodCall) {
-        }
-
-        // 2.
-        if ($node instanceof Node\Expr\New_) {
-
-        }
-
-        if (! $node->name instanceof Identifier) {
+        if ($node instanceof New_) {
+            $methodName = '__construct';
+        } elseif ($node->name instanceof Identifier) {
+            $methodName = $node->name->toString();
+        } else {
             return null;
         }
 
-        // we need at least some args
-        if ($node->getArgs() === []) {
+        $classReflection = $this->callLikeClassReflectionResolver->resolve($node);
+
+        // nothing to find here
+        if (! $classReflection instanceof ClassReflection) {
             return null;
         }
+
+        if ($this->shouldSkipClassReflection($classReflection)) {
+            return null;
+        }
+
+        if (! $classReflection->hasMethod($methodName)) {
+            return null;
+        }
+
+
+
+        $className = $classReflection->getName();
+
+        $classNameTypes = [];
+        foreach ($node->getArgs() as $key => $arg) {
+            // handle later, now work with order
+            if ($arg->name instanceof Identifier) {
+                continue;
+            }
+
+            $argType = $scope->getType($arg->value);
+            if ($this->shouldSkipType($argType)) {
+                continue;
+            }
+
+            if ($argType instanceof TypeWithClassName) {
+                $type = 'object:' . $argType->getClassName();
+            } else {
+                $type = TypeMapper::mapConstantToGenericTypes($argType);
+                $type = $type::class;
+            }
+
+            $classNameTypes[] = [$className, $methodCallName, $key, $type];
+        }
+
+        // nothing to return
+        if ($classNameTypes === []) {
+            return null;
+        }
+
+        return $classNameTypes;
+
 
         $methodCallName = $node->name->toString();
         $callerType = $scope->getType($node->var);
+
+        ProjectAutoloadGuard::ensureProjectAutoloadFileIsLoaded($callerType);
 
         // @todo check if this can be less strict, e.g. for nullable etc.
         if (! $callerType->isObject()->yes()) {
             return null;
         }
 
-        ProjectAutoloadGuard::ensureProjectAutoloadFileIsLoaded($callerType);
 
         $classNameTypes = [];
 
@@ -129,23 +177,6 @@ final class CallLikeArgTypeCollector implements Collector
         }
 
         return $classNameTypes;
-    }
-
-    private function ensureProjectAutoloadFileIsLoaded(\PHPStan\Type\Type $callerType): void
-    {
-        if (! $callerType instanceof ObjectType) {
-            return;
-        }
-
-        // call reflection is loaded properly
-        if ($callerType->getClassReflection() instanceof ClassReflection) {
-            return;
-        }
-
-        throw new ShouldNotHappenException(sprintf(
-            'Class reflection for "%s" class not found. Make sure you included the project autoload. --autoload-file=project/vendor/autoload.php',
-            $callerType->getClassName()
-        ));
     }
 
     private function shouldSkipClassReflection(ClassReflection $classReflection): bool

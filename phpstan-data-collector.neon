@@ -1,17 +1,12 @@
 parameters:
-    # avoid need of level
+    # avoid any other rules
     customRulesetUsed: true
 
 services:
     -
-        class: Rector\ArgTyper\PHPStan\Collectors\MethodCallArgTypeCollector
-        tags:
-            - phpstan.collector
-
-    -
-        class: Rector\ArgTyper\PHPStan\Collectors\StaticCallArgTypeCollector
+        class: Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector
         tags:
             - phpstan.collector
 
 rules:
-    - Rector\ArgTyper\PHPStan\Rule\DumpMethodCallArgTypesRule
+    - Rector\ArgTyper\PHPStan\Rule\DumpCallLikeArgTypesRule
