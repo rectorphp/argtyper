@@ -25,31 +25,17 @@ final class FuncCallTypesConfigurationProvider
      */
     public function matchByPosition(Function_ $function): array
     {
-        $scope = ScopeFetcher::fetch($function);
-
-        $classReflection = $scope->getClassReflection();
-
-        if (! $classReflection instanceof ClassReflection) {
-            return [];
-        }
-
         $functionTypes = $this->provide();
 
-        $className = $classReflection->getName();
-        $methodName = $function->name->toString();
+        $functionName = $function->name->toString();
 
         $matchingFunctionTypes = array_filter($functionTypes, function (FuncCallType $funcCallType) use (
-            $className,
-            $methodName
+            $functionName
         ): bool {
-            if ($funcCallType->getFunction() !== $className) {
-                return false;
-            }
-
-            return $funcCallType->getClass() === $methodName;
+            return $funcCallType->getFunction() === $functionName;
         });
 
-        Assert::allIsInstanceOf($matchingFunctionTypes, ClassMethodType::class);
+        Assert::allIsInstanceOf($matchingFunctionTypes, FuncCallType::class);
 
         $typesByPosition = [];
 
