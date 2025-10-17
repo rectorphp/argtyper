@@ -70,6 +70,10 @@ final class DumpFuncCallArgTypesRuleTest extends RuleTestCase
         $this->assertNotEmpty($collectedDatas);
 
         $this->assertCount(1, $collectedDatas);
+
+        dump($collectedDatas);
+        die;
+
         $this->assertNotEmpty($collectedDatas[$fixtureFilePath][FuncCallTypeCollector::class]);
 
         return $collectedDatas[$fixtureFilePath][FuncCallTypeCollector::class];
