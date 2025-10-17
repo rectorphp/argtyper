@@ -20,9 +20,9 @@ use Webmozart\Assert\Assert;
 /**
  * @extends RuleTestCase<DumpCallLikeArgTypesRule>
  */
-final class ResultInfererTest extends RuleTestCase
+final class DumpCallLikeArgTypesRuleTest extends RuleTestCase
 {
-    public function test(): void
+    public function testMethodCallAndStaticCall(): void
     {
         $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/MethodCalledArgs.php');
 
@@ -31,6 +31,14 @@ final class ResultInfererTest extends RuleTestCase
 
         $secondItem = $collectedData[1][0];
         $this->assertSame([SomeObject::class, 'setAge', 0, IntegerType::class], $secondItem);
+    }
+
+    public function testConstructor(): void
+    {
+        $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/ConstructorArgs.php');
+
+        dump($collectedData);
+        die;
     }
 
     /**
@@ -67,6 +75,10 @@ final class ResultInfererTest extends RuleTestCase
         $analyserResult = $analyser->analyse([$fixtureFilePath], null, null, true);
 
         $collectedDatas = $analyserResult->getCollectedData();
+
+        dump($collectedDatas);
+        die;
+
         $this->assertNotEmpty($collectedDatas);
 
         $this->assertCount(1, $collectedDatas);
