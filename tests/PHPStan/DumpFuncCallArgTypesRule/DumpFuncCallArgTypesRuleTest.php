@@ -11,10 +11,8 @@ use PHPStan\Rules\DirectRegistry;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPStan\Type\IntegerType;
-use PHPStan\Type\StringType;
 use Rector\ArgTyper\PHPStan\Collectors\FuncCallTypeCollector;
 use Rector\ArgTyper\PHPStan\Rule\DumpFuncCallArgTypesRule;
-use Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\Source\SomeObject;
 use Webmozart\Assert\Assert;
 
 /**
@@ -27,10 +25,16 @@ final class DumpFuncCallArgTypesRuleTest extends RuleTestCase
         $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/SimpleFunctionCall.php');
 
         $firstItem = $collectedData[0][0];
-        $this->assertSame(['Rector\ArgTyper\Tests\PHPStan\DumpFuncCallArgTypesRule\Source\someFunction', 0, IntegerType::class], $firstItem);
+        $this->assertSame(
+            ['Rector\ArgTyper\Tests\PHPStan\DumpFuncCallArgTypesRule\Source\someFunction', 0, IntegerType::class],
+            $firstItem
+        );
 
         $secondItem = $collectedData[0][1];
-        $this->assertSame(['Rector\ArgTyper\Tests\PHPStan\DumpFuncCallArgTypesRule\Source\someFunction', 1, IntegerType::class], $secondItem);
+        $this->assertSame(
+            ['Rector\ArgTyper\Tests\PHPStan\DumpFuncCallArgTypesRule\Source\someFunction', 1, IntegerType::class],
+            $secondItem
+        );
     }
 
     /**
