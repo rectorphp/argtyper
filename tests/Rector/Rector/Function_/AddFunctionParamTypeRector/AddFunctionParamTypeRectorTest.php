@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddFunctionParamTypeRector;
+namespace Rector\ArgTyper\Tests\Rector\Rector\Function_\AddFunctionParamTypeRector;
 
 use PHPStan\Type\StringType;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -10,6 +10,9 @@ use Rector\ArgTyper\Configuration\FuncCallTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\ValueObject\FuncCallType;
 use Rector\Testing\PHPUnit\AbstractRectorTestCase;
 
+/**
+ * @see \Rector\ArgTyper\Rector\Rector\Function_\AddFunctionParamTypeRector
+ */
 final class AddFunctionParamTypeRectorTest extends AbstractRectorTestCase
 {
     #[DataProvider('provideData')]
