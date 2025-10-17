@@ -1,6 +1,6 @@
 <?php
 
-namespace Rector\ArgTyper\Tests\Rector\Rector\AddParamIterableDocblockTypeRector\Fixture;
+namespace Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamIterableDocblockTypeRector\Fixture;
 
 final class SomeClass
 {

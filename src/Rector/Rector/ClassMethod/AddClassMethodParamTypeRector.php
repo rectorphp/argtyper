@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\Rector\Rector;
+namespace Rector\ArgTyper\Rector\Rector\ClassMethod;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\ConstFetch;
@@ -25,9 +25,9 @@ use Rector\VendorLocker\ParentClassMethodTypeOverrideGuard;
  *
  * Load data from phpstan-collected-data and add types to parameters if not nullable
  *
- * @see \Rector\ArgTyper\Tests\Rector\Rector\AddParamTypeRector\AddParamTypeRectorTest
+ * @see \Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\AddClassMethodParamTypeRectorTest
  */
-final class AddParamTypeRector extends AbstractRector
+final class AddClassMethodParamTypeRector extends AbstractRector
 {
     public function __construct(
         private readonly CallLikeTypesConfigurationProvider $classMethodTypesConfigurationProvider,

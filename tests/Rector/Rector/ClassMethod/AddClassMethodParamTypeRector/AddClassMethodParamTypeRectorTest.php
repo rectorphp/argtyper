@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\Tests\Rector\Rector\AddParamIterableDocblockTypeRector;
+namespace Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector;
 
+use PHPStan\Type\IntegerType;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\Testing\PHPUnit\AbstractRectorTestCase;
 
-final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCase
+final class AddClassMethodParamTypeRectorTest extends AbstractRectorTestCase
 {
     #[DataProvider('provideData')]
     public function test(string $filePath): void
@@ -20,12 +21,25 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
         }
 
         // 2. create temp dump
+
         $collectedData = [
             [
-                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\AddParamIterableDocblockTypeRector\Fixture\SomeClass',
-                'method' => 'run',
+                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\SkipParentContract',
+                'method' => 'checkItem',
                 'position' => 0,
-                'type' => 'array<int, string>',
+                'type' => IntegerType::class,
+            ],
+            [
+                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\KeepNullableDateTimeInterface',
+                'method' => 'record',
+                'position' => 0,
+                'type' => 'object:' . \DateTime::class,
+            ],
+            [
+                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\KeepDateTimeInterface',
+                'method' => 'record',
+                'position' => 0,
+                'type' => 'object:' . \DateTime::class,
             ],
         ];
 

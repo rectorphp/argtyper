@@ -1,6 +1,6 @@
 <?php
 
-namespace Rector\ArgTyper\Tests\Rector\Rector\AddParamTypeRector\Fixture;
+namespace Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture;
 
 final class KeepNullableDateTimeInterface
 {

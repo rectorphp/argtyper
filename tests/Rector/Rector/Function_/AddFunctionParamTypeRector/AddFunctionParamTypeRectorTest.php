@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\Tests\Rector\Rector\AddParamTypeRector;
+namespace Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddFunctionParamTypeRector;
 
+use PhpCsFixer\Config;
 use PHPStan\Type\IntegerType;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Rector\ArgTyper\Enum\ConfigFilePath;
+use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\Testing\PHPUnit\AbstractRectorTestCase;
 
-final class AddParamTypeRectorTest extends AbstractRectorTestCase
+final class AddFunctionParamTypeRectorTest extends AbstractRectorTestCase
 {
     #[DataProvider('provideData')]
     public function test(string $filePath): void
@@ -24,36 +26,30 @@ final class AddParamTypeRectorTest extends AbstractRectorTestCase
 
         $collectedData = [
             [
-                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\AddParamTypeRector\Fixture\SkipParentContract',
+                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\SkipParentContract',
                 'method' => 'checkItem',
                 'position' => 0,
                 'type' => IntegerType::class,
             ],
             [
-                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\AddParamTypeRector\Fixture\KeepNullableDateTimeInterface',
+                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\KeepNullableDateTimeInterface',
                 'method' => 'record',
                 'position' => 0,
                 'type' => 'object:' . \DateTime::class,
             ],
             [
-                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\AddParamTypeRector\Fixture\KeepDateTimeInterface',
+                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\KeepDateTimeInterface',
                 'method' => 'record',
                 'position' => 0,
                 'type' => 'object:' . \DateTime::class,
             ],
         ];
 
-        $collectedDataJson = json_encode($collectedData, JSON_PRETTY_PRINT);
-        file_put_contents(ConfigFilePath::callLikes(), $collectedDataJson);
+        // @todo improt this one to decoupel from filesytem, use in-memory structure, e.g. set to config provider service
+        FilesLoader::dumpJsonToFile(ConfigFilePath::funcCalls(), $collectedData);
 
         // 2. test here
         $this->doTestFile($filePath);
-
-        // 3. restore config
-        if (file_exists($tempFilePath)) {
-            copy($tempFilePath, ConfigFilePath::callLikes());
-            unlink($tempFilePath);
-        }
     }
 
     public static function provideData(): \Iterator

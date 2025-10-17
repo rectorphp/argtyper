@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\Rector\Rector;
+namespace Rector\ArgTyper\Rector\Rector\ClassMethod;
 
 use PhpParser\Node;
 use PhpParser\Node\Param;
