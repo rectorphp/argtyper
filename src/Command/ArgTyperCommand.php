@@ -102,7 +102,7 @@ final class ArgTyperCommand extends Command
         $dirs = array_map(static fn (string $d) => escapeshellarg($d), $projectDirs);
 
         $cmd = sprintf(
-            'vendor/bin/rector process %s --config=%s --clear-cachej',
+            'vendor/bin/rector process %s --config=%s --clear-cache',
             implode(' ', $dirs),
             escapeshellarg('rector-argtyper.php')
         );
