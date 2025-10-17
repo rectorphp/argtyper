@@ -18,7 +18,7 @@ final class FuncCallTypesConfigurationProvider
     private array $funcCallTypes = [];
 
     /**
-     * @return FuncCallType[]
+     * @return array<int, FuncCallType[]>
      */
     public function matchByPosition(Function_ $function): array
     {
