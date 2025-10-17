@@ -5,8 +5,9 @@ parameters:
 
     level: 8
 
-    reportUnmatchedIgnoredErrors: false
-    # make sure iterable docblock are checked
+    #reportUnmatchedIgnoredErrors: false
+
+    # make sure iterable docblock are checked with real assertions
     treatPhpDocTypesAsCertain: false
 
     ignoreErrors:
@@ -14,18 +15,10 @@ parameters:
         - '#Calling PHPStan\\(.*?) is not covered by backward compatibility promise\. The method might change in a minor PHPStan version#'
         - identifier: phpstanApi.constructor
 
-        # collector superfluous generics
-        - '#Method Rector\\ArgTyper\\Tests\\PHPStan\\ResultInfererTest\:\:getCollectors\(\) return type with generic interface PHPStan\\Collectors\\Collector does not specify its types\: TNodeType, TValue#'
-
         - identifier: phpstanApi.instanceofType
 
         # false positive
         - '#with generic interface PHPStan\\Collectors\\Collector#'
-
-        # possibly requires fix
-        -
-            message: '#Binary operation "." between array{string, string, string, string} and array{string, string, string, string} results in an error#'
-            path: src/PHPStan/Rule/DumpMethodCallArgTypesRule.php
 
     excludePaths:
         - "*/Fixture/*"
