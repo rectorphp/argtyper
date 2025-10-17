@@ -5,23 +5,27 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\Helpers;
 
 use SplFileInfo;
+use Symfony\Component\Finder\Finder;
 use Webmozart\Assert\Assert;
 
 final class ProjectSourceDirFinder
 {
     /**
+     * Directory names commonly used as PHP source directories
+     * @var string[]
+     */
+    private const POSSIBLE_SOURCE_DIRECTORIES = ['src', 'lib', 'app', 'tests'];
+
+    /**
      * @return string[]
      */
     public function find(string $projectPath): array
     {
-        // find directories: src, lib, app, tests
-        $possibleDirectories = ['src', 'lib', 'app', 'tests'];
-
-        $finder = (new \Symfony\Component\Finder\Finder())
+        $finder = (new Finder())
             ->in($projectPath)
             ->directories()
             ->depth('== 0')
-            ->name($possibleDirectories);
+            ->name(self::POSSIBLE_SOURCE_DIRECTORIES);
 
         /** @var SplFileInfo[] $fileInfos */
         $fileInfos = iterator_to_array($finder->getIterator());
