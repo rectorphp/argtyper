@@ -59,7 +59,7 @@ final class DumpFuncCallArgTypesRuleTest extends RuleTestCase
      */
     private function collectDataInFile(string $fixtureFilePath): array
     {
-        Assert::fileExCallLikeArgTypeCollectorists($fixtureFilePath);
+        Assert::fileExists($fixtureFilePath);
 
         $analyser = $this->createAnalyser();
 
@@ -70,9 +70,9 @@ final class DumpFuncCallArgTypesRuleTest extends RuleTestCase
         $this->assertNotEmpty($collectedDatas);
 
         $this->assertCount(1, $collectedDatas);
-        $this->assertNotEmpty($collectedDatas[$fixtureFilePath][CallLikeArgTypeCollector::class]);
+        $this->assertNotEmpty($collectedDatas[$fixtureFilePath][FuncCallTypeCollector::class]);
 
-        return $collectedDatas[$fixtureFilePath][CallLikeArgTypeCollector::class];
+        return $collectedDatas[$fixtureFilePath][FuncCallTypeCollector::class];
     }
 
     private function createAnalyser(): Analyser
