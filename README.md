@@ -1,4 +1,4 @@
-# Arg Typer
+# Arg Typer - Fill param types, based on passed args
 
 There are more known types in your project then it meets the eye. This tool finds real argument types in method calls and functions call in your PHP project. Then runs Rector to complete known param type declarations where missing. 
 
