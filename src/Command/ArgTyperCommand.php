@@ -99,11 +99,9 @@ final class ArgTyperCommand extends Command
     {
         $this->symfonyStyle->title('2. Running Rector to add types...');
 
-        $dirs = array_map(static fn (string $d) => escapeshellarg($d), $projectDirs);
-
         $cmd = sprintf(
             'vendor/bin/rector process %s --config=%s --clear-cache',
-            implode(' ', $dirs),
+            implode(' ', $projectDirs),
             escapeshellarg('rector-argtyper.php')
         );
 
@@ -127,9 +125,5 @@ final class ArgTyperCommand extends Command
             $this->symfonyStyle->writeln(sprintf('<info>$ %s</info>', $commandLine));
             $this->symfonyStyle->newLine();
         }
-
-        $process->run(function ($type, $buffer) {
-            $this->symfonyStyle->write($buffer);
-        });
     }
 }
