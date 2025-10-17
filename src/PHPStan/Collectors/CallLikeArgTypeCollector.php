@@ -67,7 +67,7 @@ final class CallLikeArgTypeCollector implements Collector
             return null;
         }
 
-        $classReflection = $this->callLikeClassReflectionResolver->resolve($node);
+        $classReflection = $this->callLikeClassReflectionResolver->resolve($node, $scope);
 
         // nothing to find here
         if (! $classReflection instanceof ClassReflection) {
@@ -103,7 +103,7 @@ final class CallLikeArgTypeCollector implements Collector
                 $type = $type::class;
             }
 
-            $classNameTypes[] = [$className, $methodCallName, $key, $type];
+            $classNameTypes[] = [$className, $methodName, $key, $type];
         }
 
         // nothing to return
@@ -113,7 +113,6 @@ final class CallLikeArgTypeCollector implements Collector
 
         return $classNameTypes;
 
-        $methodCallName = $node->name->toString();
         $callerType = $scope->getType($node->var);
 
         ProjectAutoloadGuard::ensureProjectAutoloadFileIsLoaded($callerType);
