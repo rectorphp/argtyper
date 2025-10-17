@@ -72,9 +72,6 @@ final class CallLikeArgTypeCollector implements Collector
 
         $classReflection = $this->callLikeClassReflectionResolver->resolve($node, $scope);
 
-        dump($classReflection);
-        die;
-
         // nothing to find here
         if (! $classReflection instanceof ClassReflection) {
             return null;
