@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\Tests\PHPStan;
+namespace PHPStan\DumpCallLikeArgTypesRule;
 
 use PHPStan\Analyser\Analyser;
 use PHPStan\Analyser\AnalyserResult;
 use PHPStan\Collectors\Collector;
+use PHPStan\DumpCallLikeArgTypesRule\Source\ObjectWithConstructor;
+use PHPStan\DumpCallLikeArgTypesRule\Source\SomeObject;
 use PHPStan\Rules\DirectRegistry;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
@@ -14,8 +16,6 @@ use PHPStan\Type\IntegerType;
 use PHPStan\Type\StringType;
 use Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector;
 use Rector\ArgTyper\PHPStan\Rule\DumpCallLikeArgTypesRule;
-use Rector\ArgTyper\Tests\PHPStan\Source\ObjectWithConstructor;
-use Rector\ArgTyper\Tests\PHPStan\Source\SomeObject;
 use Webmozart\Assert\Assert;
 
 /**
@@ -48,7 +48,7 @@ final class DumpCallLikeArgTypesRuleTest extends RuleTestCase
      */
     public static function getAdditionalConfigFiles(): array
     {
-        return [__DIR__ . '/../../phpstan-data-collector.neon'];
+        return [__DIR__ . '/../../../phpstan-data-collector.neon'];
     }
 
     protected function getRule(): Rule

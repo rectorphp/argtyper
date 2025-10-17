@@ -24,8 +24,8 @@ final class ProjectAutoloadGuard
 
         throw new ShouldNotHappenException(sprintf(
             'Class reflection for "%s" class not found. Make sure you included the project autoload.%svendor/bin/phpstan ... --autoload-file=project/vendor/autoload.php',
-            PHP_EOL,
-            $callerType->getClassName()
+            $callerType->getClassName(),
+            PHP_EOL
         ));
     }
 }

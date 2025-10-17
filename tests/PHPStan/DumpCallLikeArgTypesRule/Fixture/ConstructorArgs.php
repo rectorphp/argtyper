@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\Tests\PHPStan\Fixture;
+namespace PHPStan\DumpCallLikeArgTypesRule\Fixture;
 
-use Rector\ArgTyper\Tests\PHPStan\Source\ObjectWithConstructor;
+use PHPStan\DumpCallLikeArgTypesRule\Source\ObjectWithConstructor;
 
 final class ConstructorArgs
 {
