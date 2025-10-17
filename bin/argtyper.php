@@ -94,6 +94,12 @@ final class ArgTyper
     }
 }
 
+$argTyperCommand = new \Rector\ArgTyper\Command\ArgTyperCommand();
+$argTyperCommand->execute(
+    new \Symfony\Component\Console\Input\ArgvInput(),
+    new ConsoleOutput(),
+);
+
 $argTyper = new ArgTyper();
 $projectPath = $argv[1] ?? null;
 
