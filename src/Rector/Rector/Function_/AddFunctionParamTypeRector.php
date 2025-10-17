@@ -51,6 +51,7 @@ final class AddFunctionParamTypeRector extends AbstractRector
                 continue;
             }
 
+            $hasChanged = true;
             dump($paramFunctionTypes);
             die;
         }

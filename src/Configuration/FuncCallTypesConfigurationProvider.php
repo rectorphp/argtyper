@@ -23,7 +23,7 @@ final class FuncCallTypesConfigurationProvider
     public function matchByPosition(Function_ $function): array
     {
         $functionTypes = $this->provide();
-        $functionName = $function->name->toString();
+        $functionName = $function->namespacedName->toString();
 
         $matchingFunctionTypes = array_filter($functionTypes, function (FuncCallType $funcCallType) use (
             $functionName

@@ -40,17 +40,7 @@ final class CallLikeTypesConfigurationProvider
         $className = $classReflection->getName();
         $methodName = $classMethod->name->toString();
 
-        $matchingClassMethodTypes = array_filter($classMethodTypes, function (ClassMethodType $classMethodType) use (
-            $className,
-            $methodName
-        ): bool {
-            if ($classMethodType->getClass() !== $className) {
-                return false;
-            }
-
-            return $classMethodType->getMethod() === $methodName;
-        });
-
+        $matchingClassMethodTypes = $this->matchByClassAndMethodNames($classMethodTypes, $className, $methodName);
         Assert::allIsInstanceOf($matchingClassMethodTypes, ClassMethodType::class);
 
         $classMethodTypesByPosition = [];
@@ -116,5 +106,26 @@ final class CallLikeTypesConfigurationProvider
         $this->classMethodTypes = $classMethodTypes;
 
         return $classMethodTypes;
+    }
+
+    /**
+     * @param array<ClassMethodType> $classMethodTypes
+     * @return array<ClassMethodType>
+     */
+    private function matchByClassAndMethodNames(array $classMethodTypes, string $className, string $methodName): array
+    {
+        return array_filter(
+            $classMethodTypes,
+            function (ClassMethodType $classMethodType) use (
+                $className,
+                $methodName
+            ): bool {
+                if ($classMethodType->getClass() !== $className) {
+                    return false;
+                }
+
+                return $classMethodType->getMethod() === $methodName;
+            }
+        );
     }
 }
