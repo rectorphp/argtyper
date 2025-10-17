@@ -13,16 +13,11 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Type\ArrayType;
-use PHPStan\Type\Constant\ConstantArrayType;
-use PHPStan\Type\ErrorType;
 use PHPStan\Type\IntersectionType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
-use PHPStan\Type\VerbosityLevel;
-use Rector\ArgTyper\Configuration\ProjectAutoloadGuard;
 use Rector\ArgTyper\PHPStan\CallLikeClassReflectionResolver;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
