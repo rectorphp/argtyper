@@ -85,7 +85,6 @@ final class CallLikeArgTypeCollector implements Collector
             return null;
         }
 
-
         $className = $classReflection->getName();
 
         $classNameTypes = [];
