@@ -33,7 +33,6 @@ final class AddClassMethodParamTypeRector extends AbstractRector
         private readonly CallLikeTypesConfigurationProvider $classMethodTypesConfigurationProvider,
         private readonly ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard
     ) {
-
     }
 
     public function getNodeTypes(): array

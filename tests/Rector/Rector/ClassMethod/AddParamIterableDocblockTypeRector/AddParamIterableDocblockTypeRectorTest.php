@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamIterableDocblockTypeRector;
 
 use PHPUnit\Framework\Attributes\DataProvider;
-use Rector\ArgTyper\Enum\ConfigFilePath;
+use Rector\ArgTyper\Configuration\CallLikeTypesConfigurationProvider;
+use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
+use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamIterableDocblockTypeRector\Fixture\SomeClass;
 use Rector\Testing\PHPUnit\AbstractRectorTestCase;
 
 final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCase
@@ -13,33 +15,15 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
     #[DataProvider('provideData')]
     public function test(string $filePath): void
     {
-        // 1. backup current phpstan dump
-        $tempFilePath = ConfigFilePath::callLikes() . '-temp';
-        if (file_exists(ConfigFilePath::callLikes())) {
-            copy(ConfigFilePath::callLikes(), $tempFilePath);
-        }
+        /** @var CallLikeTypesConfigurationProvider $callLikeTypesConfigurationProvider */
+        $callLikeTypesConfigurationProvider = $this->getContainer()->get(CallLikeTypesConfigurationProvider::class);
 
-        // 2. create temp dump
-        $collectedData = [
-            [
-                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamIterableDocblockTypeRector\Fixture\SomeClass',
-                'method' => 'run',
-                'position' => 0,
-                'type' => 'array<int, string>',
-            ],
+        $classMethodTypes = [
+            new ClassMethodType(SomeClass::class, 'run', 0, 'array<int, string>'),
         ];
+        $callLikeTypesConfigurationProvider->seedClassMethodTypes($classMethodTypes);
 
-        $collectedDataJson = json_encode($collectedData, JSON_PRETTY_PRINT);
-        file_put_contents(ConfigFilePath::callLikes(), $collectedDataJson);
-
-        // 2. test here
         $this->doTestFile($filePath);
-
-        // 3. restore config
-        if (file_exists($tempFilePath)) {
-            copy($tempFilePath, ConfigFilePath::callLikes());
-            unlink($tempFilePath);
-        }
     }
 
     public static function provideData(): \Iterator
