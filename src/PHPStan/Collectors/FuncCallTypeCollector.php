@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\PHPStan\Collectors;
 
 use PhpParser\Node;
-use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Identifier;
