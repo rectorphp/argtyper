@@ -49,6 +49,7 @@ final class FuncCallTypesConfigurationProvider
     }
 
     /**
+     * @param array<FuncCallType> $funcCallTypes
      * @api used only in tests
      */
     public function seedTypes(array $funcCallTypes): void
