@@ -6,5 +6,4 @@ namespace Rector\ArgTyper\Tests\PHPStan;
 
 final class DataCollectorProvider
 {
-
 }
