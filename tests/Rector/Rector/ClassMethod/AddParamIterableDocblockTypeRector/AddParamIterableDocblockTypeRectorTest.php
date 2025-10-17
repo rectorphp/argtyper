@@ -18,7 +18,14 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
         $callLikeTypesConfigurationProvider = $this->getContainer()
             ->get(CallLikeTypesConfigurationProvider::class);
 
-        $classMethodTypes = [new ClassMethodType('Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamIterableDocblockTypeRector\Fixture\SomeClass', 'run', 0, 'array<int, string>')];
+        $classMethodTypes = [
+            new ClassMethodType(
+                'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamIterableDocblockTypeRector\Fixture\SomeClass',
+                'run',
+                0,
+                'array<int, string>'
+            ),
+        ];
         $callLikeTypesConfigurationProvider->seedClassMethodTypes($classMethodTypes);
 
         $this->doTestFile($filePath);

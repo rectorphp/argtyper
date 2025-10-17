@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\Configuration;
 
 use PhpParser\Node\Stmt\Function_;
-use PHPStan\Reflection\ClassReflection;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
-use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\ArgTyper\Rector\ValueObject\FuncCallType;
-use Rector\PHPStan\ScopeFetcher;
 use Webmozart\Assert\Assert;
 
 final class FuncCallTypesConfigurationProvider
