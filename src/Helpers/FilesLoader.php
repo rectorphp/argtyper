@@ -16,6 +16,8 @@ final class FilesLoader
         Assert::fileExists($filePath);
         $fileContents = file_get_contents($filePath);
 
+        Assert::string($fileContents);
+
         return json_decode($fileContents, true);
     }
 }
