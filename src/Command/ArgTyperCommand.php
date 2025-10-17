@@ -83,11 +83,7 @@ final class ArgTyperCommand extends Command
             escapeshellarg($projectPath . '/vendor/autoload.php')
         );
 
-        $this->runShell($cmd);
-
-        if ($isDebug) {
-            $this->symfonyStyle->note($cmd);
-        }
+        $this->runShell($cmd, $isDebug);
 
         // @todo consdier jsonln
         $collectedFileItems = FilesLoader::loadFileJson(ConfigFilePath::callLikes());
@@ -111,23 +107,25 @@ final class ArgTyperCommand extends Command
             escapeshellarg('rector-argtyper.php')
         );
 
-        $this->runShell($cmd);
-
         if ($isDebug) {
             $this->symfonyStyle->note($cmd);
         }
+        $this->runShell($cmd, $isDebug);
+
 
         $this->symfonyStyle->newLine();
         $this->symfonyStyle->success('Finished! Now go check the project new types!');
     }
 
-    private function runShell(string $commandLine): void
+    private function runShell(string $commandLine, bool $isDebug): void
     {
         // Use /bin/sh -lc to allow shell features in the composed commandline
         $process = Process::fromShellCommandline($commandLine);
         $process->setTimeout(null);
 
-        $this->symfonyStyle->writeln(sprintf('<info>$ %s</info>', $commandLine));
+        if ($isDebug) {
+            $this->symfonyStyle->writeln(sprintf('<info>$ %s</info>', $commandLine));
+        }
 
         $process->run(function ($type, $buffer) {
             $this->symfonyStyle->write($buffer);
