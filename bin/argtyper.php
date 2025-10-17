@@ -16,6 +16,8 @@ $argTyperCommand = new ArgTyperCommand(
     new SymfonyStyle(new ArrayInput([]), new ConsoleOutput())
 );
 
-$resultCode = $argTyperCommand->execute(new ArgvInput(), new ConsoleOutput());
+
+$argvInput = new ArgvInput(null, $argTyperCommand->getDefinition());
+$resultCode = $argTyperCommand->execute($argvInput, new ConsoleOutput());
 
 exit($resultCode);

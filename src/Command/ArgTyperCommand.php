@@ -7,7 +7,6 @@ namespace Rector\ArgTyper\Command;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Helpers\ProjectSourceDirFinder;
-use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,10 +16,6 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Webmozart\Assert\Assert;
 
-#[AsCommand(
-    name: 'argtyper:run',
-    description: 'Run PHPStan ArgTyper data collection and then apply types with Rector'
-)]
 final class ArgTyperCommand extends Command
 {
     public function __construct(
@@ -28,6 +23,19 @@ final class ArgTyperCommand extends Command
         private readonly SymfonyStyle $symfonyStyle,
     ) {
         parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this->setName('argtyper');
+
+        $this->addArgument(
+            'project-path',
+            InputArgument::REQUIRED,
+            'Path to the target project root'
+        );
+
+        $this->addOption('debug', null, null, 'Enable debug output');
     }
 
     /**
@@ -56,19 +64,6 @@ final class ArgTyperCommand extends Command
         $this->runRector($projectDirs, $isDebug);
 
         return Command::SUCCESS;
-    }
-
-    protected function configure(): void
-    {
-        $this->setName('argtyper');
-
-        $this->addArgument(
-            'project-path',
-            InputArgument::REQUIRED,
-            'Path to the target project root (must exist)'
-        );
-
-        $this->addOption('debug', null, null, 'Enable debug output');
     }
 
     /**
