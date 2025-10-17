@@ -18,6 +18,7 @@ use PHPStan\Type\MixedType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
+use Rector\ArgTyper\Configuration\ProjectAutoloadGuard;
 use Rector\ArgTyper\PHPStan\CallLikeClassReflectionResolver;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
@@ -30,7 +31,12 @@ final class CallLikeArgTypeCollector implements Collector
 
     public function __construct(ReflectionProvider $reflectionProvider)
     {
-        $this->callLikeClassReflectionResolver = new CallLikeClassReflectionResolver($reflectionProvider);
+        $projectAutoloadGuard = new ProjectAutoloadGuard();
+
+        $this->callLikeClassReflectionResolver = new CallLikeClassReflectionResolver(
+            $reflectionProvider,
+            $projectAutoloadGuard
+        );
     }
 
     public function getNodeType(): string
@@ -39,7 +45,7 @@ final class CallLikeArgTypeCollector implements Collector
     }
 
     /**
-     * @param CallLike $node
+     * @param New_|FuncCall|Node\Expr\MethodCall|Node\Expr\NullsafeMethodCall|Node\Expr\StaticCall $node
      */
     public function processNode(Node $node, Scope $scope): ?array
     {

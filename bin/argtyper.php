@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Rector\ArgTyper\Enum\ConfigFilePath;
+use Rector\ArgTyper\Helpers\FilesLoader;
+use Rector\ArgTyper\Helpers\ProjectSourceDirFinder;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -13,8 +15,8 @@ $projectPath = $argv[1] ?? null;
 \Webmozart\Assert\Assert::directory($projectPath, 'Give path to existing directory as 1st argument');
 
 // 2. run phpstan with local config on obvious code directories - use symfony/finder
-$projectDirFinder = new ProjectDirFinder();
-$projectDirs = $projectDirFinder->findProjectCodeDirs($projectPath);
+$projectSourceDirFinder = new ProjectSourceDirFinder();
+$projectDirs = $projectSourceDirFinder->find($projectPath);
 
 echo 'Found project code directories:' . PHP_EOL;
 foreach ($projectDirs as $projectDir) {
@@ -32,14 +34,11 @@ $command = sprintf(
     ) . ' --configuration=phpstan-data-collector.neon --autoload-file=%s/vendor/autoload.php',
     $projectPath
 );
-//echo 'Command: ' . $command;
 exec($command);
 
 echo 'Finished!' . PHP_EOL . PHP_EOL;
 
-$collectedFileContents = file_get_contents(ConfigFilePath::phpstanCollectedData());
-$collectedFileItems = json_decode($collectedFileContents, true);
-
+$collectedFileItems = FilesLoader::loadFileJson(ConfigFilePath::phpstanCollectedData());
 echo 'Found ' . count($collectedFileItems) . ' type items' . PHP_EOL . PHP_EOL;
 
 echo '2. Running Rector to add types...' . PHP_EOL . PHP_EOL;
@@ -53,36 +52,3 @@ exec($command);
 
 echo PHP_EOL;
 echo 'Finished! Now go check the project types!' . PHP_EOL;
-
-final class ProjectDirFinder
-{
-    /**
-     * @return string[]
-     */
-    public function findProjectCodeDirs(string $projectPath): array
-    {
-        // find directories: src, lib, app, tests
-        $possibleDirectories = ['src', 'lib', 'app', 'tests'];
-
-        $finder = (new \Symfony\Component\Finder\Finder())
-            ->in($projectPath)
-            ->directories()
-            ->depth('== 0')
-            ->name($possibleDirectories);
-
-        /** @var SplFileInfo[] $fileInfos */
-        $fileInfos = iterator_to_array($finder->getIterator());
-
-        $dirs = [];
-        foreach ($fileInfos as $fileInfo) {
-            $dirs[] = $fileInfo->getPathname();
-        }
-
-        \Webmozart\Assert\Assert::notEmpty($dirs);
-        \Webmozart\Assert\Assert::allString($dirs);
-
-        return $dirs;
-    }
-}
-
-// 2. run rector with local config
