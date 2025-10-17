@@ -20,7 +20,7 @@ use Rector\ArgTyper\PHPStan\TypeMapper;
  *
  * @see \Rector\ArgTyper\Tests\PHPStan\DumpFuncCallArgTypesRule\DumpFuncCallArgTypesRuleTest
  */
-final class FuncCallTypeCollector implements Collector
+final readonly class FuncCallTypeCollector implements Collector
 {
     private TypeMapper $typeMapper;
 

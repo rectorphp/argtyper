@@ -24,7 +24,7 @@ use Rector\Rector\AbstractRector;
 final class AddParamIterableDocblockTypeRector extends AbstractRector
 {
     public function __construct(
-        private readonly CallLikeTypesConfigurationProvider $classMethodTypesConfigurationProvider,
+        private readonly CallLikeTypesConfigurationProvider $callLikeTypesConfigurationProvider,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
         private readonly DocBlockUpdater $docBlockUpdater,
         private readonly DocStringTypeMapper $docStringTypeMapper
@@ -48,7 +48,7 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
                 continue;
             }
 
-            $classMethodTypesByPosition = $this->classMethodTypesConfigurationProvider->matchByPosition($classMethod);
+            $classMethodTypesByPosition = $this->callLikeTypesConfigurationProvider->matchByPosition($classMethod);
             if ($classMethodTypesByPosition === []) {
                 continue;
             }

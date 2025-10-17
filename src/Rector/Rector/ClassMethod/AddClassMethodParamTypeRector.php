@@ -30,7 +30,7 @@ use Rector\VendorLocker\ParentClassMethodTypeOverrideGuard;
 final class AddClassMethodParamTypeRector extends AbstractRector
 {
     public function __construct(
-        private readonly CallLikeTypesConfigurationProvider $classMethodTypesConfigurationProvider,
+        private readonly CallLikeTypesConfigurationProvider $callLikeTypesConfigurationProvider,
         private readonly ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard
     ) {
     }
@@ -52,7 +52,7 @@ final class AddClassMethodParamTypeRector extends AbstractRector
                 continue;
             }
 
-            $classMethodTypesByPosition = $this->classMethodTypesConfigurationProvider->matchByPosition($classMethod);
+            $classMethodTypesByPosition = $this->callLikeTypesConfigurationProvider->matchByPosition($classMethod);
             if ($classMethodTypesByPosition === []) {
                 continue;
             }

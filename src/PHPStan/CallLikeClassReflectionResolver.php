@@ -16,11 +16,11 @@ use PHPStan\Type\ObjectType;
 use PHPStan\Type\StaticType;
 use Rector\ArgTyper\Configuration\ProjectAutoloadGuard;
 
-final class CallLikeClassReflectionResolver
+final readonly class CallLikeClassReflectionResolver
 {
     public function __construct(
-        private readonly ReflectionProvider $reflectionProvider,
-        private readonly ProjectAutoloadGuard $projectAutoloadGuard
+        private ReflectionProvider $reflectionProvider,
+        private ProjectAutoloadGuard $projectAutoloadGuard
     ) {
     }
 

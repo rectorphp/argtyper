@@ -31,11 +31,10 @@ final class FuncCallTypesConfigurationProvider
 
         $functionTypes = $this->provide();
 
-        $matchingFunctionTypes = array_filter($functionTypes, function (FuncCallType $funcCallType) use (
-            $functionName
-        ): bool {
-            return $funcCallType->getFunction() === $functionName;
-        });
+        $matchingFunctionTypes = array_filter(
+            $functionTypes,
+            fn (FuncCallType $funcCallType): bool => $funcCallType->getFunction() === $functionName
+        );
 
         Assert::allIsInstanceOf($matchingFunctionTypes, FuncCallType::class);
 

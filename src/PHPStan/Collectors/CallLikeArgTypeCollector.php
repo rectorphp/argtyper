@@ -25,7 +25,7 @@ use Rector\ArgTyper\PHPStan\TypeMapper;
  *
  * @see \Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\DumpCallLikeArgTypesRuleTest
  */
-final class CallLikeArgTypeCollector implements Collector
+final readonly class CallLikeArgTypeCollector implements Collector
 {
     private CallLikeClassReflectionResolver $callLikeClassReflectionResolver;
 
