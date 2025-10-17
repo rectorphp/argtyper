@@ -14,6 +14,7 @@ use PHPStan\Type\IntegerType;
 use PHPStan\Type\StringType;
 use Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector;
 use Rector\ArgTyper\PHPStan\Rule\DumpCallLikeArgTypesRule;
+use Rector\ArgTyper\Tests\PHPStan\Source\ObjectWithConstructor;
 use Rector\ArgTyper\Tests\PHPStan\Source\SomeObject;
 use Webmozart\Assert\Assert;
 
@@ -39,15 +40,8 @@ final class DumpCallLikeArgTypesRuleTest extends RuleTestCase
 
         $newItemCollecdtedData = $collectedData[0];
 
-
-        $this->assertSame([\Rector\ArgTyper\Tests\PHPStan\Source\ObjectWithConstructor::class, '__construct', 0, IntegerType::class], $collectedData[0]);
-    |  0 => array (4)
-             0 => 'Rector\ArgTyper\Tests\PHPStan\Source\ObjectWithConstructor'
-             1 => '__construct'
-             2 => 0
-             3 => 'PHPStan\Type\IntegerType'
-
-        ], $collectedData[0]);
+        $this->assertSame([ObjectWithConstructor::class, '__construct', 0, IntegerType::class], $newItemCollecdtedData[0]);
+        $this->assertSame([ObjectWithConstructor::class, '__construct', 0, IntegerType::class], $newItemCollecdtedData[1]);
     }
 
     /**
