@@ -13,7 +13,6 @@ use PHPStan\Rules\Rule;
 use PHPStan\ShouldNotHappenException;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector;
-use Rector\ArgTyper\PHPStan\Collectors\StaticCallArgTypeCollector;
 
 /**
  * @implements Rule<CollectedDataNode>
@@ -33,13 +32,7 @@ final class DumpCallLikeArgTypesRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        $methodCallCollectedItemsByFile = $node->get(CallLikeArgTypeCollector::class);
-        $staticCallCollectedItemsByFile = $node->get(StaticCallArgTypeCollector::class);
-
-        $callLikeCollectedItemsByFile = array_merge_recursive(
-            $methodCallCollectedItemsByFile ?? [],
-            $staticCallCollectedItemsByFile ?? []
-        );
+        $callLikeCollectedItemsByFile = $node->get(CallLikeArgTypeCollector::class);
 
         // nothing to process
         if ($callLikeCollectedItemsByFile === []) {
@@ -73,9 +66,8 @@ final class DumpCallLikeArgTypesRule implements Rule
             );
         }
 
-        $jsonString = Json::encode($data, Json::PRETTY);
-
-        FileSystem::write(ConfigFilePath::phpstanCollectedData(), $jsonString);
+        $jsonString = json_encode($data, Json::PRETTY);
+        file_put_contents(ConfigFilePath::phpstanCollectedData(), $jsonString);
 
         // comply with contract, but never used
         return [];
