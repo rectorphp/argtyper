@@ -28,7 +28,10 @@
     "autoload-dev": {
         "psr-4": {
             "Rector\\ArgTyper\\Tests\\": "tests"
-        }
+        },
+        "files": [
+            "tests/PHPStan/DumpFuncCallArgTypesRule/Source/some_function.php"
+        ]
     },
     "config": {
         "sort-packages": true

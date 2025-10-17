@@ -14,6 +14,7 @@ use PHPStan\Collectors\Collector;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use Rector\ArgTyper\Configuration\ProjectAutoloadGuard;
+use Rector\ArgTyper\Helpers\ReflectionChecker;
 use Rector\ArgTyper\PHPStan\CallLikeClassReflectionResolver;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
@@ -21,6 +22,8 @@ use Rector\ArgTyper\PHPStan\TypeMapper;
  * @implements Collector<CallLike, array<array{0: string, 1: string, 2: string, 3: string}>>
  *
  * @see \Rector\ArgTyper\PHPStan\Rule\DumpCallLikeArgTypesRule
+ *
+ * @see \Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\DumpCallLikeArgTypesRuleTest
  */
 final class CallLikeArgTypeCollector implements Collector
 {
@@ -74,7 +77,7 @@ final class CallLikeArgTypeCollector implements Collector
             return null;
         }
 
-        if ($this->shouldSkipClassReflection($classReflection)) {
+        if (ReflectionChecker::shouldSkip($classReflection)) {
             return null;
         }
 
@@ -86,14 +89,7 @@ final class CallLikeArgTypeCollector implements Collector
 
         $classNameTypes = [];
         foreach ($node->getArgs() as $key => $arg) {
-            // @todo handle later, now work with native order
-            if ($arg->name instanceof Identifier) {
-                continue;
-            }
-
-            $argType = $scope->getType($arg->value);
-
-            $typeString = $this->typeMapper->mapToStringIfUseful($argType);
+            $typeString = $this->typeMapper->mapToStringIfUseful($arg, $scope);
             if (! is_string($typeString)) {
                 continue;
             }
@@ -107,21 +103,5 @@ final class CallLikeArgTypeCollector implements Collector
         }
 
         return $classNameTypes;
-    }
-
-    private function shouldSkipClassReflection(ClassReflection $classReflection): bool
-    {
-        if ($classReflection->isInternal()) {
-            return true;
-        }
-
-        $fileName = $classReflection->getFileName();
-
-        // most likely internal or magic
-        if ($fileName === null) {
-            return true;
-        }
-
-        return str_contains($fileName, '/vendor');
     }
 }

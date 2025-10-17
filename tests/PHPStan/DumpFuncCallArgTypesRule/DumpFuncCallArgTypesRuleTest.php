@@ -11,7 +11,6 @@ use PHPStan\Rules\DirectRegistry;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPStan\Type\StringType;
-use Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector;
 use Rector\ArgTyper\PHPStan\Collectors\FuncCallTypeCollector;
 use Rector\ArgTyper\PHPStan\Rule\DumpFuncCallArgTypesRule;
 use Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\Source\SomeObject;
@@ -70,10 +69,6 @@ final class DumpFuncCallArgTypesRuleTest extends RuleTestCase
         $this->assertNotEmpty($collectedDatas);
 
         $this->assertCount(1, $collectedDatas);
-
-        dump($collectedDatas);
-        die;
-
         $this->assertNotEmpty($collectedDatas[$fixtureFilePath][FuncCallTypeCollector::class]);
 
         return $collectedDatas[$fixtureFilePath][FuncCallTypeCollector::class];

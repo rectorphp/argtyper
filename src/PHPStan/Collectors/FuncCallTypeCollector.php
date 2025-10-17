@@ -6,18 +6,19 @@ namespace Rector\ArgTyper\PHPStan\Collectors;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
-use PHPStan\Reflection\FunctionReflection;
 use PHPStan\Reflection\ReflectionProvider;
+use Rector\ArgTyper\Helpers\ReflectionChecker;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
 /**
  * @implements Collector<FuncCall, array<array{0: string, 1: string, 2: string}>>
  *
  * @see \Rector\ArgTyper\PHPStan\Rule\DumpFuncCallArgTypesRule
+ *
+ * @see \Rector\ArgTyper\Tests\PHPStan\DumpFuncCallArgTypesRule\DumpFuncCallArgTypesRuleTest
  */
 final class FuncCallTypeCollector implements Collector
 {
@@ -53,19 +54,15 @@ final class FuncCallTypeCollector implements Collector
         }
 
         $functionReflection = $this->reflectionProvider->getFunction($node->name, $scope);
-        if ($this->shouldSkipClassReflection($functionReflection)) {
+
+        if (ReflectionChecker::shouldSkip($functionReflection)) {
             return null;
         }
 
         $functionArgTypes = [];
         foreach ($node->getArgs() as $key => $arg) {
-            // @todo handle later, now work with native order
-            if ($arg->name instanceof Identifier) {
-                continue;
-            }
 
-            $argType = $scope->getType($arg->value);
-            $typeString = $this->typeMapper->mapToStringIfUseful($argType);
+            $typeString = $this->typeMapper->mapToStringIfUseful($arg, $scope);
             if (! is_string($typeString)) {
                 continue;
             }
@@ -79,21 +76,5 @@ final class FuncCallTypeCollector implements Collector
         }
 
         return $functionArgTypes;
-    }
-
-    private function shouldSkipClassReflection(FunctionReflection $functionReflection): bool
-    {
-        if ($functionReflection->isInternal()->yes()) {
-            return true;
-        }
-
-        $fileName = $functionReflection->getFileName();
-
-        // most likely internal or magic
-        if ($fileName === null) {
-            return true;
-        }
-
-        return str_contains($fileName, '/vendor');
     }
 }

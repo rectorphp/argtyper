@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\PHPStan;
 
+use PhpParser\Node\Arg;
+use PhpParser\Node\Identifier;
+use PHPStan\Analyser\Scope;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\BooleanType;
 use PHPStan\Type\Constant\ConstantArrayType;
@@ -22,8 +25,15 @@ use PHPStan\Type\UnionType;
 
 final class TypeMapper
 {
-    public function mapToStringIfUseful(Type $type): ?string
+    public function mapToStringIfUseful(Arg $arg, Scope $scope): ?string
     {
+        // @todo handle later, now work with native order
+        if ($arg->name instanceof Identifier) {
+            return null;
+        }
+
+        $type = $scope->getType($arg->value);
+
         if ($this->shouldSkipType($type)) {
             return null;
         }
