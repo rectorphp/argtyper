@@ -112,61 +112,6 @@ final class CallLikeArgTypeCollector implements Collector
         }
 
         return $classNameTypes;
-
-        $callerType = $scope->getType($node->var);
-
-        ProjectAutoloadGuard::ensureProjectAutoloadFileIsLoaded($callerType);
-
-        // @todo check if this can be less strict, e.g. for nullable etc.
-        if (! $callerType->isObject()->yes()) {
-            return null;
-        }
-
-        $classNameTypes = [];
-
-        $objectClassReflections = $callerType->getObjectClassReflections();
-        foreach ($objectClassReflections as $objectClassReflection) {
-            if (! $objectClassReflection->hasMethod($methodCallName)) {
-                continue;
-            }
-
-            if ($this->shouldSkipClassReflection($objectClassReflection)) {
-                continue;
-            }
-
-            $className = $objectClassReflection->getName();
-            foreach ($node->getArgs() as $key => $arg) {
-                // handle later, now work with order
-                if ($arg->name instanceof Identifier) {
-                    continue;
-                }
-
-                $argType = $scope->getType($arg->value);
-                if ($this->shouldSkipType($argType)) {
-                    continue;
-                }
-
-                if ($argType instanceof TypeWithClassName) {
-                    $type = 'object:' . $argType->getClassName();
-                } else {
-                    $type = TypeMapper::mapConstantToGenericTypes($argType);
-                    if ($type instanceof ArrayType || $type instanceof ConstantArrayType) {
-                        $type = $type->describe(VerbosityLevel::typeOnly());
-                    } else {
-                        $type = $type::class;
-                    }
-                }
-
-                $classNameTypes[] = [$className, $methodCallName, $key, $type];
-            }
-        }
-
-        // avoid empty array processing in the rule
-        if ($classNameTypes === []) {
-            return null;
-        }
-
-        return $classNameTypes;
     }
 
     private function shouldSkipClassReflection(ClassReflection $classReflection): bool
@@ -188,18 +133,10 @@ final class CallLikeArgTypeCollector implements Collector
     private function shouldSkipType(Type $type): bool
     {
         // unable to move to json for now, handle later
-        if ($type instanceof ErrorType) {
-            return true;
-        }
-
         if ($type instanceof MixedType) {
             return true;
         }
 
-        if ($type instanceof UnionType) {
-            return true;
-        }
-
-        return $type instanceof IntersectionType;
+        return $type instanceof UnionType || $type instanceof IntersectionType;
     }
 }

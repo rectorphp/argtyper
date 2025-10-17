@@ -10,7 +10,7 @@ use PHPStan\Type\ObjectType;
 
 final class ProjectAutoloadGuard
 {
-    public static function ensureProjectAutoloadFileIsLoaded(\PHPStan\Type\Type $callerType): void
+    public function ensureProjectAutoloadFileIsLoaded(\PHPStan\Type\Type $callerType): void
     {
         if (! $callerType instanceof ObjectType) {
             return;

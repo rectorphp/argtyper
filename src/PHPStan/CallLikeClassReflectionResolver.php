@@ -12,25 +12,35 @@ use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
+use PHPStan\Type\ObjectType;
+use Rector\ArgTyper\Configuration\ProjectAutoloadGuard;
 
 final class CallLikeClassReflectionResolver
 {
     public function __construct(
-        private readonly ReflectionProvider $reflectionProvider
+        private readonly ReflectionProvider $reflectionProvider,
+        private readonly ProjectAutoloadGuard $projectAutoloadGuard
     ) {
     }
 
     public function resolve(New_|StaticCall|MethodCall|NullsafeMethodCall $callLike, Scope $scope): ?ClassReflection
     {
-        if ($callLike instanceof New_) {
+        if ($callLike instanceof New_ || $callLike instanceof StaticCall) {
             return $this->resolveNewAndStaticCall($callLike);
         }
 
-        if ($callLike instanceof StaticCall) {
-            return $this->resolveNewAndStaticCall($callLike);
+        $methodCallerType = $scope->getType($callLike->var);
+
+        $this->projectAutoloadGuard->ensureProjectAutoloadFileIsLoaded($methodCallerType);
+
+        // @todo check if this can be less strict, e.g. for nullable etc.
+        if (! $methodCallerType->isObject()->yes()) {
+            return null;
         }
 
-        $methodCallType = $scope->getType($callLike);
+        if ($methodCallerType instanceof ObjectType) {
+            return $methodCallerType->getClassReflection();
+        }
 
         return null;
     }
