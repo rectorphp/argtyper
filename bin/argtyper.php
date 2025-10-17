@@ -19,49 +19,71 @@ final class ArgTyper
 {
     private ProjectSourceDirFinder $projectSourceDirFinder;
 
+    private SymfonyStyle $symfonyStyle;
+
     public function __construct()
     {
+        $this->symfonyStyle = new SymfonyStyle(new ArrayInput([]), new ConsoleOutput());
         $this->projectSourceDirFinder = new ProjectSourceDirFinder();
     }
 
     public function process(?string $projectPath): void
     {
+        $projectDirs = $this->findProjectDirs($projectPath);
+
+        $this->symfonyStyle->writeln('Found project code directories');
+        $this->symfonyStyle->listing($projectDirs);
+
+        $this->executePHPStan($projectDirs, $projectPath);
+
+        $this->executeRector($projectDirs);
+    }
+
+    private function findProjectDirs(?string $projectPath): array
+    {
         // 1. take 1st arg from console and verify the path exits
         Assert::notNull($projectPath, 'Give path to existing directory as 1st argument');
         Assert::directory($projectPath, 'Give path to existing directory as 1st argument');
 
-        // 2. run phpstan with local config on obvious code directories - use symfony/finder
-        $projectDirs = $this->projectSourceDirFinder->find($projectPath);
+        return $this->projectSourceDirFinder->find($projectPath);
+    }
+
+    /**
+     * @param string[] $projectDirs
+     */
+    private function executePHPStan(array $projectDirs, string $projectPath): void
+    {
+        $this->symfonyStyle->title('1. Running PHPStan to collect data...');
+
+        $phpstanAnalyzeCommand = sprintf(
+            'vendor/bin/phpstan analyse %s --configuration=%s --autoload-file=%s/vendor/autoload.php',
+            implode(' ', $projectDirs),
+            'phpstan-data-collector.neon',
+            $projectPath
+        );
+        exec($phpstanAnalyzeCommand);
+
+        $collectedFileItems = FilesLoader::loadFileJson(ConfigFilePath::phpstanCollectedData());
+        $this->symfonyStyle->success(sprintf('Finished! Found %d arg types', count($collectedFileItems)));
+    }
+
+    /**
+     * @param string[] $projectDirs
+     */
+    private function executeRector(array $projectDirs): void
+    {
+        $this->symfonyStyle->title('2. Running Rector to add types...');
+
+        $rectorProcessCommand = sprintf(
+            'vendor/bin/rector process %s --config=rector-argtyper.php',
+            implode(' ', $projectDirs),
+        );
+        exec($rectorProcessCommand);
+
+        $this->symfonyStyle->success('Finished! Now go check the project new types!');
     }
 }
 
-$symfonyStyle = new SymfonyStyle(new ArrayInput([]), new ConsoleOutput());
-
-echo 'Found project code directories:' . PHP_EOL;
-$symfonyStyle->listing($projectDirs);
-
-$symfonyStyle->title('1. Running PHPStan to collect data...');
-
-$phpstanAnalyzeCommand = sprintf(
-    'vendor/bin/phpstan analyse %s --configuration=%s --autoload-file=%s/vendor/autoload.php',
-    implode(' ', $projectDirs),
-    'phpstan-data-collector.neon',
-    $projectPath
-);
-exec($phpstanAnalyzeCommand);
-
-$collectedFileItems = FilesLoader::loadFileJson(ConfigFilePath::phpstanCollectedData());
-$symfonyStyle->success(sprintf('Finished! Found %d arg types', count($collectedFileItems)));
-
-$symfonyStyle->title('2. Running Rector to add types...');
-
-$rectorProcessCommand = sprintf(
-    'vendor/bin/rector process %s --config=rector-argtyper.php',
-    implode(' ', $projectDirs),
-);
-exec($rectorProcessCommand);
-
-$symfonyStyle->success('Finished! Now go check the project new types!');
 
 $argTyper = new ArgTyper();
 $projectPath = $argv[1] ?? null;
