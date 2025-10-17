@@ -69,6 +69,9 @@ final class ArgTyper
         exec($phpstanAnalyzeCommand);
 
         $collectedFileItems = FilesLoader::loadFileJson(ConfigFilePath::callLikes());
+
+        $this->symfonyStyle->newLine();
+
         $this->symfonyStyle->success(sprintf('Finished! Found %d arg types', count($collectedFileItems)));
     }
 
@@ -84,6 +87,8 @@ final class ArgTyper
             implode(' ', $projectDirs),
         );
         exec($rectorProcessCommand);
+
+        $this->symfonyStyle->newLine();
 
         $this->symfonyStyle->success('Finished! Now go check the project new types!');
     }
