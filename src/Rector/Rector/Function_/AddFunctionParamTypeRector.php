@@ -6,6 +6,7 @@ namespace Rector\ArgTyper\Rector\Rector\Function_;
 
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Function_;
+use Rector\ArgTyper\Configuration\FuncCallTypesConfigurationProvider;
 use Rector\Rector\AbstractRector;
 
 /**
@@ -13,6 +14,11 @@ use Rector\Rector\AbstractRector;
  */
 final class AddFunctionParamTypeRector extends AbstractRector
 {
+    public function __construct(
+        private readonly FuncCallTypesConfigurationProvider $funcCallTypesConfigurationProvider,
+    ) {
+    }
+
     public function getNodeTypes(): array
     {
         return [Function_::class];
@@ -23,9 +29,36 @@ final class AddFunctionParamTypeRector extends AbstractRector
      */
     public function refactor(Node $node)
     {
+        if ($node->getParams() === []) {
+            return null;
+        }
 
-        // ...
-        dump('...');
-        die;
+        $hasChanged = false;
+
+        foreach ($node->getParams() as $position => $param) {
+            // already filled
+            if ($param->type instanceof Node) {
+                continue;
+            }
+
+            $functionTypesByPosition = $this->funcCallTypesConfigurationProvider->matchByPosition($node);
+            if ($functionTypesByPosition === []) {
+                continue;
+            }
+
+            $paramFunctionTypes = $functionTypesByPosition[$position] ?? null;
+            if ($paramFunctionTypes === null) {
+                continue;
+            }
+
+            dump($paramFunctionTypes);
+            die;
+        }
+
+        if (! $hasChanged) {
+            return null;
+        }
+
+        return $node;
     }
 }
