@@ -5,39 +5,67 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\PHPStan\Collectors;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Reflection\ClassReflection;
+use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\ShouldNotHappenException;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
+use PHPStan\Type\ErrorType;
+use PHPStan\Type\IntersectionType;
+use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
+use PHPStan\Type\Type;
 use PHPStan\Type\TypeWithClassName;
+use PHPStan\Type\UnionType;
 use PHPStan\Type\VerbosityLevel;
+use Rector\ArgTyper\Configuration\ProjectAutoloadGuard;
+use Rector\ArgTyper\PHPStan\CallLikeClassReflectionResolver;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
 /**
- * @implements Collector<MethodCall, array<array{0: string, 1: string, 2: string, 3: string}>>
+ * @implements Collector<CallLike, array<array{0: string, 1: string, 2: string, 3: string}>>
  */
-final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector implements Collector
+final class CallLikeArgTypeCollector implements Collector
 {
+    private CallLikeClassReflectionResolver $callLikeClassReflectionResolver;
+
+    public function __construct(
+        private ReflectionProvider $reflectionProvider
+    ) {
+        $this->callLikeClassReflectionResolver = new CallLikeClassReflectionResolver($reflectionProvider);
+    }
+
     public function getNodeType(): string
     {
-        return MethodCall::class;
+        return CallLike::class;
     }
 
     /**
-     * @param MethodCall $node
+     * @param CallLike $node
      */
     public function processNode(Node $node, Scope $scope): ?array
     {
-        if (! $node->name instanceof Identifier) {
+        // nothing magic here
+        if ($node->isFirstClassCallable()) {
             return null;
         }
 
-        if ($node->isFirstClassCallable()) {
+        // 1.
+        if ($node instanceof MethodCall || $node instanceof NullsafeMethodCall) {
+        }
+
+        // 2.
+        if ($node instanceof Node\Expr\New_) {
+
+        }
+
+        if (! $node->name instanceof Identifier) {
             return null;
         }
 
@@ -49,12 +77,12 @@ final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
         $methodCallName = $node->name->toString();
         $callerType = $scope->getType($node->var);
 
-        // @todo check if this can be less strict
+        // @todo check if this can be less strict, e.g. for nullable etc.
         if (! $callerType->isObject()->yes()) {
             return null;
         }
 
-        $this->ensureProjectAutoloadFileIsLoaded($callerType);
+        ProjectAutoloadGuard::ensureProjectAutoloadFileIsLoaded($callerType);
 
         $classNameTypes = [];
 
@@ -64,11 +92,7 @@ final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
                 continue;
             }
 
-            if ($objectClassReflection->isInternal()) {
-                continue;
-            }
-
-            if ($this->isVendorClass($objectClassReflection)) {
+            if ($this->shouldSkipClassReflection($objectClassReflection)) {
                 continue;
             }
 
@@ -122,5 +146,39 @@ final class MethodCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
             'Class reflection for "%s" class not found. Make sure you included the project autoload. --autoload-file=project/vendor/autoload.php',
             $callerType->getClassName()
         ));
+    }
+
+    private function shouldSkipClassReflection(ClassReflection $classReflection): bool
+    {
+        if ($classReflection->isInternal()) {
+            return true;
+        }
+
+        $fileName = $classReflection->getFileName();
+
+        // most likely internal or magic
+        if ($fileName === null) {
+            return true;
+        }
+
+        return str_contains($fileName, '/vendor');
+    }
+
+    private function shouldSkipType(Type $type): bool
+    {
+        // unable to move to json for now, handle later
+        if ($type instanceof ErrorType) {
+            return true;
+        }
+
+        if ($type instanceof MixedType) {
+            return true;
+        }
+
+        if ($type instanceof UnionType) {
+            return true;
+        }
+
+        return $type instanceof IntersectionType;
     }
 }

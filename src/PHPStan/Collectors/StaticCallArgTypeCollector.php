@@ -17,11 +17,12 @@ use Rector\ArgTyper\PHPStan\TypeMapper;
 /**
  * @implements Collector<StaticCall, array<array{0: string, 1: string, 2: string, 3: string}>>
  */
-final class StaticCallArgTypeCollector extends AbstractCallLikeTypeCollector implements Collector
+final class StaticCallArgTypeCollector extends CallLikeTypeCollector implements Collector
 {
     public function __construct(
         private readonly ReflectionProvider $reflectionProvider
     ) {
+
     }
 
     public function getNodeType(): string
@@ -47,17 +48,17 @@ final class StaticCallArgTypeCollector extends AbstractCallLikeTypeCollector imp
             return null;
         }
 
-        if (! $node->class instanceof Name) {
-            return null;
-        }
-
-        $className = $node->class->toString();
-
-        if (! $this->reflectionProvider->hasClass($className)) {
-            return null;
-        }
-
-        $classReflection = $this->reflectionProvider->getClass($className);
+        //        if (! $node->class instanceof Name) {
+        //            return null;
+        //        }
+        //
+        //        $className = $node->class->toString();
+        //
+        //        if (! $this->reflectionProvider->hasClass($className)) {
+        //            return null;
+        //        }
+        //
+        //        $classReflection = $this->reflectionProvider->getClass($className);
         $methodCallName = $node->name->toString();
 
         if (! $classReflection->hasMethod($methodCallName)) {

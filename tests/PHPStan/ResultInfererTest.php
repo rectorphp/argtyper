@@ -12,7 +12,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\StringType;
-use Rector\ArgTyper\PHPStan\Collectors\MethodCallArgTypeCollector;
+use Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector;
 use Rector\ArgTyper\PHPStan\Collectors\StaticCallArgTypeCollector;
 use Rector\ArgTyper\PHPStan\Rule\DumpMethodCallArgTypesRule;
 use Rector\ArgTyper\Tests\PHPStan\Source\SomeObject;
@@ -50,7 +50,7 @@ final class ResultInfererTest extends RuleTestCase
     protected function getCollectors(): array
     {
         return [
-            self::getContainer()->getByType(MethodCallArgTypeCollector::class),
+            self::getContainer()->getByType(CallLikeArgTypeCollector::class),
             self::getContainer()->getByType(StaticCallArgTypeCollector::class),
         ];
     }
@@ -73,7 +73,7 @@ final class ResultInfererTest extends RuleTestCase
         $this->assertCount(1, $collectedDatas);
         $this->assertCount(2, $collectedDatas[$fixtureFilePath]);
 
-        $firstCollectorData = $collectedDatas[$fixtureFilePath][MethodCallArgTypeCollector::class][0];
+        $firstCollectorData = $collectedDatas[$fixtureFilePath][CallLikeArgTypeCollector::class][0];
         $secondCollectorData = $collectedDatas[$fixtureFilePath][StaticCallArgTypeCollector::class][0];
 
         return array_merge($firstCollectorData, $secondCollectorData);

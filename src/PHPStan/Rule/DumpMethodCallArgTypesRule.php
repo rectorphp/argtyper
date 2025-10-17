@@ -12,7 +12,7 @@ use PHPStan\Node\CollectedDataNode;
 use PHPStan\Rules\Rule;
 use PHPStan\ShouldNotHappenException;
 use Rector\ArgTyper\Enum\ConfigFilePath;
-use Rector\ArgTyper\PHPStan\Collectors\MethodCallArgTypeCollector;
+use Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector;
 use Rector\ArgTyper\PHPStan\Collectors\StaticCallArgTypeCollector;
 
 /**
@@ -33,7 +33,7 @@ final class DumpMethodCallArgTypesRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        $methodCallCollectedItemsByFile = $node->get(MethodCallArgTypeCollector::class);
+        $methodCallCollectedItemsByFile = $node->get(CallLikeArgTypeCollector::class);
         $staticCallCollectedItemsByFile = $node->get(StaticCallArgTypeCollector::class);
 
         $callLikeCollectedItemsByFile = array_merge_recursive(

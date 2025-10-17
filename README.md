@@ -5,7 +5,8 @@ There are more known types in your project then it meets the eye. This tool find
 ## Todo
 
 * [ ] add function param type support
-* [ ] handle New_ nodes
+* [ ] handle `FuncCall` nodes
+* [ ] handle `New_` nodes
 * [ ] simpler run with `vendor/bin/argtyper`
 * [ ] also add `--dry-run`
 
