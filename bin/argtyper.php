@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Nette\Utils\FileSystem;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 
 require __DIR__ . '/../vendor/autoload.php';

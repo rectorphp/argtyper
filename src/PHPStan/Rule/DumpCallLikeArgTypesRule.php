@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\PHPStan\Rule;
 
-use Nette\Utils\FileSystem;
 use Nette\Utils\Json;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;

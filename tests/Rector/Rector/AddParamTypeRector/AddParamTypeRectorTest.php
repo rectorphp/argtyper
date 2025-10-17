@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\Tests\Rector\Rector\AddParamTypeRector;
 
-use Nette\Utils\FileSystem;
-use Nette\Utils\Json;
 use PHPStan\Type\IntegerType;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Rector\ArgTyper\Enum\ConfigFilePath;
