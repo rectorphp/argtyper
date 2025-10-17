@@ -62,6 +62,17 @@ final class CallLikeTypesConfigurationProvider
     }
 
     /**
+     * @api used only in tests
+     * @param ClassMethodType[] $classMethodTypes
+     */
+    public function seedClassMethodTypes(array $classMethodTypes): void
+    {
+        Assert::allIsInstanceOf($classMethodTypes, ClassMethodType::class);
+
+        $this->classMethodTypes = $classMethodTypes;
+    }
+
+    /**
      * @return array<ClassMethodType>
      */
     private function provide(): array

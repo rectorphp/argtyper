@@ -6,54 +6,32 @@ namespace Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTyp
 
 use PHPStan\Type\IntegerType;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Rector\ArgTyper\Enum\ConfigFilePath;
+use Rector\ArgTyper\Configuration\CallLikeTypesConfigurationProvider;
+use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
+use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture\KeepDateTimeInterface;
+use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture\KeepNullableDateTimeInterface;
+use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture\SkipParentContract;
 use Rector\Testing\PHPUnit\AbstractRectorTestCase;
 
+/**
+ * @see \Rector\ArgTyper\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector
+ */
 final class AddClassMethodParamTypeRectorTest extends AbstractRectorTestCase
 {
     #[DataProvider('provideData')]
     public function test(string $filePath): void
     {
-        // 1. backup current phpstan dump
-        $tempFilePath = ConfigFilePath::callLikes() . '-temp';
-        if (file_exists(ConfigFilePath::callLikes())) {
-            copy(ConfigFilePath::callLikes(), $tempFilePath);
-        }
+        /** @var CallLikeTypesConfigurationProvider $callLikeTypesConfigurationProvider */
+        $callLikeTypesConfigurationProvider = $this->getContainer()->get(CallLikeTypesConfigurationProvider::class);
 
-        // 2. create temp dump
-
-        $collectedData = [
-            [
-                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\SkipParentContract',
-                'method' => 'checkItem',
-                'position' => 0,
-                'type' => IntegerType::class,
-            ],
-            [
-                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\KeepNullableDateTimeInterface',
-                'method' => 'record',
-                'position' => 0,
-                'type' => 'object:' . \DateTime::class,
-            ],
-            [
-                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\KeepDateTimeInterface',
-                'method' => 'record',
-                'position' => 0,
-                'type' => 'object:' . \DateTime::class,
-            ],
+        $classMethodTypes = [
+            new ClassMethodType(SkipParentContract::class, 'checkItem', 0, IntegerType::class),
+            new ClassMethodType(KeepNullableDateTimeInterface::class, 'record', 0, 'object:' . \DateTime::class),
+            new ClassMethodType(KeepDateTimeInterface::class, 'record', 0, 'object:' . \DateTime::class),
         ];
+        $callLikeTypesConfigurationProvider->seedClassMethodTypes($classMethodTypes);
 
-        $collectedDataJson = json_encode($collectedData, JSON_PRETTY_PRINT);
-        file_put_contents(ConfigFilePath::callLikes(), $collectedDataJson);
-
-        // 2. test here
         $this->doTestFile($filePath);
-
-        // 3. restore config
-        if (file_exists($tempFilePath)) {
-            copy($tempFilePath, ConfigFilePath::callLikes());
-            unlink($tempFilePath);
-        }
     }
 
     public static function provideData(): \Iterator
