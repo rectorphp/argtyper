@@ -16,13 +16,7 @@ final class AddFunctionParamTypeRectorTest extends AbstractRectorTestCase
     #[DataProvider('provideData')]
     public function test(string $filePath): void
     {
-        // 1. backup current phpstan dump
-        $tempFilePath = ConfigFilePath::callLikes() . '-temp';
-        if (file_exists(ConfigFilePath::callLikes())) {
-            copy(ConfigFilePath::callLikes(), $tempFilePath);
-        }
 
-        // 2. create temp dump
 
         $collectedData = [
             [
@@ -44,9 +38,6 @@ final class AddFunctionParamTypeRectorTest extends AbstractRectorTestCase
                 'type' => 'object:' . \DateTime::class,
             ],
         ];
-
-        // @todo improt this one to decoupel from filesytem, use in-memory structure, e.g. set to config provider service
-        FilesLoader::dumpJsonToFile(ConfigFilePath::funcCalls(), $collectedData);
 
         // 2. test here
         $this->doTestFile($filePath);

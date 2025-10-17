@@ -1,20 +1,8 @@
 [
     {
-        "class": "Rector\\ArgTyper\\Tests\\Rector\\Rector\\ClassMethod\\AddParamTypeRector\\Fixture\\SkipParentContract",
-        "method": "checkItem",
+        "class": "Rector\\ArgTyper\\Tests\\Rector\\Rector\\ClassMethod\\AddParamIterableDocblockTypeRector\\Fixture\\SomeClass",
+        "method": "run",
         "position": 0,
-        "type": "PHPStan\\Type\\IntegerType"
-    },
-    {
-        "class": "Rector\\ArgTyper\\Tests\\Rector\\Rector\\ClassMethod\\AddParamTypeRector\\Fixture\\KeepNullableDateTimeInterface",
-        "method": "record",
-        "position": 0,
-        "type": "object:DateTime"
-    },
-    {
-        "class": "Rector\\ArgTyper\\Tests\\Rector\\Rector\\ClassMethod\\AddParamTypeRector\\Fixture\\KeepDateTimeInterface",
-        "method": "record",
-        "position": 0,
-        "type": "object:DateTime"
+        "type": "array<int, string>"
     }
 ]
