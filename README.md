@@ -19,6 +19,12 @@ composer require rector/argtyper --dev
 
 ## Usage
 
+Run on your project directory:
+
+```bash
+vendor/bin/argtyper project
+```
+
 1. First, run PHPStan to generate `phpstan-collected-data.json`
 
 ```bash

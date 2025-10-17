@@ -14,14 +14,28 @@ use Webmozart\Assert\Assert;
 require __DIR__ . '/../vendor/autoload.php';
 
 // run on project: bin/argtyper.php project
-// 1. take 1st arg from console and verify the path exits
-$projectPath = $argv[1] ?? null;
-Assert::notNull($projectPath, 'Give path to existing directory as 1st argument');
-Assert::directory($projectPath, 'Give path to existing directory as 1st argument');
 
-// 2. run phpstan with local config on obvious code directories - use symfony/finder
-$projectSourceDirFinder = new ProjectSourceDirFinder();
-$projectDirs = $projectSourceDirFinder->find($projectPath);
+final class ArgTyper
+{
+    private ProjectSourceDirFinder $projectSourceDirFinder;
+
+    public function __construct()
+    {
+        $this->projectSourceDirFinder = new ProjectSourceDirFinder;
+    }
+
+    public function process(?string $projectPath): void
+    {
+        // 1. take 1st arg from console and verify the path exits
+        Assert::notNull($projectPath, 'Give path to existing directory as 1st argument');
+        Assert::directory($projectPath, 'Give path to existing directory as 1st argument');
+
+        // 2. run phpstan with local config on obvious code directories - use symfony/finder
+        $projectDirs = $this->projectSourceDirFinder->find($projectPath);
+    }
+}
+
+
 
 $symfonyStyle = new SymfonyStyle(new ArrayInput([]), new ConsoleOutput());
 
@@ -50,5 +64,10 @@ $rectorProcessCommand = sprintf(
 exec($rectorProcessCommand);
 
 $symfonyStyle->success('Finished! Now go check the project new types!');
+
+
+$argTyper = new ArgTyper();
+$projectPath = $argv[1] ?? null;
+$argTyper->process($projectPath);
 
 exit(Command::SUCCESS);
