@@ -12,7 +12,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Webmozart\Assert\Assert;
 
@@ -23,19 +22,6 @@ final class ArgTyperCommand extends Command
         private readonly SymfonyStyle $symfonyStyle,
     ) {
         parent::__construct();
-    }
-
-    protected function configure(): void
-    {
-        $this->setName('argtyper');
-
-        $this->addArgument(
-            'project-path',
-            InputArgument::REQUIRED,
-            'Path to the target project root'
-        );
-
-        $this->addOption('debug', null, null, 'Enable debug output');
     }
 
     /**
@@ -64,6 +50,15 @@ final class ArgTyperCommand extends Command
         $this->runRector($projectDirs, $isDebug);
 
         return Command::SUCCESS;
+    }
+
+    protected function configure(): void
+    {
+        $this->setName('argtyper');
+
+        $this->addArgument('project-path', InputArgument::REQUIRED, 'Path to the target project root');
+
+        $this->addOption('debug', null, null, 'Enable debug output');
     }
 
     /**
@@ -109,7 +104,6 @@ final class ArgTyperCommand extends Command
             $this->symfonyStyle->note($cmd);
         }
         $this->runShell($cmd, $isDebug);
-
 
         $this->symfonyStyle->newLine();
         $this->symfonyStyle->success('Finished! Now go check the project new types!');
