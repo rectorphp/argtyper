@@ -1,11 +1,12 @@
 parameters:
     paths:
+        - bin
         - src
         - tests
 
     level: 8
 
-    #reportUnmatchedIgnoredErrors: false
+    reportUnmatchedIgnoredErrors: false
 
     # make sure iterable docblock are checked with real assertions
     treatPhpDocTypesAsCertain: false
