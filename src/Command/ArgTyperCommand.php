@@ -102,7 +102,7 @@ final class ArgTyperCommand extends Command
         $dirs = array_map(static fn (string $d) => escapeshellarg($d), $projectDirs);
 
         $cmd = sprintf(
-            'vendor/bin/rector process %s --config=%s',
+            'vendor/bin/rector process %s --config=%s --clear-cachej',
             implode(' ', $dirs),
             escapeshellarg('rector-argtyper.php')
         );
@@ -125,14 +125,11 @@ final class ArgTyperCommand extends Command
 
         if ($isDebug) {
             $this->symfonyStyle->writeln(sprintf('<info>$ %s</info>', $commandLine));
+            $this->symfonyStyle->newLine();
         }
 
         $process->run(function ($type, $buffer) {
             $this->symfonyStyle->write($buffer);
         });
-
-        if (! $process->isSuccessful()) {
-            throw new ProcessFailedException($process);
-        }
     }
 }

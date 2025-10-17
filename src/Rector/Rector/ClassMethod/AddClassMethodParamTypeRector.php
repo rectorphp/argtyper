@@ -48,7 +48,7 @@ final class AddClassMethodParamTypeRector extends AbstractRector
         $hasChanged = false;
 
         foreach ($node->getMethods() as $classMethod) {
-            if ($classMethod->isMagic() || $classMethod->getParams() === []) {
+            if (($classMethod->isMagic() && $classMethod->name->toString() !== '__construct') || $classMethod->getParams() === []) {
                 continue;
             }
 
