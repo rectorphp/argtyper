@@ -30,19 +30,6 @@ final class ArgTyperCommand extends Command
         parent::__construct();
     }
 
-    protected function configure(): void
-    {
-        $this->setName('argtyper');
-
-        $this->addArgument(
-            'project-path',
-            InputArgument::REQUIRED,
-            'Path to the target project root (must exist)'
-        );
-
-        $this->addOption('debug', null, null, 'Enable debug output');
-    }
-
     /**
      * @return Command::*
      */
@@ -67,6 +54,19 @@ final class ArgTyperCommand extends Command
         $this->runRector($projectDirs);
 
         return Command::SUCCESS;
+    }
+
+    protected function configure(): void
+    {
+        $this->setName('argtyper');
+
+        $this->addArgument(
+            'project-path',
+            InputArgument::REQUIRED,
+            'Path to the target project root (must exist)'
+        );
+
+        $this->addOption('debug', null, null, 'Enable debug output');
     }
 
     /**
