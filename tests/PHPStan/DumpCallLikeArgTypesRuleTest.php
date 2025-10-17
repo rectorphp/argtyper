@@ -38,10 +38,8 @@ final class DumpCallLikeArgTypesRuleTest extends RuleTestCase
     {
         $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/ConstructorArgs.php');
 
-        $newItemCollecdtedData = $collectedData[0];
-
-        $this->assertSame([ObjectWithConstructor::class, '__construct', 0, IntegerType::class], $newItemCollecdtedData[0]);
-        $this->assertSame([ObjectWithConstructor::class, '__construct', 0, IntegerType::class], $newItemCollecdtedData[1]);
+        $this->assertSame([ObjectWithConstructor::class, '__construct', 0, IntegerType::class], $collectedData[0][0]);
+        $this->assertSame([ObjectWithConstructor::class, '__construct', 0, IntegerType::class], $collectedData[1][0]);
     }
 
     /**
