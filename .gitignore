@@ -6,5 +6,7 @@ composer.lock
 .phpunit.result.cache
 
 # local metadata
-phpstan-collected-data.json
+call-like-collected-data.json
+func-call-collected-data.json
+
 rector-argtyper.php

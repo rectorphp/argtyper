@@ -6,12 +6,17 @@ namespace Rector\ArgTyper\Helpers;
 
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\FunctionReflection;
+use PHPStan\TrinaryLogic;
 
 final class ReflectionChecker
 {
     public static function shouldSkip(ClassReflection|FunctionReflection $reflection): bool
     {
-        if ($reflection->isInternal()->yes()) {
+        if ($reflection->isInternal() instanceof TrinaryLogic) {
+            if ($reflection->isInternal()->yes()) {
+                return true;
+            }
+        } elseif ($reflection->isInternal()) {
             return true;
         }
 
