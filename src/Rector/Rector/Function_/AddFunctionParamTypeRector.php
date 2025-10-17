@@ -5,8 +5,16 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\Rector\Rector\Function_;
 
 use PhpParser\Node;
+use PhpParser\Node\Name;
+use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt\Function_;
+use PHPStan\Type\NeverType;
+use PHPStan\Type\NullType;
+use PHPStan\Type\ResourceType;
 use Rector\ArgTyper\Configuration\FuncCallTypesConfigurationProvider;
+use Rector\ArgTyper\Exception\NotImplementedException;
+use Rector\ArgTyper\Rector\TypeResolver;
+use Rector\Exception\ShouldNotHappenException;
 use Rector\Rector\AbstractRector;
 
 /**
@@ -51,9 +59,32 @@ final class AddFunctionParamTypeRector extends AbstractRector
                 continue;
             }
 
-            $hasChanged = true;
-            dump($paramFunctionTypes);
-            die;
+            if (count($paramFunctionTypes) >= 2) {
+                throw new NotImplementedException('Multiple types not implemented yet');
+            }
+
+            $paramFunctionType = $paramFunctionTypes[0];
+
+            // nothing useful
+            if (in_array($paramFunctionType->getType(), [NullType::class, ResourceType::class, NeverType::class])) {
+                continue;
+            }
+
+            $isNullable = $this->isNullable($param);
+            $typeNode = TypeResolver::resolveTypeNode($paramFunctionType->getType());
+
+            if ($paramFunctionType->isObjectType() && ($param->type instanceof Name || ($param->type instanceof NullableType && $param->type->type instanceof Name))) {
+                // skip already set object type
+                continue;
+            }
+
+            if ($isNullable) {
+                $param->type = new NullableType($typeNode);
+                $hasChanged = true;
+            } else {
+                $param->type = $typeNode;
+                $hasChanged = true;
+            }
         }
 
         if (! $hasChanged) {
