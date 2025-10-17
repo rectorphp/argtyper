@@ -24,6 +24,8 @@ use Rector\ArgTyper\PHPStan\TypeMapper;
 
 /**
  * @implements Collector<CallLike, array<array{0: string, 1: string, 2: string, 3: string}>>
+ *
+ * @see \Rector\ArgTyper\PHPStan\Rule\DumpCallLikeArgTypesRule
  */
 final class CallLikeArgTypeCollector implements Collector
 {
@@ -83,16 +85,18 @@ final class CallLikeArgTypeCollector implements Collector
             return null;
         }
 
+
         $className = $classReflection->getName();
 
         $classNameTypes = [];
         foreach ($node->getArgs() as $key => $arg) {
-            // handle later, now work with order
+            // @todo handle later, now work with native order
             if ($arg->name instanceof Identifier) {
                 continue;
             }
 
             $argType = $scope->getType($arg->value);
+
             if ($this->shouldSkipType($argType)) {
                 continue;
             }
