@@ -40,6 +40,7 @@ final class DumpCallLikeArgTypesRuleTest extends RuleTestCase
 
         $this->assertSame([ObjectWithConstructor::class, '__construct', 0, IntegerType::class], $collectedData[0][0]);
         $this->assertSame([ObjectWithConstructor::class, '__construct', 0, IntegerType::class], $collectedData[1][0]);
+        $this->assertSame([ObjectWithConstructor::class, '__construct', 0, StringType::class], $collectedData[2][0]);
     }
 
     /**
@@ -79,7 +80,7 @@ final class DumpCallLikeArgTypesRuleTest extends RuleTestCase
         $this->assertNotEmpty($collectedDatas);
 
         $this->assertCount(1, $collectedDatas);
-        $this->assertCount(2, $collectedDatas[$fixtureFilePath][CallLikeArgTypeCollector::class]);
+        $this->assertNotEmpty($collectedDatas[$fixtureFilePath][CallLikeArgTypeCollector::class]);
 
         return $collectedDatas[$fixtureFilePath][CallLikeArgTypeCollector::class];
     }

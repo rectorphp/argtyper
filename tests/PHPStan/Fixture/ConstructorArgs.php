@@ -13,5 +13,7 @@ final class ConstructorArgs
         $firstArg = new ObjectWithConstructor(100);
 
         $secondArg = new ObjectWithConstructor(500);
+
+        $thirdArg = new ObjectWithConstructor('ABC');
     }
 }
