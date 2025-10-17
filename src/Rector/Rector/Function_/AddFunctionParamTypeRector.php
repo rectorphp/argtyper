@@ -35,7 +35,7 @@ final class AddFunctionParamTypeRector extends AbstractRector
     /**
      * @param Function_ $node
      */
-    public function refactor(Node $node)
+    public function refactor(Node $node): ?Function_
     {
         if ($node->getParams() === []) {
             return null;
@@ -44,11 +44,6 @@ final class AddFunctionParamTypeRector extends AbstractRector
         $hasChanged = false;
 
         foreach ($node->getParams() as $position => $param) {
-            // already filled
-            if ($param->type instanceof Node) {
-                continue;
-            }
-
             $functionTypesByPosition = $this->funcCallTypesConfigurationProvider->matchByPosition($node);
             if ($functionTypesByPosition === []) {
                 continue;
