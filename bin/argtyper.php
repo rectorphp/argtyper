@@ -21,7 +21,7 @@ final class ArgTyper
 
     public function __construct()
     {
-        $this->projectSourceDirFinder = new ProjectSourceDirFinder;
+        $this->projectSourceDirFinder = new ProjectSourceDirFinder();
     }
 
     public function process(?string $projectPath): void
@@ -34,8 +34,6 @@ final class ArgTyper
         $projectDirs = $this->projectSourceDirFinder->find($projectPath);
     }
 }
-
-
 
 $symfonyStyle = new SymfonyStyle(new ArrayInput([]), new ConsoleOutput());
 
@@ -64,7 +62,6 @@ $rectorProcessCommand = sprintf(
 exec($rectorProcessCommand);
 
 $symfonyStyle->success('Finished! Now go check the project new types!');
-
 
 $argTyper = new ArgTyper();
 $projectPath = $argv[1] ?? null;
