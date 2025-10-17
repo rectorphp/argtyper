@@ -11,7 +11,6 @@ use PHPStan\Rules\Rule;
 use PHPStan\ShouldNotHappenException;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
-use Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector;
 use Rector\ArgTyper\PHPStan\Collectors\FuncCallTypeCollector;
 
 /**
