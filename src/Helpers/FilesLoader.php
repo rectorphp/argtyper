@@ -19,4 +19,16 @@ final class FilesLoader
         Assert::string($fileContents);
         return json_decode($fileContents, true);
     }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public static function dumpJsonToFile(string $filePath, array $data): void
+    {
+        $jsonContent = json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+
+        Assert::string($jsonContent);
+
+        file_put_contents($filePath, $jsonContent);
+    }
 }

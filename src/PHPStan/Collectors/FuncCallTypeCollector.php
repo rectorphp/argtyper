@@ -21,7 +21,9 @@ use PHPStan\Type\UnionType;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
 /**
- * @implements Collector<FunctionLike, array<array{0: string, 1: string, 2: string}>>
+ * @implements Collector<FuncCall, array<array{0: string, 1: string, 2: string}>>
+ *
+ * @see \Rector\ArgTyper\PHPStan\Rule\DumpFuncCallArgTypesRule
  */
 final class FuncCallTypeCollector implements Collector
 {
@@ -49,12 +51,11 @@ final class FuncCallTypeCollector implements Collector
             return null;
         }
 
-        $functionName = $node->name->toString();
-        if (! $this->reflectionProvider->hasFunction($functionName, $scope->getNamespace())) {
+        if (! $this->reflectionProvider->hasFunction($node->name, $scope)) {
             return null;
         }
 
-        $functionReflection = $this->reflectionProvider->getFunction($functionName, $scope->getNamespace());
+        $functionReflection = $this->reflectionProvider->getFunction($node->name, $scope);
         if ($this->shouldSkipClassReflection($functionReflection)) {
             return null;
         }
@@ -92,7 +93,7 @@ final class FuncCallTypeCollector implements Collector
 
     private function shouldSkipClassReflection(FunctionReflection $functionReflection): bool
     {
-        if ($functionReflection->isInternal()) {
+        if ($functionReflection->isInternal()->yes()) {
             return true;
         }
 

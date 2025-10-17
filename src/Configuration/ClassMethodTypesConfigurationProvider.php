@@ -70,7 +70,7 @@ final class ClassMethodTypesConfigurationProvider
             return $this->classMethodTypes;
         }
 
-        $phpstanResultsData = FilesLoader::loadFileJson(ConfigFilePath::phpstanCollectedData());
+        $phpstanResultsData = FilesLoader::loadFileJson(ConfigFilePath::callLikes());
 
         $dataGroupedByPositionMethodAndClassNames = [];
 

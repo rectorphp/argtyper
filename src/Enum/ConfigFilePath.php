@@ -6,8 +6,13 @@ namespace Rector\ArgTyper\Enum;
 
 final class ConfigFilePath
 {
-    public static function phpstanCollectedData(): string
+    public static function callLikes(): string
     {
-        return getcwd() . '/phpstan-collected-data.json';
+        return getcwd() . '/call-like-collected-data.json';
+    }
+
+    public static function funcCalls(): string
+    {
+        return getcwd() . '/func-call-collected-data.json';
     }
 }

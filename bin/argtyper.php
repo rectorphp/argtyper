@@ -68,7 +68,7 @@ final class ArgTyper
         );
         exec($phpstanAnalyzeCommand);
 
-        $collectedFileItems = FilesLoader::loadFileJson(ConfigFilePath::phpstanCollectedData());
+        $collectedFileItems = FilesLoader::loadFileJson(ConfigFilePath::callLikes());
         $this->symfonyStyle->success(sprintf('Finished! Found %d arg types', count($collectedFileItems)));
     }
 
