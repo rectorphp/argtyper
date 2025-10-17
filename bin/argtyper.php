@@ -96,6 +96,12 @@ final class ArgTyper
 
 $argTyper = new ArgTyper();
 $projectPath = $argv[1] ?? null;
-$argTyper->process($projectPath);
+
+if ($projectPath === null) {
+    // print help
+    echo 'Usage: vendor/bin/argtyper /path/to/your/project' . PHP_EOL;
+} else {
+    $argTyper->process($projectPath);
+}
 
 exit(Command::SUCCESS);
