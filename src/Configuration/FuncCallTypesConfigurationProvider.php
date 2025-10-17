@@ -23,7 +23,6 @@ final class FuncCallTypesConfigurationProvider
     public function matchByPosition(Function_ $function): array
     {
         $functionTypes = $this->provide();
-
         $functionName = $function->name->toString();
 
         $matchingFunctionTypes = array_filter($functionTypes, function (FuncCallType $funcCallType) use (
@@ -41,6 +40,15 @@ final class FuncCallTypesConfigurationProvider
         }
 
         return $typesByPosition;
+    }
+
+    /**
+     * @api used only in tests
+     */
+    public function seedTypes(array $funcCallTypes): void
+    {
+        Assert::allIsInstanceOf($funcCallTypes, FuncCallType::class);
+        $this->funcCallTypes = $funcCallTypes;
     }
 
     /**

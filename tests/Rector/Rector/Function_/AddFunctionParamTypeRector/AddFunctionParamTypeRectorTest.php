@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddFunctionParamTypeRector;
 
-use PhpCsFixer\Config;
-use PHPStan\Type\IntegerType;
+use PHPStan\Type\StringType;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Rector\ArgTyper\Enum\ConfigFilePath;
-use Rector\ArgTyper\Helpers\FilesLoader;
+use Rector\ArgTyper\Configuration\FuncCallTypesConfigurationProvider;
+use Rector\ArgTyper\Rector\ValueObject\FuncCallType;
 use Rector\Testing\PHPUnit\AbstractRectorTestCase;
 
 final class AddFunctionParamTypeRectorTest extends AbstractRectorTestCase
@@ -16,30 +15,18 @@ final class AddFunctionParamTypeRectorTest extends AbstractRectorTestCase
     #[DataProvider('provideData')]
     public function test(string $filePath): void
     {
+        /** @var FuncCallTypesConfigurationProvider $funcCallTypesConfigurationProvider */
+        $funcCallTypesConfigurationProvider = $this->getContainer()
+            ->get(FuncCallTypesConfigurationProvider::class);
 
+        $funcCallTypesConfigurationProvider->seedTypes([
+            new FuncCallType(
+                'Rector\ArgTyper\Tests\Rector\Rector\Function_\AddFunctionParamTypeRector\Fixture\simpleFunction',
+                0,
+                StringType::class
+            ),
+        ]);
 
-        $collectedData = [
-            [
-                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\SkipParentContract',
-                'method' => 'checkItem',
-                'position' => 0,
-                'type' => IntegerType::class,
-            ],
-            [
-                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\KeepNullableDateTimeInterface',
-                'method' => 'record',
-                'position' => 0,
-                'type' => 'object:' . \DateTime::class,
-            ],
-            [
-                'class' => 'Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamTypeRector\Fixture\KeepDateTimeInterface',
-                'method' => 'record',
-                'position' => 0,
-                'type' => 'object:' . \DateTime::class,
-            ],
-        ];
-
-        // 2. test here
         $this->doTestFile($filePath);
     }
 
