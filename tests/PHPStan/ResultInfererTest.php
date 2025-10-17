@@ -33,6 +33,9 @@ final class ResultInfererTest extends RuleTestCase
         $this->assertSame([SomeObject::class, 'setAge', 0, IntegerType::class], $secondItem);
     }
 
+    /**
+     * @return string[]
+     */
     public static function getAdditionalConfigFiles(): array
     {
         return [__DIR__ . '/../../phpstan-data-collector.neon'];
@@ -67,9 +70,9 @@ final class ResultInfererTest extends RuleTestCase
         $this->assertNotEmpty($collectedDatas);
 
         $this->assertCount(1, $collectedDatas);
-        $this->assertCount(2, $collectedDatas[$fixtureFilePath]);
+        $this->assertCount(2, $collectedDatas[$fixtureFilePath][CallLikeArgTypeCollector::class]);
 
-        return $collectedDatas[$fixtureFilePath][CallLikeArgTypeCollector::class][0];
+        return $collectedDatas[$fixtureFilePath][CallLikeArgTypeCollector::class];
     }
 
     private function createAnalyser(): Analyser
