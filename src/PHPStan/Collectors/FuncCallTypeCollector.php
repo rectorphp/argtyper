@@ -7,47 +7,37 @@ namespace Rector\ArgTyper\PHPStan\Collectors;
 use PhpParser\Node;
 use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\New_;
+use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
-use PHPStan\Reflection\ClassReflection;
+use PHPStan\Reflection\FunctionReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\IntersectionType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
-use Rector\ArgTyper\Configuration\ProjectAutoloadGuard;
-use Rector\ArgTyper\PHPStan\CallLikeClassReflectionResolver;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
 /**
- * @implements Collector<CallLike, array<array{0: string, 1: string, 2: string, 3: string}>>
- *
- * @see \Rector\ArgTyper\PHPStan\Rule\DumpCallLikeArgTypesRule
+ * @implements Collector<FunctionLike, array<array{0: string, 1: string, 2: string}>>
  */
-final class CallLikeArgTypeCollector implements Collector
+final class FuncCallTypeCollector implements Collector
 {
-    private CallLikeClassReflectionResolver $callLikeClassReflectionResolver;
-
-    public function __construct(ReflectionProvider $reflectionProvider)
-    {
-        $projectAutoloadGuard = new ProjectAutoloadGuard();
-
-        $this->callLikeClassReflectionResolver = new CallLikeClassReflectionResolver(
-            $reflectionProvider,
-            $projectAutoloadGuard
-        );
+    public function __construct(
+        private ReflectionProvider $reflectionProvider
+    ) {
     }
 
     public function getNodeType(): string
     {
-        return CallLike::class;
+        return FuncCall::class;
     }
 
     /**
-     * @param New_|FuncCall|Node\Expr\MethodCall|Node\Expr\NullsafeMethodCall|Node\Expr\StaticCall $node
+     * @param FuncCall $node
      */
     public function processNode(Node $node, Scope $scope): ?array
     {
@@ -56,37 +46,21 @@ final class CallLikeArgTypeCollector implements Collector
             return null;
         }
 
-        if ($node instanceof FuncCall) {
+        if (! $node->name instanceof Name) {
             return null;
         }
 
-        // 1.
-        if ($node instanceof New_) {
-            $methodName = '__construct';
-        } elseif ($node->name instanceof Identifier) {
-            $methodName = $node->name->toString();
-        } else {
+        $functionName = $node->name->toString();
+        if (! $this->reflectionProvider->hasFunction($functionName, $scope->getNamespace())) {
             return null;
         }
 
-        $classReflection = $this->callLikeClassReflectionResolver->resolve($node, $scope);
-
-        // nothing to find here
-        if (! $classReflection instanceof ClassReflection) {
+        $functionReflection = $this->reflectionProvider->getFunction($functionName, $scope->getNamespace());
+        if ($this->shouldSkipClassReflection($functionReflection)) {
             return null;
         }
 
-        if ($this->shouldSkipClassReflection($classReflection)) {
-            return null;
-        }
-
-        if (! $classReflection->hasMethod($methodName)) {
-            return null;
-        }
-
-        $className = $classReflection->getName();
-
-        $classNameTypes = [];
+        $functionArgTypes = [];
         foreach ($node->getArgs() as $key => $arg) {
             // @todo handle later, now work with native order
             if ($arg->name instanceof Identifier) {
@@ -106,24 +80,24 @@ final class CallLikeArgTypeCollector implements Collector
                 $type = $type::class;
             }
 
-            $classNameTypes[] = [$className, $methodName, $key, $type];
+            $functionArgTypes[] = [$functionReflection->getName(), $key, $type];
         }
 
         // nothing to return
-        if ($classNameTypes === []) {
+        if ($functionArgTypes === []) {
             return null;
         }
 
-        return $classNameTypes;
+        return $functionArgTypes;
     }
 
-    private function shouldSkipClassReflection(ClassReflection $classReflection): bool
+    private function shouldSkipClassReflection(FunctionReflection $functionReflection): bool
     {
-        if ($classReflection->isInternal()) {
+        if ($functionReflection->isInternal()) {
             return true;
         }
 
-        $fileName = $classReflection->getFileName();
+        $fileName = $functionReflection->getFileName();
 
         // most likely internal or magic
         if ($fileName === null) {
