@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PHPStan\DumpCallLikeArgTypesRule\Fixture;
+namespace Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\Fixture;
 
-use PHPStan\DumpCallLikeArgTypesRule\Source\SomeObject;
+use Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\Source\SomeObject;
 
 final class MethodCalledArgs
 {

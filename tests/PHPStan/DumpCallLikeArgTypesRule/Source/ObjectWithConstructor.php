@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PHPStan\DumpCallLikeArgTypesRule\Source;
+namespace Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\Source;
 
 final class ObjectWithConstructor
 {
