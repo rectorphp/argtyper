@@ -21,6 +21,10 @@ parameters:
         # false positive
         - '#with generic interface PHPStan\\Collectors\\Collector#'
 
+        -
+            identifier: class.notFound
+            path: tests/Rector/Rector/ClassMethod/AddClassMethodParamTypeRector/AddClassMethodParamTypeRectorTest.php
+
     excludePaths:
         - "*/Fixture/*"
         - "*/Source/*"

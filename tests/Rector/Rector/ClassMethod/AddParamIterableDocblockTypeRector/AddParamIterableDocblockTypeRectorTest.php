@@ -7,7 +7,6 @@ namespace Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamIterableDocblo
 use PHPUnit\Framework\Attributes\DataProvider;
 use Rector\ArgTyper\Configuration\CallLikeTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
-use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamIterableDocblockTypeRector\Fixture\SomeClass;
 use Rector\Testing\PHPUnit\AbstractRectorTestCase;
 
 final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCase
@@ -19,7 +18,7 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
         $callLikeTypesConfigurationProvider = $this->getContainer()
             ->get(CallLikeTypesConfigurationProvider::class);
 
-        $classMethodTypes = [new ClassMethodType(SomeClass::class, 'run', 0, 'array<int, string>')];
+        $classMethodTypes = [new ClassMethodType('Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddParamIterableDocblockTypeRector\Fixture\SomeClass', 'run', 0, 'array<int, string>')];
         $callLikeTypesConfigurationProvider->seedClassMethodTypes($classMethodTypes);
 
         $this->doTestFile($filePath);

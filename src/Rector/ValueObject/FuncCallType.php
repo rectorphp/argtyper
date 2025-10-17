@@ -7,15 +7,15 @@ namespace Rector\ArgTyper\Rector\ValueObject;
 final readonly class FuncCallType
 {
     public function __construct(
-        private string $class,
+        private string $function,
         private int $position,
         private string $type,
     ) {
     }
 
-    public function getClass(): string
+    public function getFunction(): string
     {
-        return $this->class;
+        return $this->function;
     }
 
     public function getPosition(): int

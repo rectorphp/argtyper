@@ -28,6 +28,7 @@ final class FuncCallTypesConfigurationProvider
         $scope = ScopeFetcher::fetch($function);
 
         $classReflection = $scope->getClassReflection();
+
         if (! $classReflection instanceof ClassReflection) {
             return [];
         }
@@ -37,15 +38,15 @@ final class FuncCallTypesConfigurationProvider
         $className = $classReflection->getName();
         $methodName = $function->name->toString();
 
-        $matchingFunctionTypes = array_filter($functionTypes, function (ClassMethodType $classMethodType) use (
+        $matchingFunctionTypes = array_filter($functionTypes, function (FuncCallType $funcCallType) use (
             $className,
             $methodName
         ): bool {
-            if ($classMethodType->getClass() !== $className) {
+            if ($funcCallType->getFunction() !== $className) {
                 return false;
             }
 
-            return $classMethodType->getMethod() === $methodName;
+            return $funcCallType->getClass() === $methodName;
         });
 
         Assert::allIsInstanceOf($matchingFunctionTypes, ClassMethodType::class);
@@ -60,7 +61,7 @@ final class FuncCallTypesConfigurationProvider
     }
 
     /**
-     * @return array<ClassMethodType>
+     * @return array<FuncCallType>
      */
     private function provide(): array
     {
