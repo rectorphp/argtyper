@@ -1,9 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Rector\ArgTyper\Rector\Rector\Function_;
 
-final class AddFunctionParamTypeRector
-{
-    // @todo
+use PhpParser\Node;
+use PhpParser\Node\Stmt\Function_;
+use Rector\Rector\AbstractRector;
 
+final class AddFunctionParamTypeRector extends AbstractRector
+{
+    public function getNodeTypes(): array
+    {
+        return [Function_::class];
+    }
+
+    /**
+     * @param Function_ $node
+     */
+    public function refactor(Node $node)
+    {
+
+        // ...
+        dump('...');
+        die;
+    }
 }

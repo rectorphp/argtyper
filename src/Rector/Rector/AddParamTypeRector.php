@@ -15,7 +15,7 @@ use PhpParser\Node\UnionType;
 use PHPStan\Type\NeverType;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ResourceType;
-use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
+use Rector\ArgTyper\Configuration\CallLikeTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\TypeResolver;
 use Rector\Rector\AbstractRector;
 use Rector\VendorLocker\ParentClassMethodTypeOverrideGuard;
@@ -30,7 +30,7 @@ use Rector\VendorLocker\ParentClassMethodTypeOverrideGuard;
 final class AddParamTypeRector extends AbstractRector
 {
     public function __construct(
-        private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider,
+        private readonly CallLikeTypesConfigurationProvider $classMethodTypesConfigurationProvider,
         private readonly ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard
     ) {
 

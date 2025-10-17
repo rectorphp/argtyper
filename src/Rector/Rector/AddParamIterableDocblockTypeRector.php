@@ -9,7 +9,7 @@ use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
-use Rector\ArgTyper\Configuration\ClassMethodTypesConfigurationProvider;
+use Rector\ArgTyper\Configuration\CallLikeTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\TypeMapper\DocStringTypeMapper;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
@@ -24,7 +24,7 @@ use Rector\Rector\AbstractRector;
 final class AddParamIterableDocblockTypeRector extends AbstractRector
 {
     public function __construct(
-        private readonly ClassMethodTypesConfigurationProvider $classMethodTypesConfigurationProvider,
+        private readonly CallLikeTypesConfigurationProvider $classMethodTypesConfigurationProvider,
         private readonly PhpDocInfoFactory $phpDocInfoFactory,
         private readonly DocBlockUpdater $docBlockUpdater,
         private readonly DocStringTypeMapper $docStringTypeMapper

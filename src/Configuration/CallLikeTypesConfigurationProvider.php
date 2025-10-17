@@ -12,7 +12,7 @@ use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\PHPStan\ScopeFetcher;
 use Webmozart\Assert\Assert;
 
-final class ClassMethodTypesConfigurationProvider
+final class CallLikeTypesConfigurationProvider
 {
     /**
      * @var array<ClassMethodType>
@@ -85,7 +85,6 @@ final class ClassMethodTypesConfigurationProvider
                 foreach ($typesByPosition as $position => $types) {
                     if (count($types) === 1) {
                         // easy path, pick sole type
-
                         $classMethodTypes[] = new \Rector\ArgTyper\Rector\ValueObject\ClassMethodType(
                             $className,
                             $methodName,
@@ -95,6 +94,7 @@ final class ClassMethodTypesConfigurationProvider
                     } else {
                         // @todo add support if all the same
                         // use unique types method
+                        dump(sprintf('Add support for multiple types in "%s":', __METHOD__));
                         dump($types);
                         die;
                     }
