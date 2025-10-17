@@ -18,7 +18,7 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
         // 1. backup current phpstan dump
         $tempFilePath = ConfigFilePath::phpstanCollectedData() . '-temp';
         if (file_exists(ConfigFilePath::phpstanCollectedData())) {
-            FileSystem::copy(ConfigFilePath::phpstanCollectedData(), $tempFilePath);
+            copy(ConfigFilePath::phpstanCollectedData(), $tempFilePath);
         }
 
         // 2. create temp dump
@@ -31,16 +31,16 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
             ],
         ];
 
-        $collectedDataJson = Json::encode($collectedData, pretty: true);
-        FileSystem::write(ConfigFilePath::phpstanCollectedData(), $collectedDataJson);
+        $collectedDataJson = json_encode($collectedData, JSON_PRETTY_PRINT);
+        file_put_contents(ConfigFilePath::phpstanCollectedData(), $collectedDataJson);
 
         // 2. test here
         $this->doTestFile($filePath);
 
         // 3. restore config
         if (file_exists($tempFilePath)) {
-            FileSystem::copy($tempFilePath, ConfigFilePath::phpstanCollectedData());
-            FileSystem::delete($tempFilePath);
+            copy($tempFilePath, ConfigFilePath::phpstanCollectedData());
+            unlink($tempFilePath);
         }
     }
 

@@ -38,8 +38,8 @@ exec($command);
 
 echo 'Finished!' . PHP_EOL . PHP_EOL;
 
-$collectedFileContents = FileSystem::read(ConfigFilePath::phpstanCollectedData());
-$collectedFileItems = \Nette\Utils\Json::decode($collectedFileContents);
+$collectedFileContents = file_get_contents(ConfigFilePath::phpstanCollectedData());
+$collectedFileItems = json_decode($collectedFileContents, true);
 
 echo 'Found ' . count($collectedFileItems) . ' type items' . PHP_EOL . PHP_EOL;
 
