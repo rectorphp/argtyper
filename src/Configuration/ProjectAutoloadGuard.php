@@ -7,10 +7,11 @@ namespace Rector\ArgTyper\Configuration;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\ShouldNotHappenException;
 use PHPStan\Type\ObjectType;
+use PHPStan\Type\Type;
 
 final class ProjectAutoloadGuard
 {
-    public function ensureProjectAutoloadFileIsLoaded(\PHPStan\Type\Type $callerType): void
+    public function ensureProjectAutoloadFileIsLoaded(Type $callerType): void
     {
         if (! $callerType instanceof ObjectType) {
             return;
