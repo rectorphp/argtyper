@@ -7,7 +7,6 @@
     ],
     "require": {
         "php": "^8.2",
-        "illuminate/container": "^12.34",
         "nette/utils": "^4.0",
         "phpstan/phpstan": "^2.1",
         "rector/rector": "^2.2",

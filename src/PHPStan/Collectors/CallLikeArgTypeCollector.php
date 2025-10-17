@@ -33,9 +33,8 @@ final class CallLikeArgTypeCollector implements Collector
 {
     private CallLikeClassReflectionResolver $callLikeClassReflectionResolver;
 
-    public function __construct(
-        private ReflectionProvider $reflectionProvider
-    ) {
+    public function __construct(ReflectionProvider $reflectionProvider)
+    {
         $this->callLikeClassReflectionResolver = new CallLikeClassReflectionResolver($reflectionProvider);
     }
 
