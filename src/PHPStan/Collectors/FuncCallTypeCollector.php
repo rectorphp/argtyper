@@ -12,11 +12,6 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Reflection\FunctionReflection;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Type\IntersectionType;
-use PHPStan\Type\MixedType;
-use PHPStan\Type\Type;
-use PHPStan\Type\TypeWithClassName;
-use PHPStan\Type\UnionType;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
 /**
@@ -26,9 +21,12 @@ use Rector\ArgTyper\PHPStan\TypeMapper;
  */
 final class FuncCallTypeCollector implements Collector
 {
+    private TypeMapper $typeMapper;
+
     public function __construct(
         private ReflectionProvider $reflectionProvider
     ) {
+        $this->typeMapper = new TypeMapper();
     }
 
     public function getNodeType(): string
@@ -67,19 +65,12 @@ final class FuncCallTypeCollector implements Collector
             }
 
             $argType = $scope->getType($arg->value);
-
-            if ($this->shouldSkipType($argType)) {
+            $typeString = $this->typeMapper->mapToStringIfUseful($argType);
+            if (! is_string($typeString)) {
                 continue;
             }
 
-            if ($argType instanceof TypeWithClassName) {
-                $type = 'object:' . $argType->getClassName();
-            } else {
-                $type = TypeMapper::mapConstantToGenericTypes($argType);
-                $type = $type::class;
-            }
-
-            $functionArgTypes[] = [$functionReflection->getName(), $key, $type];
+            $functionArgTypes[] = [$functionReflection->getName(), $key, $typeString];
         }
 
         // nothing to return
@@ -104,15 +95,5 @@ final class FuncCallTypeCollector implements Collector
         }
 
         return str_contains($fileName, '/vendor');
-    }
-
-    private function shouldSkipType(Type $type): bool
-    {
-        // unable to move to json for now, handle later
-        if ($type instanceof MixedType) {
-            return true;
-        }
-
-        return $type instanceof UnionType || $type instanceof IntersectionType;
     }
 }

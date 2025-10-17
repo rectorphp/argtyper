@@ -13,11 +13,6 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Type\IntersectionType;
-use PHPStan\Type\MixedType;
-use PHPStan\Type\Type;
-use PHPStan\Type\TypeWithClassName;
-use PHPStan\Type\UnionType;
 use Rector\ArgTyper\Configuration\ProjectAutoloadGuard;
 use Rector\ArgTyper\PHPStan\CallLikeClassReflectionResolver;
 use Rector\ArgTyper\PHPStan\TypeMapper;
@@ -31,9 +26,12 @@ final class CallLikeArgTypeCollector implements Collector
 {
     private CallLikeClassReflectionResolver $callLikeClassReflectionResolver;
 
+    private TypeMapper $typeMapper;
+
     public function __construct(ReflectionProvider $reflectionProvider)
     {
         $projectAutoloadGuard = new ProjectAutoloadGuard();
+        $this->typeMapper = new TypeMapper();
 
         $this->callLikeClassReflectionResolver = new CallLikeClassReflectionResolver(
             $reflectionProvider,
@@ -95,18 +93,12 @@ final class CallLikeArgTypeCollector implements Collector
 
             $argType = $scope->getType($arg->value);
 
-            if ($this->shouldSkipType($argType)) {
+            $typeString = $this->typeMapper->mapToStringIfUseful($argType);
+            if (! is_string($typeString)) {
                 continue;
             }
 
-            if ($argType instanceof TypeWithClassName) {
-                $type = 'object:' . $argType->getClassName();
-            } else {
-                $type = TypeMapper::mapConstantToGenericTypes($argType);
-                $type = $type::class;
-            }
-
-            $classNameTypes[] = [$className, $methodName, $key, $type];
+            $classNameTypes[] = [$className, $methodName, $key, $typeString];
         }
 
         // nothing to return
@@ -131,15 +123,5 @@ final class CallLikeArgTypeCollector implements Collector
         }
 
         return str_contains($fileName, '/vendor');
-    }
-
-    private function shouldSkipType(Type $type): bool
-    {
-        // unable to move to json for now, handle later
-        if ($type instanceof MixedType) {
-            return true;
-        }
-
-        return $type instanceof UnionType || $type instanceof IntersectionType;
     }
 }

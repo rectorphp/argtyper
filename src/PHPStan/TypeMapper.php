@@ -13,12 +13,31 @@ use PHPStan\Type\Constant\ConstantIntegerType;
 use PHPStan\Type\Constant\ConstantStringType;
 use PHPStan\Type\IntegerRangeType;
 use PHPStan\Type\IntegerType;
+use PHPStan\Type\IntersectionType;
+use PHPStan\Type\MixedType;
 use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
+use PHPStan\Type\TypeWithClassName;
+use PHPStan\Type\UnionType;
 
 final class TypeMapper
 {
-    public static function mapConstantToGenericTypes(Type $type): Type
+    public function mapToStringIfUseful(Type $type): ?string
+    {
+        if ($this->shouldSkipType($type)) {
+            return null;
+        }
+
+        if ($type instanceof TypeWithClassName) {
+            return 'object:' . $type->getClassName();
+        }
+
+        $genericType = $this->mapConstantToGenericTypes($type);
+
+        return $genericType::class;
+    }
+
+    private function mapConstantToGenericTypes(Type $type): Type
     {
         // correct to generic types
         if ($type instanceof IntegerRangeType) {
@@ -46,5 +65,15 @@ final class TypeMapper
         }
 
         return $type;
+    }
+
+    private function shouldSkipType(Type $type): bool
+    {
+        // unable to move to json for now, handle later
+        if ($type instanceof MixedType) {
+            return true;
+        }
+
+        return $type instanceof UnionType || $type instanceof IntersectionType;
     }
 }
