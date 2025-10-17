@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\PHPStan\Rule;
 
-use Nette\Utils\Json;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
@@ -65,7 +64,7 @@ final class DumpCallLikeArgTypesRule implements Rule
             );
         }
 
-        $jsonString = json_encode($data, Json::PRETTY);
+        $jsonString = json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
         file_put_contents(ConfigFilePath::phpstanCollectedData(), $jsonString);
 
         // comply with contract, but never used
