@@ -13,6 +13,7 @@ use PHPStan\Type\NullType;
 use PHPStan\Type\ResourceType;
 use Rector\ArgTyper\Configuration\FuncCallTypesConfigurationProvider;
 use Rector\ArgTyper\Exception\NotImplementedException;
+use Rector\ArgTyper\Rector\NodeTypeChecker;
 use Rector\ArgTyper\Rector\TypeResolver;
 use Rector\Exception\ShouldNotHappenException;
 use Rector\Rector\AbstractRector;
@@ -70,7 +71,7 @@ final class AddFunctionParamTypeRector extends AbstractRector
                 continue;
             }
 
-            $isNullable = $this->isNullable($param);
+            $isNullable = NodeTypeChecker::isParamNullable($param);
             $typeNode = TypeResolver::resolveTypeNode($paramFunctionType->getType());
 
             if ($paramFunctionType->isObjectType() && ($param->type instanceof Name || ($param->type instanceof NullableType && $param->type->type instanceof Name))) {

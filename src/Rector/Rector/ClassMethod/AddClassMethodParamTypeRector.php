@@ -16,6 +16,7 @@ use PHPStan\Type\NeverType;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ResourceType;
 use Rector\ArgTyper\Configuration\CallLikeTypesConfigurationProvider;
+use Rector\ArgTyper\Rector\NodeTypeChecker;
 use Rector\ArgTyper\Rector\TypeResolver;
 use Rector\Rector\AbstractRector;
 use Rector\VendorLocker\ParentClassMethodTypeOverrideGuard;
@@ -79,7 +80,7 @@ final class AddClassMethodParamTypeRector extends AbstractRector
                     continue;
                 }
 
-                $isNullable = $this->isNullable($param);
+                $isNullable = NodeTypeChecker::isParamNullable($param);
                 $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
 
                 if ($classMethodType->isObjectType() && ($param->type instanceof Name || ($param->type instanceof NullableType && $param->type->type instanceof Name))) {
@@ -102,18 +103,5 @@ final class AddClassMethodParamTypeRector extends AbstractRector
         }
 
         return $node;
-    }
-
-    private function isNullable(Param $param): bool
-    {
-        if ($param->type instanceof NullableType) {
-            return true;
-        }
-
-        if (! $param->default instanceof ConstFetch) {
-            return false;
-        }
-
-        return $this->isName($param->default, 'null');
     }
 }
