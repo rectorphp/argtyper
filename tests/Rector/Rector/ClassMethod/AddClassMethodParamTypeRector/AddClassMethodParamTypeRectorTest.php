@@ -22,7 +22,8 @@ final class AddClassMethodParamTypeRectorTest extends AbstractRectorTestCase
     public function test(string $filePath): void
     {
         /** @var CallLikeTypesConfigurationProvider $callLikeTypesConfigurationProvider */
-        $callLikeTypesConfigurationProvider = $this->getContainer()->get(CallLikeTypesConfigurationProvider::class);
+        $callLikeTypesConfigurationProvider = $this->getContainer()
+            ->get(CallLikeTypesConfigurationProvider::class);
 
         $classMethodTypes = [
             new ClassMethodType(SkipParentContract::class, 'checkItem', 0, IntegerType::class),

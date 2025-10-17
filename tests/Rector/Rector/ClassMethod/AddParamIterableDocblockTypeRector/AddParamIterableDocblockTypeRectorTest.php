@@ -16,11 +16,10 @@ final class AddParamIterableDocblockTypeRectorTest extends AbstractRectorTestCas
     public function test(string $filePath): void
     {
         /** @var CallLikeTypesConfigurationProvider $callLikeTypesConfigurationProvider */
-        $callLikeTypesConfigurationProvider = $this->getContainer()->get(CallLikeTypesConfigurationProvider::class);
+        $callLikeTypesConfigurationProvider = $this->getContainer()
+            ->get(CallLikeTypesConfigurationProvider::class);
 
-        $classMethodTypes = [
-            new ClassMethodType(SomeClass::class, 'run', 0, 'array<int, string>'),
-        ];
+        $classMethodTypes = [new ClassMethodType(SomeClass::class, 'run', 0, 'array<int, string>')];
         $callLikeTypesConfigurationProvider->seedClassMethodTypes($classMethodTypes);
 
         $this->doTestFile($filePath);
