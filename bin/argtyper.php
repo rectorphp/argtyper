@@ -34,6 +34,8 @@ final class ArgTyper
         $this->symfonyStyle->writeln('Found project code directories');
         $this->symfonyStyle->listing($projectDirs);
 
+        Assert::string($projectPath);
+
         $this->executePHPStan($projectDirs, $projectPath);
 
         $this->executeRector($projectDirs);
