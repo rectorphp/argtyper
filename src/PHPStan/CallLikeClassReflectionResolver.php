@@ -6,6 +6,7 @@ namespace Rector\ArgTyper\PHPStan;
 
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
+use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
@@ -19,7 +20,7 @@ final class CallLikeClassReflectionResolver
     ) {
     }
 
-    public function resolve(New_|StaticCall|MethodCall $callLike, Scope $scope): ?ClassReflection
+    public function resolve(New_|StaticCall|MethodCall|NullsafeMethodCall $callLike, Scope $scope): ?ClassReflection
     {
         if ($callLike instanceof New_) {
             return $this->resolveNewAndStaticCall($callLike);
