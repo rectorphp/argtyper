@@ -11,7 +11,7 @@ final class ReflectionChecker
 {
     public static function shouldSkip(ClassReflection|FunctionReflection $reflection): bool
     {
-        if ($reflection->isInternal()) {
+        if ($reflection->isInternal()->yes()) {
             return true;
         }
 
