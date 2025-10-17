@@ -7,21 +7,17 @@ namespace Rector\ArgTyper\PHPStan\Collectors;
 use PhpParser\Node;
 use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
-use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\ShouldNotHappenException;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
 use PHPStan\Type\ErrorType;
 use PHPStan\Type\IntersectionType;
 use PHPStan\Type\MixedType;
-use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
@@ -87,8 +83,6 @@ final class CallLikeArgTypeCollector implements Collector
             return null;
         }
 
-
-
         $className = $classReflection->getName();
 
         $classNameTypes = [];
@@ -120,7 +114,6 @@ final class CallLikeArgTypeCollector implements Collector
 
         return $classNameTypes;
 
-
         $methodCallName = $node->name->toString();
         $callerType = $scope->getType($node->var);
 
@@ -130,7 +123,6 @@ final class CallLikeArgTypeCollector implements Collector
         if (! $callerType->isObject()->yes()) {
             return null;
         }
-
 
         $classNameTypes = [];
 
