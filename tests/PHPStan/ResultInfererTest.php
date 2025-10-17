@@ -26,10 +26,10 @@ final class ResultInfererTest extends RuleTestCase
     {
         $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/MethodCalledArgs.php');
 
-        $firstItem = $collectedData[0];
+        $firstItem = $collectedData[0][0];
         $this->assertSame([SomeObject::class, 'setName', 0, StringType::class], $firstItem);
 
-        $secondItem = $collectedData[1];
+        $secondItem = $collectedData[1][0];
         $this->assertSame([SomeObject::class, 'setAge', 0, IntegerType::class], $secondItem);
     }
 
