@@ -4,9 +4,6 @@ There are more known types in your project then it meets the eye. This tool find
 
 ## Todo
 
-* [ ] add function param type support
-* [ ] handle `FuncCall` nodes
-* [ ] handle `New_` nodes
 * [ ] simpler run with `vendor/bin/argtyper`
 * [ ] also add `--dry-run`
 
@@ -25,19 +22,11 @@ Run on your project directory:
 vendor/bin/argtyper project
 ```
 
-1. First, run PHPStan to generate `phpstan-collected-data.json`
+## How it works?
 
-```bash
-vendor/bin/phpstan analyse src tests --configuration vendor/rector/argtyper/phpstan-data-collector.neon
-```
+First, couple PHPStan custom rules will go through the code and record all arguments types passed to method calls, static call, new and function calls.
 
-or from non-root directory, but this project:
-
-```bash
-vendor/bin/phpstan analyse ../project/src --configuration config/phpstan-data-collector.neon --autoload-file ../project/vendor/autoload.php
-```
-
-It will dump data to `phpstan-collected-data.json` file:
+It will store these data in temporary `*.json file` in this format:
 
 ```json
 [
@@ -50,18 +39,13 @@ It will dump data to `phpstan-collected-data.json` file:
 ]
 ```
 
-2. Run Rector with rules that fill known types based on collected data:
+Then, Rector custom rules will go through codebase and fill known parameter types based on collected data. E.g. if some method gets `100`, `326` and `5`, it will fill `int`.
 
-```bash
-vendor/bin/rector src tests --config vendor/rector/argtyper/rector-arg-typer.php
-```
+With few exceptions:
 
-or from non-root directory, but this project:
-
-```bash
-vendor/bin/rector p ../project/src --config rector-arg-typer.php
-```
-
+* if multiple types are found, it will skip it
+* if union/intersection types are found, it will skip it as ambiguous
+ 
 ```diff
  namespace App\SomePackage;
 
@@ -73,6 +57,11 @@ vendor/bin/rector p ../project/src --config rector-arg-typer.php
      }
  }
 ```
+
+That's it!
+
+It's not perfect, but in our testing runs, it fills 95 % of data correctly and saves huge amount of work. 
+The rest you can fix manually based on PHPStan/tests feedback.
 
 <br>
 
