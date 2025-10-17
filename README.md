@@ -20,6 +20,10 @@ Run on your project directory:
 vendor/bin/argtyper project
 ```
 
+To see more process details, add `--debug` option.
+
+<br>
+
 ## How it works?
 
 First, couple PHPStan custom rules will go through the code and record all arguments types passed to method calls, static call, new and function calls.
