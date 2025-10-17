@@ -116,10 +116,7 @@ final class CallLikeTypesConfigurationProvider
     {
         return array_filter(
             $classMethodTypes,
-            function (ClassMethodType $classMethodType) use (
-                $className,
-                $methodName
-            ): bool {
+            function (ClassMethodType $classMethodType) use ($className, $methodName): bool {
                 if ($classMethodType->getClass() !== $className) {
                     return false;
                 }

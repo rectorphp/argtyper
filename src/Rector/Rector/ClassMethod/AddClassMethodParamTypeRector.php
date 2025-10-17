@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\Rector\Rector\ClassMethod;
 
 use PhpParser\Node;
-use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
