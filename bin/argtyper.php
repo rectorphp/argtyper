@@ -41,6 +41,9 @@ final class ArgTyper
         $this->executeRector($projectDirs);
     }
 
+    /**
+     * @return string[]
+     */
     private function findProjectDirs(?string $projectPath): array
     {
         // 1. take 1st arg from console and verify the path exits
