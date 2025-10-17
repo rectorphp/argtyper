@@ -15,7 +15,6 @@ use Rector\ArgTyper\Configuration\FuncCallTypesConfigurationProvider;
 use Rector\ArgTyper\Exception\NotImplementedException;
 use Rector\ArgTyper\Rector\NodeTypeChecker;
 use Rector\ArgTyper\Rector\TypeResolver;
-use Rector\Exception\ShouldNotHappenException;
 use Rector\Rector\AbstractRector;
 
 /**
@@ -73,9 +72,6 @@ final class AddFunctionParamTypeRector extends AbstractRector
 
             $isNullable = NodeTypeChecker::isParamNullable($param);
             $typeNode = TypeResolver::resolveTypeNode($paramFunctionType->getType());
-
-            dump($typeNode);
-            die;
 
             if ($paramFunctionType->isObjectType() && ($param->type instanceof Name || ($param->type instanceof NullableType && $param->type->type instanceof Name))) {
                 // skip already set object type
