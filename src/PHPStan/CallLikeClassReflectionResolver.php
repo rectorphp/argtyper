@@ -13,6 +13,7 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ObjectType;
+use PHPStan\Type\StaticType;
 use Rector\ArgTyper\Configuration\ProjectAutoloadGuard;
 
 final class CallLikeClassReflectionResolver
@@ -30,12 +31,16 @@ final class CallLikeClassReflectionResolver
         }
 
         $methodCallerType = $scope->getType($callLike->var);
-
         $this->projectAutoloadGuard->ensureProjectAutoloadFileIsLoaded($methodCallerType);
 
         // @todo check if this can be less strict, e.g. for nullable etc.
         if (! $methodCallerType->isObject()->yes()) {
             return null;
+        }
+
+        // unwrap "self::" and "$this" calls
+        if ($methodCallerType instanceof StaticType) {
+            $methodCallerType = $methodCallerType->getStaticObjectType();
         }
 
         if ($methodCallerType instanceof ObjectType) {
