@@ -44,14 +44,16 @@ final class ArgTyperCommand extends Command
         // Discover source dirs
         $projectDirs = $this->projectSourceDirFinder->find($projectPath);
 
+        $isDebug = (bool) $input->getOption('debug');
+
         $this->symfonyStyle->writeln('Found project code directories');
         $this->symfonyStyle->listing($projectDirs);
 
         // 1. Run PHPStan data collection
-        $this->runPhpStan($projectDirs, $projectPath);
+        $this->runPhpStan($projectDirs, $projectPath, $isDebug);
 
         // 2. Run Rector to apply types
-        $this->runRector($projectDirs);
+        $this->runRector($projectDirs, $isDebug);
 
         return Command::SUCCESS;
     }
@@ -72,7 +74,7 @@ final class ArgTyperCommand extends Command
     /**
      * @param string[] $projectDirs
      */
-    private function runPhpStan(array $projectDirs, string $projectPath): void
+    private function runPhpStan(array $projectDirs, string $projectPath, bool $isDebug): void
     {
         $this->symfonyStyle->title('1. Running PHPStan to collect data...');
 
@@ -88,16 +90,21 @@ final class ArgTyperCommand extends Command
 
         $this->runShell($cmd);
 
+        if ($isDebug) {
+            $this->symfonyStyle->note($cmd);
+        }
+
+        // @todo consdier jsonln
         $collectedFileItems = FilesLoader::loadFileJson(ConfigFilePath::callLikes());
 
-        $io->newLine();
-        $io->success(sprintf('Finished! Found %d arg types', count($collectedFileItems)));
+        $this->symfonyStyle->newLine();
+        $this->symfonyStyle->success(sprintf('Finished! Found %d arg types', count($collectedFileItems)));
     }
 
     /**
      * @param string[] $projectDirs
      */
-    private function runRector(array $projectDirs): void
+    private function runRector(array $projectDirs, bool $isDebug): void
     {
         $this->symfonyStyle->title('2. Running Rector to add types...');
 
@@ -110,6 +117,10 @@ final class ArgTyperCommand extends Command
         );
 
         $this->runShell($cmd);
+
+        if ($isDebug) {
+            $this->symfonyStyle->note($cmd);
+        }
 
         $this->symfonyStyle->newLine();
         $this->symfonyStyle->success('Finished! Now go check the project new types!');
