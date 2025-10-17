@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\Configuration;
 
+use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Function_;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
@@ -22,8 +23,13 @@ final class FuncCallTypesConfigurationProvider
      */
     public function matchByPosition(Function_ $function): array
     {
-        $functionTypes = $this->provide();
+        if (! $function->namespacedName instanceof Name) {
+            return [];
+        }
+
         $functionName = $function->namespacedName->toString();
+
+        $functionTypes = $this->provide();
 
         $matchingFunctionTypes = array_filter($functionTypes, function (FuncCallType $funcCallType) use (
             $functionName
