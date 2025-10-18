@@ -1,9 +1,10 @@
-# Arg Typer - Fill param types, based on passed values
+# Arg Typer – Fill Parameter Types Based on Passed Values
 
-There are many known types in your project then meets the eye. This tool detects real passed types in method/function calls using PHPStan.
+There are often more known types in your project than meets the eye.  
+This tool detects the **real** types passed into method and function calls using PHPStan.
 
 ```php
-$this->hotelOverview->makeRoomVailable(324);
+$this->hotelOverview->makeRoomAvailable(324);
 ```
 
 Later in the code...
@@ -11,7 +12,7 @@ Later in the code...
 ```php
 public function roomDetail(int $roomNumber)
 {
-    $this->hotelOverview->makeRoomVailable($int);
+    $this->hotelOverview->makeRoomAvailable($roomNumber);
 }
 ```
 
@@ -20,15 +21,15 @@ Later in tests...
 ```php
 public function test(int $roomNumber): void
 {
-    $this->hotelOverview->makeRoomVailable($roomNumber);
+    $this->hotelOverview->makeRoomAvailable($roomNumber);
 }
 ```
 
-* 3 times an `int` value is passed into `makeRoomVailable()` ✅ 
+✅ Three times an `int` value is passed into `makeRoomAvailable()`.
 
 <br>
 
-Then runs Rector to complete them where missing:
+Then [Rector](https://getrector.com) runs and fills in the missing type declarations:
 
 ```diff
  final class HotelOverview
@@ -40,11 +41,11 @@ Then runs Rector to complete them where missing:
  }
 ```
 
-* adding `int` param type to the `makeRoomVailable()` method  ✅
+✅ An `int` parameter type is added to the `makeRoomAvailable()` method.
 
 <br>
 
-That's it.
+That’s it.
 
 <br>
 
@@ -58,19 +59,25 @@ composer require rector/argtyper --dev
 
 ## Usage
 
-Run on your project directory:
+Run it in your project directory:
+
+```bash
+vendor/bin/argtyper .
+```
+
+Or on another project:
 
 ```bash
 vendor/bin/argtyper project
 ```
 
-To see more process details, add `--debug` option.
+To see more details during the process, add the `--debug` option.
 
 <br>
 
-## How it works?
+## How It Works
 
-First, couple PHPStan custom rules will go through the code and record all arguments types passed to method calls, static call, new and function calls. It will store these data in temporary `*.json` file in this format:
+1. A set of custom PHPStan rules scans your code and records the argument types passed to method calls, static calls, `new` expressions, and function calls. It stores this data in temporary `*.json` files in the following format:
 
 ```json
 [
@@ -78,25 +85,25 @@ First, couple PHPStan custom rules will go through the code and record all argum
         "class": "HotelOverview",
         "method": "makeRoomAvailable",
         "position": 0,
-        "type": "PHPStan\\Type\\IntegerType"
+        "type": "PHPStan\Type\IntegerType"
     }
 ]
 ```
 
-Then, Rector custom rules will go through codebase and fill known parameter types based on collected data where missing.
+2. Then, custom Rector rules go through the codebase and fill in the known parameter types based on the collected data — but only where they’re missing.
 
-With few exceptions:
+With a few exceptions:
 
-* if multiple types are found, it will skip it
-* if union/intersection types are found, it will skip it as ambiguous
-* if `float` param type is used and `int` arg is passed (even as `30.0`), to avoid loosing decimal part
+* If multiple types are found → it’s skipped.
+* If union or intersection types are found → it’s skipped as ambiguous.
+* If a `float` parameter type is declared but only `int` arguments are passed (e.g. `30.0`) → it’s skipped to avoid losing decimal precision.
 
 <br>
 
-## Verify Results
- 
-It's not 100 % perfect, but in our testing runs it fills 95 % of data correctly and saves huge amount of work. 
-The rest you can fix manually based on PHPStan/tests feedback.
+## Verify the Results
+
+It’s not 100 % perfect, but in our tests it fills in about **95 %** of the data correctly and saves a huge amount of manual work.  
+You can fix the remaining cases manually based on PHPStan or test feedback.
 
 <br>
 
