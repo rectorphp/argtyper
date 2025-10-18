@@ -49,6 +49,7 @@ With few exceptions:
 
 * if multiple types are found, it will skip it
 * if union/intersection types are found, it will skip it as ambiguous
+* if `float` param type is used and `int` arg is passed (even as `30.0`), to avoid loosing decimal part
  
 ```diff
  namespace App\SomePackage;
