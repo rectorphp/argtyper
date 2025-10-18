@@ -107,7 +107,7 @@ final class CollectCallLikeArgTypesRuleTest extends RuleTestCase
     }
 
     /**
-     * @return array<array{0: string, 1: string, 2: string, 3: string}>
+     * @return array<int, array<string, mixed>>
      */
     private function collectDataInFile(string $fixtureFilePath): array
     {
