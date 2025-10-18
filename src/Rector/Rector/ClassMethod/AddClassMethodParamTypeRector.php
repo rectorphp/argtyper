@@ -132,11 +132,7 @@ final class AddClassMethodParamTypeRector extends AbstractRector
 
     private function shouldSkipOverride(Param $param, ClassMethodType $classMethodType): bool
     {
-        if ($param->type instanceof NullableType) {
-            $rawType = $param->type->type;
-        } else {
-            $rawType = $param->type;
-        }
+        $rawType = $param->type instanceof NullableType ? $param->type->type : $param->type;
 
         // just to be safe
         if ($rawType instanceof Identifier && in_array($rawType->toString(), ['iterable', 'float'], true)) {
