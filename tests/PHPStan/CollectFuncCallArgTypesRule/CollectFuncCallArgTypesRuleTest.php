@@ -23,12 +23,20 @@ final class CollectFuncCallArgTypesRuleTest extends RuleTestCase
         $collectedTypes = $this->collectDataInFile(__DIR__ . '/Fixture/SimpleFunctionCall.php');
 
         $this->assertSame(
-            ['Rector\ArgTyper\Tests\PHPStan\CollectFuncCallArgTypesRule\Source\someFunction', 0, IntegerType::class],
+            [
+                'function' => 'Rector\ArgTyper\Tests\PHPStan\CollectFuncCallArgTypesRule\Source\someFunction',
+                'position' => 0,
+                'type' => IntegerType::class,
+            ],
             $collectedTypes[0]
         );
 
         $this->assertSame(
-            ['Rector\ArgTyper\Tests\PHPStan\CollectFuncCallArgTypesRule\Source\someFunction', 1, FloatType::class],
+            [
+                'function' => 'Rector\ArgTyper\Tests\PHPStan\CollectFuncCallArgTypesRule\Source\someFunction',
+                'position' => 1,
+                'type' => FloatType::class,
+            ],
             $collectedTypes[1]
         );
     }
