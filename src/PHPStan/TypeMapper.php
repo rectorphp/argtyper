@@ -43,7 +43,6 @@ final class TypeMapper
         }
 
         $genericType = $this->mapConstantToGenericTypes($type);
-
         return $genericType::class;
     }
 

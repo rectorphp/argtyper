@@ -56,6 +56,6 @@ final class CollectFuncCallArgTypesRuleTest extends RuleTestCase
         Assert::fileExists($fixtureFilePath);
         $this->analyse([$fixtureFilePath], []);
 
-        return FilesLoader::loadJsonl(ConfigFilePath::callLikes());
+        return FilesLoader::loadJsonl(ConfigFilePath::funcCalls());
     }
 }

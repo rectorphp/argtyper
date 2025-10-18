@@ -65,7 +65,7 @@ final readonly class CollectFuncCallArgTypesRule implements Rule
             }
 
             FilesLoader::writeJsonl(
-                ConfigFilePath::callLikes(),
+                ConfigFilePath::funcCalls(),
                 [
                     'function' => $functionReflection->getName(),
                     'position' => $key,
