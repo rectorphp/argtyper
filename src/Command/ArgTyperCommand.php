@@ -100,10 +100,6 @@ final class ArgTyperCommand extends Command
             escapeshellarg('rector-argtyper.php')
         );
 
-        if ($isDebug) {
-            $this->symfonyStyle->note($cmd);
-        }
-
         $this->runShell($cmd, $isDebug);
 
         $this->symfonyStyle->newLine();
@@ -120,5 +116,7 @@ final class ArgTyperCommand extends Command
             $this->symfonyStyle->writeln(sprintf('<info>$ %s</info>', $commandLine));
             $this->symfonyStyle->newLine();
         }
+
+        $process->run();
     }
 }
