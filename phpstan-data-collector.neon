@@ -4,11 +4,6 @@ parameters:
 
 services:
     -
-        class: Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector
-        tags:
-            - phpstan.collector
-
-    -
         class: Rector\ArgTyper\PHPStan\Collectors\FuncCallTypeCollector
         tags:
             - phpstan.collector
