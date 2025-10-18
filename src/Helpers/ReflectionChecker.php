@@ -19,11 +19,7 @@ final class ReflectionChecker
             return true;
         }
 
-        if ($classReflection instanceof ClassReflection) {
-            return ! $classReflection->hasMethod($methodName);
-        }
-
-        return false;
+        return ! $classReflection->hasMethod($methodName);
     }
 
     public static function shouldSkipFunctionReflection(FunctionReflection $functionReflection): bool
