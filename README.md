@@ -87,7 +87,7 @@ At first, a set of custom PHPStan rules scans your code and records the argument
         "class": "HotelOverview",
         "method": "makeRoomAvailable",
         "position": 0,
-        "type": "PHPStan\Type\IntegerType"
+        "type": "PHPStan\\Type\\IntegerType"
     }
 ]
 ```
