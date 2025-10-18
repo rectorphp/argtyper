@@ -80,51 +80,26 @@ final class CollectCallLikeArgTypesRule implements Rule
             return [];
         }
 
-        if (ReflectionChecker::shouldSkip($classReflection)) {
+        if (ReflectionChecker::shouldSkipClassReflection($classReflection, $methodName)) {
             return [];
         }
 
-        if (! $classReflection->hasMethod($methodName)) {
-            return [];
-        }
-
-        $className = $classReflection->getName();
-
-        $classNameTypes = [];
         foreach ($node->getArgs() as $key => $arg) {
             $typeString = $this->typeMapper->mapToStringIfUseful($arg, $scope);
             if (! is_string($typeString)) {
                 continue;
             }
 
-            $classNameTypes[] = [$className, $methodName, $key, $typeString];
-
             FilesLoader::writeJsonl(
                 ConfigFilePath::callLikes(),
                 [
-                    'class' => $className,
+                    'class' => $classReflection->getName(),
                     'method' => $methodName,
                     'position' => $key,
                     'type' => $typeString,
                 ]
             );
-            //            dump($classNameTypes);
-            //            die;
         }
-
-        // nothing to return
-        if ($classNameTypes === []) {
-            return [];
-        }
-
-        //return $classNameTypes;
-
-        //                    $data[$uniqueHash] = [
-        //                        'class' => $collectedMethodCallArgType[0],
-        //                        'method' => $collectedMethodCallArgType[1],
-        //                        'position' => $collectedMethodCallArgType[2],
-        //                        'type' => $collectedMethodCallArgType[3],
-        //                    ];
 
         // comply with contract, but never used
         return [];

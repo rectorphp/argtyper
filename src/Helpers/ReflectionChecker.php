@@ -6,20 +6,37 @@ namespace Rector\ArgTyper\Helpers;
 
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\FunctionReflection;
-use PHPStan\TrinaryLogic;
 
 final class ReflectionChecker
 {
-    public static function shouldSkip(ClassReflection|FunctionReflection $reflection): bool
+    public static function shouldSkipClassReflection(ClassReflection $classReflection, string $methodName): bool
     {
-        if ($reflection->isInternal() instanceof TrinaryLogic) {
-            if ($reflection->isInternal()->yes()) {
-                return true;
-            }
-        } elseif ($reflection->isInternal()) {
+        if ($classReflection->isInternal()) {
             return true;
         }
 
+        if (self::isVendor($classReflection)) {
+            return true;
+        }
+
+        if ($classReflection instanceof ClassReflection) {
+            return ! $classReflection->hasMethod($methodName);
+        }
+
+        return false;
+    }
+
+    public static function shouldSkipFunctionReflection(FunctionReflection $functionReflection): bool
+    {
+        if ($functionReflection->isInternal()->yes()) {
+            return true;
+        }
+
+        return self::isVendor($functionReflection);
+    }
+
+    private static function isVendor(ClassReflection|FunctionReflection $reflection): bool
+    {
         $fileName = $reflection->getFileName();
 
         // most likely internal or magic
@@ -27,6 +44,7 @@ final class ReflectionChecker
             return true;
         }
 
+        // is part of vendor? we can't change that, so skip it
         return str_contains($fileName, '/vendor');
     }
 }

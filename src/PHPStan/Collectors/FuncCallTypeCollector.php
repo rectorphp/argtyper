@@ -54,7 +54,7 @@ final readonly class FuncCallTypeCollector implements Collector
         }
 
         $functionReflection = $this->reflectionProvider->getFunction($node->name, $scope);
-        if (ReflectionChecker::shouldSkip($functionReflection)) {
+        if (ReflectionChecker::shouldSkipFunctionReflection($functionReflection, $me)) {
             return null;
         }
 
