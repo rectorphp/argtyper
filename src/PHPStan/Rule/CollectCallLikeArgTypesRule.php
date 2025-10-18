@@ -7,7 +7,10 @@ namespace Rector\ArgTyper\PHPStan\Rule;
 use PhpParser\Node;
 use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
+use PhpParser\Node\Expr\NullsafeMethodCall;
+use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
@@ -51,7 +54,7 @@ final class CollectCallLikeArgTypesRule implements Rule
     }
 
     /**
-     * @param CallLike $node
+     * @param MethodCall|FuncCall|StaticCall|NullsafeMethodCall $node
      */
     public function processNode(Node $node, Scope $scope): array
     {
