@@ -1,6 +1,6 @@
-# Arg Typer - Fill param types, based on passed args
+# Arg Typer - Fill param types, based on passed values
 
-There are more known types in your project then it meets the eye. This tool detects real passed types in method/function calls using PHPStan.
+There are many known types in your project then meets the eye. This tool detects real passed types in method/function calls using PHPStan.
 
 ```php
 $this->hotelOverview->makeRoomVailable(324);
@@ -42,6 +42,7 @@ Then runs Rector to complete them where missing:
 
 * adding `int` param type to the `makeRoomVailable()` method  ✅
 
+<br>
 
 That's it.
 
