@@ -97,16 +97,17 @@ final class ArgTyperCommand extends Command
         $cmd = sprintf(
             'vendor/bin/rector process %s --config=%s --clear-cache',
             implode(' ', $projectDirs),
-            escapeshellarg('rector-argtyper.php')
+            'rector-argtyper.php'
         );
 
-        $this->runShell($cmd, $isDebug);
+        // show output, so we know what exactly has changed
+        $this->runShell($cmd, $isDebug, true);
 
         $this->symfonyStyle->newLine();
         $this->symfonyStyle->success('Finished! Now go check the project new types!');
     }
 
-    private function runShell(string $commandLine, bool $isDebug): void
+    private function runShell(string $commandLine, bool $isDebug, bool $showResult = false): void
     {
         // Use /bin/sh -lc to allow shell features in the composed commandline
         $process = Process::fromShellCommandline($commandLine);
@@ -118,5 +119,9 @@ final class ArgTyperCommand extends Command
         }
 
         $process->run();
+
+        if ($showResult) {
+            $this->symfonyStyle->writeln($process->getOutput());
+        }
     }
 }
