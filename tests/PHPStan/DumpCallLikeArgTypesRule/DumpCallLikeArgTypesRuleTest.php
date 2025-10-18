@@ -10,6 +10,7 @@ use PHPStan\Collectors\Collector;
 use PHPStan\Rules\DirectRegistry;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
+use PHPStan\Type\FloatType;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\StringType;
 use Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector;
@@ -41,6 +42,14 @@ final class DumpCallLikeArgTypesRuleTest extends RuleTestCase
         $this->assertSame([ObjectWithConstructor::class, '__construct', 0, IntegerType::class], $collectedData[0][0]);
         $this->assertSame([ObjectWithConstructor::class, '__construct', 0, IntegerType::class], $collectedData[1][0]);
         $this->assertSame([ObjectWithConstructor::class, '__construct', 0, StringType::class], $collectedData[2][0]);
+    }
+
+    public function testFloatAsInt(): void
+    {
+        $collectedData = $this->collectDataInFile(__DIR__ . '/Fixture/FloatAsInt.php');
+
+        $this->assertSame([ObjectWithConstructor::class, '__construct', 0, FloatType::class], $collectedData[0][0]);
+        $this->assertSame([ObjectWithConstructor::class, '__construct', 0, FloatType::class], $collectedData[1][0]);
     }
 
     /**

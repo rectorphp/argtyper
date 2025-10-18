@@ -14,6 +14,7 @@ use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\Constant\ConstantFloatType;
 use PHPStan\Type\Constant\ConstantIntegerType;
 use PHPStan\Type\Constant\ConstantStringType;
+use PHPStan\Type\FloatType;
 use PHPStan\Type\IntegerRangeType;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\IntersectionType;
@@ -27,13 +28,12 @@ final class TypeMapper
 {
     public function mapToStringIfUseful(Arg $arg, Scope $scope): ?string
     {
-        // @todo handle later, now work with native order
+        // work with native order only
         if ($arg->name instanceof Identifier) {
             return null;
         }
 
         $type = $scope->getType($arg->value);
-
         if ($this->shouldSkipType($type)) {
             return null;
         }
@@ -67,7 +67,7 @@ final class TypeMapper
         }
 
         if ($type instanceof ConstantFloatType) {
-            return new IntegerType();
+            return new FloatType();
         }
 
         if ($type instanceof ConstantBooleanType) {
