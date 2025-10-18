@@ -62,6 +62,7 @@ final class DumpCallLikeArgTypesRuleTest extends RuleTestCase
 
     protected function getRule(): Rule
     {
+        // return new CollectCallLikeArgTypesRule();
         return new DumpCallLikeArgTypesRule();
     }
 
