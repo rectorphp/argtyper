@@ -31,4 +31,16 @@ final class FilesLoader
 
         file_put_contents($filePath, $jsonContent);
     }
+
+    /**
+     * @see https://jsonlines.org/
+     * @param array<string, mixed> $record
+     */
+    public static function writeJsonl(string $filePath, array $record): void
+    {
+        $line = json_encode($record, JSON_UNESCAPED_UNICODE) . PHP_EOL;
+
+        // Append the line and lock the file to prevent race conditions
+        file_put_contents($filePath, $line, FILE_APPEND | LOCK_EX);
+    }
 }
