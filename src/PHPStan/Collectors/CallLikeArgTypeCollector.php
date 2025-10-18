@@ -21,9 +21,9 @@ use Rector\ArgTyper\PHPStan\TypeMapper;
 /**
  * @implements Collector<CallLike, array<array{0: string, 1: string, 2: string, 3: string}>>
  *
- * @see \Rector\ArgTyper\PHPStan\Rule\DumpCallLikeArgTypesRule
+ * @see \Rector\ArgTyper\PHPStan\Rule\CollectCallLikeArgTypesRule
  *
- * @see \Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\DumpCallLikeArgTypesRuleTest
+ * @see \Rector\ArgTyper\Tests\PHPStan\CollectCallLikeArgTypesRule\CollectCallLikeArgTypesRuleTest
  */
 final readonly class CallLikeArgTypeCollector implements Collector
 {

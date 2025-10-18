@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PHPStan\DumpCallLikeArgTypesRule\Fixture;
+namespace PHPStan\CollectCallLikeArgTypesRule\Fixture;
 
-use Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\Source\ObjectWithConstructor;
+use Rector\ArgTyper\Tests\PHPStan\CollectCallLikeArgTypesRule\Source\ObjectWithConstructor;
 
 final class FloatAsInt
 {

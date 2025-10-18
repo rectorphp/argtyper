@@ -34,7 +34,7 @@ final class FilesLoader
 
         Assert::string($jsonContent);
 
-        file_put_contents($filePath, $jsonContent);
+        file_put_contents($filePath, $jsonContent . PHP_EOL);
     }
 
     /**
@@ -47,5 +47,24 @@ final class FilesLoader
 
         // Append the line and lock the file to prevent race conditions
         file_put_contents($filePath, $line, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public static function loadJsonl(string $filePath): array
+    {
+        Assert::fileExists($filePath);
+
+        $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $records = [];
+
+        foreach ($lines as $line) {
+            $decoded = json_decode($line, true);
+            Assert::isArray($decoded);
+            $records[] = $decoded;
+        }
+
+        return $records;
     }
 }

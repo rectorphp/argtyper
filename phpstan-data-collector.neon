@@ -14,5 +14,7 @@ services:
             - phpstan.collector
 
 rules:
-    - Rector\ArgTyper\PHPStan\Rule\DumpCallLikeArgTypesRule
     - Rector\ArgTyper\PHPStan\Rule\DumpFuncCallArgTypesRule
+
+    # reworked simper versions
+    - Rector\ArgTyper\PHPStan\Rule\CollectCallLikeArgTypesRule

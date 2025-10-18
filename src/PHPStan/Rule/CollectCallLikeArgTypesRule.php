@@ -10,24 +10,20 @@ use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
-use PHPStan\Node\CollectedDataNode;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
-use PHPStan\ShouldNotHappenException;
 use Rector\ArgTyper\Configuration\ProjectAutoloadGuard;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Helpers\ReflectionChecker;
 use Rector\ArgTyper\PHPStan\CallLikeClassReflectionResolver;
-use Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector;
 use Rector\ArgTyper\PHPStan\TypeMapper;
-use Rector\Reflection\ReflectionResolver;
 
 /**
  * @implements Rule<CallLike>
  *
- * @see \Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\DumpCallLikeArgTypesRuleTest
+ * @see \Rector\ArgTyper\Tests\PHPStan\CollectCallLikeArgTypesRule\CollectCallLikeArgTypesRuleTest
  */
 final class CollectCallLikeArgTypesRule implements Rule
 {
@@ -35,13 +31,15 @@ final class CollectCallLikeArgTypesRule implements Rule
 
     private CallLikeClassReflectionResolver $callLikeClassReflectionResolver;
 
-    public function __construct(
-        ReflectionProvider $reflectionProvider
-    ) {
+    public function __construct(ReflectionProvider $reflectionProvider)
+    {
         $this->typeMapper = new TypeMapper();
         $projectAutoloadGuard = new ProjectAutoloadGuard();
 
-        $this->callLikeClassReflectionResolver = new CallLikeClassReflectionResolver($reflectionProvider, $projectAutoloadGuard);
+        $this->callLikeClassReflectionResolver = new CallLikeClassReflectionResolver(
+            $reflectionProvider,
+            $projectAutoloadGuard
+        );
     }
 
     /**
@@ -101,8 +99,17 @@ final class CollectCallLikeArgTypesRule implements Rule
 
             $classNameTypes[] = [$className, $methodName, $key, $typeString];
 
-            dump($classNameTypes);
-            die;
+            FilesLoader::writeJsonl(
+                ConfigFilePath::callLikes(),
+                [
+                    'class' => $className,
+                    'method' => $methodName,
+                    'position' => $key,
+                    'type' => $typeString,
+                ]
+            );
+            //            dump($classNameTypes);
+            //            die;
         }
 
         // nothing to return
@@ -110,14 +117,14 @@ final class CollectCallLikeArgTypesRule implements Rule
             return [];
         }
 
-        return $classNameTypes;
+        //return $classNameTypes;
 
-//                    $data[$uniqueHash] = [
-//                        'class' => $collectedMethodCallArgType[0],
-//                        'method' => $collectedMethodCallArgType[1],
-//                        'position' => $collectedMethodCallArgType[2],
-//                        'type' => $collectedMethodCallArgType[3],
-//                    ];
+        //                    $data[$uniqueHash] = [
+        //                        'class' => $collectedMethodCallArgType[0],
+        //                        'method' => $collectedMethodCallArgType[1],
+        //                        'position' => $collectedMethodCallArgType[2],
+        //                        'type' => $collectedMethodCallArgType[3],
+        //                    ];
 
         // comply with contract, but never used
         return [];

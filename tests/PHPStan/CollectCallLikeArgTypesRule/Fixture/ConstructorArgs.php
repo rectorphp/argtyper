@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\Fixture;
+namespace Rector\ArgTyper\Tests\PHPStan\CollectCallLikeArgTypesRule\Fixture;
 
-use Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\Source\ObjectWithConstructor;
+use Rector\ArgTyper\Tests\PHPStan\CollectCallLikeArgTypesRule\Source\ObjectWithConstructor;
 
 final class ConstructorArgs
 {

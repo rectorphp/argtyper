@@ -16,9 +16,9 @@ use Rector\ArgTyper\PHPStan\Collectors\CallLikeArgTypeCollector;
 /**
  * @implements Rule<CollectedDataNode>
  *
- * @see \Rector\ArgTyper\Tests\PHPStan\DumpCallLikeArgTypesRule\DumpCallLikeArgTypesRuleTest
+ * @see \Rector\ArgTyper\Tests\PHPStan\CollectCallLikeArgTypesRule\CollectCallLikeArgTypesRuleTest
  */
-final class DumpCallLikeArgTypesRule implements Rule
+final class CollectCallLikeArgTypesRule implements Rule
 {
     /**
      * @return class-string<Node>
