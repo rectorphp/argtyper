@@ -94,7 +94,6 @@ final readonly class CallLikeArgTypeCollector implements Collector
         $classNameTypes = [];
         foreach ($node->getArgs() as $key => $arg) {
 
-
             dump($arg->value);
             dump($scope->getType($arg->value));
 
