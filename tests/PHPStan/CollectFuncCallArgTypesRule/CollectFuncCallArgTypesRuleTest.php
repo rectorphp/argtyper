@@ -18,27 +18,21 @@ use Webmozart\Assert\Assert;
  */
 final class CollectFuncCallArgTypesRuleTest extends RuleTestCase
 {
-    public function testMethodCallAndStaticCall(): void
+    public function test(): void
     {
         $collectedTypes = $this->collectDataInFile(__DIR__ . '/Fixture/SimpleFunctionCall.php');
 
-        $this->assertSame(
-            [
-                'function' => 'Rector\ArgTyper\Tests\PHPStan\CollectFuncCallArgTypesRule\Source\someFunction',
-                'position' => 0,
-                'type' => IntegerType::class,
-            ],
-            $collectedTypes[0]
-        );
+        $this->assertSame([
+            'function' => 'Rector\ArgTyper\Tests\PHPStan\CollectFuncCallArgTypesRule\Source\someFunction',
+            'position' => 0,
+            'type' => IntegerType::class,
+        ], $collectedTypes[0]);
 
-        $this->assertSame(
-            [
-                'function' => 'Rector\ArgTyper\Tests\PHPStan\CollectFuncCallArgTypesRule\Source\someFunction',
-                'position' => 1,
-                'type' => FloatType::class,
-            ],
-            $collectedTypes[1]
-        );
+        $this->assertSame([
+            'function' => 'Rector\ArgTyper\Tests\PHPStan\CollectFuncCallArgTypesRule\Source\someFunction',
+            'position' => 1,
+            'type' => FloatType::class,
+        ], $collectedTypes[1]);
     }
 
     /**
