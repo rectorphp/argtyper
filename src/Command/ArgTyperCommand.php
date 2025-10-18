@@ -27,7 +27,7 @@ final class ArgTyperCommand extends Command
     /**
      * @return Command::*
      */
-    public function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectPath = (string) $input->getArgument('project-path');
 
@@ -68,7 +68,7 @@ final class ArgTyperCommand extends Command
     {
         $this->symfonyStyle->title('1. Running PHPStan to collect data...');
 
-        $dirs = array_map(static fn (string $d) => escapeshellarg($d), $projectDirs);
+        $dirs = array_map(static fn (string $d): string => escapeshellarg($d), $projectDirs);
 
         // Keep paths the same as in the original script
         $cmd = sprintf(
@@ -103,6 +103,7 @@ final class ArgTyperCommand extends Command
         if ($isDebug) {
             $this->symfonyStyle->note($cmd);
         }
+
         $this->runShell($cmd, $isDebug);
 
         $this->symfonyStyle->newLine();
