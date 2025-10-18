@@ -112,7 +112,6 @@ final class CollectCallLikeArgTypesRuleTest extends RuleTestCase
     private function collectDataInFile(string $fixtureFilePath): array
     {
         Assert::fileExists($fixtureFilePath);
-
         $this->analyse([$fixtureFilePath], []);
 
         return FilesLoader::loadJsonl(ConfigFilePath::callLikes());

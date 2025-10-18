@@ -31,7 +31,7 @@
             "Rector\\ArgTyper\\Tests\\": "tests"
         },
         "files": [
-            "tests/PHPStan/DumpFuncCallArgTypesRule/Source/some_function.php"
+            "tests/PHPStan/CollectFuncCallArgTypesRule/Source/some_function.php"
         ]
     },
     "config": {

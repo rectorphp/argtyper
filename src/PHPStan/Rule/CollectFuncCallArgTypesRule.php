@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Rector\ArgTyper\PHPStan\Collectors;
+namespace Rector\ArgTyper\PHPStan\Rule;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
-use PHPStan\Collectors\Collector;
 use PHPStan\Reflection\ReflectionProvider;
+use PHPStan\Rules\Rule;
+use Rector\ArgTyper\Enum\ConfigFilePath;
+use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Helpers\ReflectionChecker;
 use Rector\ArgTyper\PHPStan\TypeMapper;
 
 /**
- * @implements Collector<FuncCall, array<array{0: string, 1: string, 2: string}>>
+ * @implements Rule<FuncCall>
  *
- * @see \Rector\ArgTyper\PHPStan\Rule\DumpFuncCallArgTypesRule
- *
- * @see \Rector\ArgTyper\Tests\PHPStan\DumpFuncCallArgTypesRule\DumpFuncCallArgTypesRuleTest
+ * @see \Rector\ArgTyper\Tests\PHPStan\CollectFuncCallArgTypesRule\CollectFuncCallArgTypesRuleTest
  */
-final readonly class FuncCallTypeCollector implements Collector
+final readonly class CollectFuncCallArgTypesRule implements Rule
 {
     private TypeMapper $typeMapper;
 
@@ -38,42 +38,43 @@ final readonly class FuncCallTypeCollector implements Collector
     /**
      * @param FuncCall $node
      */
-    public function processNode(Node $node, Scope $scope): ?array
+    public function processNode(Node $node, Scope $scope): array
     {
         // nothing to find here
         if ($node->isFirstClassCallable() || $node->getArgs() === []) {
-            return null;
+            return [];
         }
 
         if (! $node->name instanceof Name) {
-            return null;
+            return [];
         }
 
         if (! $this->reflectionProvider->hasFunction($node->name, $scope)) {
-            return null;
+            return [];
         }
 
         $functionReflection = $this->reflectionProvider->getFunction($node->name, $scope);
         if (ReflectionChecker::shouldSkipFunctionReflection($functionReflection)) {
-            return null;
+            return [];
         }
 
-        $functionArgTypes = [];
         foreach ($node->getArgs() as $key => $arg) {
-
             $typeString = $this->typeMapper->mapToStringIfUseful($arg, $scope);
             if (! is_string($typeString)) {
                 continue;
             }
 
-            $functionArgTypes[] = [$functionReflection->getName(), $key, $typeString];
+            FilesLoader::writeJsonl(
+                ConfigFilePath::callLikes(),
+                [
+                    'function' => $functionReflection->getName(),
+                    'position' => $key,
+                    'type' => $typeString,
+                ]
+            );
         }
 
-        // nothing to return
-        if ($functionArgTypes === []) {
-            return null;
-        }
-
-        return $functionArgTypes;
+        // nothing to return, just comply with contract
+        return [];
     }
 }
