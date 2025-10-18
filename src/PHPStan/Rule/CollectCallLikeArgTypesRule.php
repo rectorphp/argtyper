@@ -28,7 +28,7 @@ use Rector\ArgTyper\PHPStan\TypeMapper;
  *
  * @see \Rector\ArgTyper\Tests\PHPStan\CollectCallLikeArgTypesRule\CollectCallLikeArgTypesRuleTest
  */
-final class CollectCallLikeArgTypesRule implements Rule
+final readonly class CollectCallLikeArgTypesRule implements Rule
 {
     private TypeMapper $typeMapper;
 
