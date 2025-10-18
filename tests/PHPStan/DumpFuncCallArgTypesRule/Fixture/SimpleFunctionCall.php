@@ -10,6 +10,6 @@ final class SimpleFunctionCall
 {
     public function run(): void
     {
-        someFunction(100, 200);
+        someFunction(100, 200.0);
     }
 }

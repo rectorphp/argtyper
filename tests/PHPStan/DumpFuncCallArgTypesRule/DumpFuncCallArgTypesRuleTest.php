@@ -10,6 +10,7 @@ use PHPStan\Collectors\Collector;
 use PHPStan\Rules\DirectRegistry;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
+use PHPStan\Type\FloatType;
 use PHPStan\Type\IntegerType;
 use Rector\ArgTyper\PHPStan\Collectors\FuncCallTypeCollector;
 use Rector\ArgTyper\PHPStan\Rule\DumpFuncCallArgTypesRule;
@@ -32,7 +33,7 @@ final class DumpFuncCallArgTypesRuleTest extends RuleTestCase
 
         $secondItem = $collectedData[0][1];
         $this->assertSame(
-            ['Rector\ArgTyper\Tests\PHPStan\DumpFuncCallArgTypesRule\Source\someFunction', 1, IntegerType::class],
+            ['Rector\ArgTyper\Tests\PHPStan\DumpFuncCallArgTypesRule\Source\someFunction', 1, FloatType::class],
             $secondItem
         );
     }
