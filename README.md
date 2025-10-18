@@ -1,4 +1,4 @@
-# Arg Typer – Fill Parameter Types Based on Passed Values
+# Arg Typer: Fill Parameter Types based on Passed Values
 
 There are often more known types in your project than meets the eye.  
 This tool detects the **real** types passed into method and function calls using PHPStan.
@@ -65,6 +65,8 @@ Run it in your project directory:
 vendor/bin/argtyper .
 ```
 
+<br>
+
 Or on another project:
 
 ```bash
@@ -77,7 +79,7 @@ To see more details during the process, add the `--debug` option.
 
 ## How It Works
 
-1. A set of custom PHPStan rules scans your code and records the argument types passed to method calls, static calls, `new` expressions, and function calls. It stores this data in temporary `*.json` files in the following format:
+At first, a set of custom PHPStan rules scans your code and records the argument types passed to method calls, static calls, `new` expressions, and function calls. It stores this data in temporary `*.json` files in the following format:
 
 ```json
 [
@@ -90,7 +92,9 @@ To see more details during the process, add the `--debug` option.
 ]
 ```
 
-2. Then, custom Rector rules go through the codebase and fill in the known parameter types based on the collected data — but only where they’re missing.
+<br>
+
+Then, custom Rector rules go through the codebase and fill in the known parameter types based on the collected data — but only where they’re missing.
 
 With a few exceptions:
 
