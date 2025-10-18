@@ -87,8 +87,17 @@ final readonly class CallLikeArgTypeCollector implements Collector
 
         $className = $classReflection->getName();
 
+        if ($methodName !== 'ResetRatesForDate') {
+            return null;
+        }
+
         $classNameTypes = [];
         foreach ($node->getArgs() as $key => $arg) {
+
+
+            dump($arg->value);
+            dump($scope->getType($arg->value));
+
             $typeString = $this->typeMapper->mapToStringIfUseful($arg, $scope);
             if (! is_string($typeString)) {
                 continue;
