@@ -5,19 +5,24 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\Rector\Rector\ClassMethod;
 
 use PhpParser\Node;
+use PhpParser\Node\Identifier;
 use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\UnionType;
+use PHPStan\Type\IntegerType;
 use PHPStan\Type\NeverType;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ResourceType;
 use Rector\ArgTyper\Configuration\CallLikeTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\NodeTypeChecker;
 use Rector\ArgTyper\Rector\TypeResolver;
+use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\Rector\AbstractRector;
+use Rector\ValueObject\MethodName;
 use Rector\VendorLocker\ParentClassMethodTypeOverrideGuard;
 
 /**
@@ -48,7 +53,7 @@ final class AddClassMethodParamTypeRector extends AbstractRector
         $hasChanged = false;
 
         foreach ($node->getMethods() as $classMethod) {
-            if (($classMethod->isMagic() && $classMethod->name->toString() !== '__construct') || $classMethod->getParams() === []) {
+            if ($this->shouldSkipClassMethod($classMethod)) {
                 continue;
             }
 
@@ -74,13 +79,21 @@ final class AddClassMethodParamTypeRector extends AbstractRector
 
                 $classMethodType = $paramClassMethodTypes[0];
 
-                // nothing useful
-                if (in_array($classMethodType->getType(), [NullType::class, ResourceType::class, NeverType::class])) {
+                // nothing useful in type declarations
+                if (in_array(
+                    $classMethodType->getType(),
+                    [NullType::class, ResourceType::class, NeverType::class],
+                    true
+                )) {
                     continue;
                 }
 
                 $isNullable = NodeTypeChecker::isParamNullable($param);
                 $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
+
+                if ($this->shouldSkipOverride($param, $classMethodType)) {
+                    continue;
+                }
 
                 if ($classMethodType->isObjectType() && ($param->type instanceof Name || ($param->type instanceof NullableType && $param->type->type instanceof Name))) {
                     // skip already set object type
@@ -102,5 +115,37 @@ final class AddClassMethodParamTypeRector extends AbstractRector
         }
 
         return $node;
+    }
+
+    private function shouldSkipClassMethod(ClassMethod $classMethod): bool
+    {
+        // empty params
+        if ($classMethod->getParams() === []) {
+            return true;
+        }
+
+        if ($classMethod->name->toString() === MethodName::CONSTRUCT) {
+            return false;
+        }
+
+        return $classMethod->isMagic() === true;
+    }
+
+    private function shouldSkipOverride(Param $param, ClassMethodType $classMethodType): bool
+    {
+        if (! $param->type instanceof Identifier) {
+            return false;
+        }
+
+        if ($param->type->toString() === 'float' || $classMethodType->getType() === IntegerType::class) {
+            return true;
+        }
+
+        if ($classMethodType->isObjectType() && ($param->type instanceof Name || ($param->type instanceof NullableType && $param->type->type instanceof Name))) {
+            // skip already set object type
+            return true;
+        }
+
+        return false;
     }
 }

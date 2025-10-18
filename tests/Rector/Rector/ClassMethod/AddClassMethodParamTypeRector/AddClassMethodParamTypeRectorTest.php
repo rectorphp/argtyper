@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector;
 
+use Iterator;
 use PHPStan\Type\IntegerType;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Rector\ArgTyper\Configuration\CallLikeTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
 use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture\KeepDateTimeInterface;
 use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture\KeepNullableDateTimeInterface;
+use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture\SkipIntToFloatOverride;
 use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture\SkipParentContract;
 use Rector\Testing\PHPUnit\AbstractRectorTestCase;
 
@@ -29,13 +31,14 @@ final class AddClassMethodParamTypeRectorTest extends AbstractRectorTestCase
             new ClassMethodType(SkipParentContract::class, 'checkItem', 0, IntegerType::class),
             new ClassMethodType(KeepNullableDateTimeInterface::class, 'record', 0, 'object:' . \DateTime::class),
             new ClassMethodType(KeepDateTimeInterface::class, 'record', 0, 'object:' . \DateTime::class),
+            new ClassMethodType(SkipIntToFloatOverride::class, 'passInteger', 0, IntegerType::class),
         ];
         $callLikeTypesConfigurationProvider->seedClassMethodTypes($classMethodTypes);
 
         $this->doTestFile($filePath);
     }
 
-    public static function provideData(): \Iterator
+    public static function provideData(): Iterator
     {
         return self::yieldFilesFromDirectory(__DIR__ . '/Fixture');
     }
