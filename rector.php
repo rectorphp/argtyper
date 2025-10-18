@@ -19,4 +19,7 @@ return RectorConfig::configure()
         naming: true,
         phpunitCodeQuality: true,
     )
-    ->withSkip(['*/Source', '*/Fixture']);
+    ->withSkip(['*/Source', '*/Fixture',
+        \Rector\CodingStyle\Rector\ClassMethod\MakeInheritedMethodVisibilitySameAsParentRector::class => [
+            __DIR__ . '/src/Command/ArgTyperCommand.php',
+        ]]);

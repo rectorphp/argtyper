@@ -27,7 +27,7 @@ final class ArgTyperCommand extends Command
     /**
      * @return Command::*
      */
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    public function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectPath = (string) $input->getArgument('project-path');
 

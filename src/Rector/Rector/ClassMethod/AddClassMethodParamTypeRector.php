@@ -128,7 +128,7 @@ final class AddClassMethodParamTypeRector extends AbstractRector
             return false;
         }
 
-        return $classMethod->isMagic() === true;
+        return $classMethod->isMagic();
     }
 
     private function shouldSkipOverride(Param $param, ClassMethodType $classMethodType): bool
@@ -141,11 +141,7 @@ final class AddClassMethodParamTypeRector extends AbstractRector
             return true;
         }
 
-        if ($classMethodType->isObjectType() && ($param->type instanceof Name || ($param->type instanceof NullableType && $param->type->type instanceof Name))) {
-            // skip already set object type
-            return true;
-        }
-
-        return false;
+        // skip already set object type
+        return $classMethodType->isObjectType() && ($param->type instanceof Name || ($param->type instanceof NullableType && $param->type->type instanceof Name));
     }
 }
