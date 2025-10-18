@@ -137,7 +137,8 @@ final class AddClassMethodParamTypeRector extends AbstractRector
             return false;
         }
 
-        if ($param->type->toString() === 'float' || $classMethodType->getType() === IntegerType::class) {
+        // just to be safe
+        if (in_array($param->type->toString(), ['iterable', 'float'], true)) {
             return true;
         }
 
