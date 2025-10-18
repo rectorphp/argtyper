@@ -57,6 +57,9 @@ final class FilesLoader
         Assert::fileExists($filePath);
 
         $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+        Assert::isArray($lines);
+
         $records = [];
 
         foreach ($lines as $line) {
