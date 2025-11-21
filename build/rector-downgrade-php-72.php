@@ -6,4 +6,4 @@ use Rector\Config\RectorConfig;
 
 return RectorConfig::configure()
     ->withDowngradeSets(php72: true)
-    ->withSkip(['*/Tests/*', '*/tests/*', __DIR__ . '/../../tests']);
+    ->withSkip([__DIR__ . '/../tests']);
