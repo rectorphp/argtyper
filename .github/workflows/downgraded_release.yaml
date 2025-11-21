@@ -3,10 +3,7 @@ name: Downgraded Release
 on:
     push:
         tags:
-            # avoid infinite looping, skip tags that ends with ".72"
-            # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-including-and-excluding-branches
             - '*'
-            - '!**.72'
 
 jobs:
     downgrade_release:
@@ -53,6 +50,7 @@ jobs:
                 run: |
                     git config user.email "action@github.com"
                     git config user.name "GitHub Action"
+
             # publish to the same repository with a new tag
             # see https://tomasvotruba.com/blog/how-to-release-php-81-and-72-package-in-the-same-repository/
             -
