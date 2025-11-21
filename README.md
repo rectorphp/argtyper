@@ -1,11 +1,15 @@
-# Arg Typer: Fill Parameter Types based on Passed Values
+# Fill Parameter Types based on Passed Values
 
 There are often more known types in your project than meets the eye.  
 This tool detects the **real** types passed into method and function calls using PHPStan.
 
+<br>
+
 ```php
 $this->hotelOverview->makeRoomAvailable(324);
 ```
+
+<br>
 
 Later in the code...
 
@@ -15,6 +19,8 @@ public function roomDetail(int $roomNumber)
     $this->hotelOverview->makeRoomAvailable($roomNumber);
 }
 ```
+
+<br>
 
 Later in tests...
 
