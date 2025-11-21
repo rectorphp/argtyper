@@ -22,7 +22,6 @@ if (file_exists(__DIR__ . '/../vendor/scoper-autoload.php')) {
     require_once __DIR__ . '/../vendor/autoload.php';
 }
 
-
 $argTyperCommand = new ArgTyperCommand(
     new ProjectSourceDirFinder(),
     new SymfonyStyle(new ArrayInput([]), new ConsoleOutput())
