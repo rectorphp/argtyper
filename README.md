@@ -62,7 +62,7 @@ composer require rector/argtyper --dev
 Run it in your project directory:
 
 ```bash
-vendor/bin/argtyper .
+vendor/bin/argtyper add-types .
 ```
 
 <br>
@@ -70,7 +70,7 @@ vendor/bin/argtyper .
 Or on another project:
 
 ```bash
-vendor/bin/argtyper project
+vendor/bin/argtyper add-types project
 ```
 
 To see more details during the process, add the `--debug` option.

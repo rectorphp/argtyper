@@ -15,7 +15,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Process\Process;
 use Webmozart\Assert\Assert;
 
-final class ArgTyperCommand extends Command
+final class AddTypesCommand extends Command
 {
     public function __construct(
         private readonly ProjectSourceDirFinder $projectSourceDirFinder,
@@ -24,10 +24,21 @@ final class ArgTyperCommand extends Command
         parent::__construct();
     }
 
+
+
+    protected function configure(): void
+    {
+        $this->setName('add-types');
+
+        $this->addArgument('project-path', InputArgument::REQUIRED, 'Path to the target project root');
+
+        $this->addOption('debug', null, null, 'Enable debug output');
+    }
+
     /**
      * @return Command::*
      */
-    public function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectPath = (string) $input->getArgument('project-path');
 
@@ -58,15 +69,6 @@ final class ArgTyperCommand extends Command
         $this->removeTempFiles();
 
         return Command::SUCCESS;
-    }
-
-    protected function configure(): void
-    {
-        $this->setName('argtyper');
-
-        $this->addArgument('project-path', InputArgument::REQUIRED, 'Path to the target project root');
-
-        $this->addOption('debug', null, null, 'Enable debug output');
     }
 
     /**
