@@ -1,0 +1,39 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\DeadCode\PhpDoc\TagRemover;
+
+use Argtyper202511\PhpParser\Node\Stmt\ClassMethod;
+use Argtyper202511\PhpParser\Node\Stmt\Function_;
+use Argtyper202511\PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
+use Argtyper202511\Rector\DeadCode\PhpDoc\DeadReturnTagValueNodeAnalyzer;
+final class ReturnTagRemover
+{
+    /**
+     * @readonly
+     * @var \Rector\DeadCode\PhpDoc\DeadReturnTagValueNodeAnalyzer
+     */
+    private $deadReturnTagValueNodeAnalyzer;
+    public function __construct(DeadReturnTagValueNodeAnalyzer $deadReturnTagValueNodeAnalyzer)
+    {
+        $this->deadReturnTagValueNodeAnalyzer = $deadReturnTagValueNodeAnalyzer;
+    }
+    /**
+     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_ $functionLike
+     */
+    public function removeReturnTagIfUseless(PhpDocInfo $phpDocInfo, $functionLike): bool
+    {
+        // remove existing type
+        $returnTagValueNode = $phpDocInfo->getReturnTagValue();
+        if (!$returnTagValueNode instanceof ReturnTagValueNode) {
+            return \false;
+        }
+        $isReturnTagValueDead = $this->deadReturnTagValueNodeAnalyzer->isDead($returnTagValueNode, $functionLike);
+        if (!$isReturnTagValueDead) {
+            return \false;
+        }
+        $phpDocInfo->removeByType(ReturnTagValueNode::class);
+        return \true;
+    }
+}

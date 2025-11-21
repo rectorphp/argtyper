@@ -1,0 +1,129 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Doctrine\Orm28\Rector\MethodCall;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr;
+use Argtyper202511\PhpParser\Node\Expr\ArrayDimFetch;
+use Argtyper202511\PhpParser\Node\Expr\MethodCall;
+use Argtyper202511\PhpParser\Node\Identifier;
+use Argtyper202511\PhpParser\Node\Name;
+use Argtyper202511\PhpParser\Node\Stmt\ClassMethod;
+use Argtyper202511\PhpParser\Node\Stmt\Foreach_;
+use Argtyper202511\PHPStan\Type\ObjectType;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @changelog https://github.com/doctrine/orm/pull/7885
+ * @changelog https://github.com/doctrine/orm/pull/8293
+ *
+ * @see \Rector\Doctrine\Tests\Orm28\Rector\MethodCall\IterateToToIterableRector\IterateToToIterableRectorTest
+ */
+final class IterateToToIterableRector extends AbstractRector
+{
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes(): array
+    {
+        return [MethodCall::class, ClassMethod::class, Foreach_::class];
+    }
+    public function getRuleDefinition(): RuleDefinition
+    {
+        return new RuleDefinition('Change iterate() => toIterable()', [new CodeSample(<<<'CODE_SAMPLE'
+use Doctrine\ORM\EntityRepository;
+use Doctrine\ORM\Internal\Hydration\IterableResult;
+
+class SomeRepository extends EntityRepository
+{
+    public function run(): IterateResult
+    {
+        /** @var \Doctrine\ORM\AbstractQuery $query */
+        $query = $this->getEntityManager()->select('e')->from('entity')->getQuery();
+
+        return $query->iterate();
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+use Doctrine\ORM\EntityRepository;
+use Doctrine\ORM\Internal\Hydration\IterableResult;
+
+class SomeRepository extends EntityRepository
+{
+    public function run(): iterable
+    {
+        /** @var \Doctrine\ORM\AbstractQuery $query */
+        $query = $this->getEntityManager()->select('e')->from('entity')->getQuery();
+
+        return $query->toIterable();
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @param ClassMethod|MethodCall|Foreach_ $node
+     * @return \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Foreach_|null
+     */
+    public function refactor(Node $node)
+    {
+        if ($node instanceof ClassMethod) {
+            return $this->refactorClassMethod($node);
+        }
+        if ($node instanceof Foreach_) {
+            return $this->refactorForeach($node);
+        }
+        $varType = $this->nodeTypeResolver->getType($node->var);
+        if (!$varType instanceof ObjectType) {
+            return null;
+        }
+        if (!$varType->isInstanceOf('Argtyper202511\Doctrine\ORM\AbstractQuery')->yes()) {
+            return null;
+        }
+        // Change iterate() method calls to toIterable()
+        if (!$this->isName($node->name, 'iterate')) {
+            return null;
+        }
+        $node->name = new Identifier('toIterable');
+        return $node;
+    }
+    private function refactorClassMethod(ClassMethod $classMethod): ?ClassMethod
+    {
+        if (!$classMethod->returnType instanceof Node) {
+            return null;
+        }
+        if (!$this->isName($classMethod->returnType, 'Argtyper202511\Doctrine\ORM\Internal\Hydration\IterableResult')) {
+            return null;
+        }
+        $classMethod->returnType = new Name('iterable');
+        return $classMethod;
+    }
+    private function refactorForeach(Foreach_ $foreach): ?Foreach_
+    {
+        $foreachedExprType = $this->getType($foreach->expr);
+        if (!$foreachedExprType instanceof ObjectType) {
+            return null;
+        }
+        if (!$foreachedExprType->isInstanceOf('Argtyper202511\Doctrine\ORM\Internal\Hydration\IterableResult')->yes()) {
+            return null;
+        }
+        $itemName = $this->getName($foreach->valueVar);
+        if (!is_string($itemName)) {
+            return null;
+        }
+        $this->traverseNodesWithCallable($foreach->stmts, function (Node $node) use ($itemName): ?Expr {
+            // update dim fetched reference to direct ones
+            if (!$node instanceof ArrayDimFetch) {
+                return null;
+            }
+            if (!$this->isName($node->var, $itemName)) {
+                return null;
+            }
+            return $node->var;
+        });
+        return $foreach;
+    }
+}

@@ -1,0 +1,117 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Doctrine\TypedCollections\Rector\ClassMethod;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\Variable;
+use Argtyper202511\PhpParser\Node\Name;
+use Argtyper202511\PhpParser\Node\Stmt\ClassMethod;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
+use Argtyper202511\Rector\Comments\NodeDocBlock\DocBlockUpdater;
+use Argtyper202511\Rector\Doctrine\Enum\DoctrineClass;
+use Argtyper202511\Rector\Doctrine\TypedCollections\DocBlockProcessor\UnionCollectionTagValueNodeNarrower;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Doctrine\Tests\TypedCollections\Rector\ClassMethod\NarrowParamUnionToCollectionRector\NarrowParamUnionToCollectionRectorTest
+ */
+final class NarrowParamUnionToCollectionRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
+     */
+    private $phpDocInfoFactory;
+    /**
+     * @readonly
+     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
+     */
+    private $docBlockUpdater;
+    /**
+     * @readonly
+     * @var \Rector\Doctrine\TypedCollections\DocBlockProcessor\UnionCollectionTagValueNodeNarrower
+     */
+    private $unionCollectionTagValueNodeNarrower;
+    public function __construct(PhpDocInfoFactory $phpDocInfoFactory, DocBlockUpdater $docBlockUpdater, UnionCollectionTagValueNodeNarrower $unionCollectionTagValueNodeNarrower)
+    {
+        $this->phpDocInfoFactory = $phpDocInfoFactory;
+        $this->docBlockUpdater = $docBlockUpdater;
+        $this->unionCollectionTagValueNodeNarrower = $unionCollectionTagValueNodeNarrower;
+    }
+    public function getRuleDefinition(): RuleDefinition
+    {
+        return new RuleDefinition('Narrow union param docblock type to Collection type in class method', [new CodeSample(<<<'CODE_SAMPLE'
+use Doctrine\Common\Collections\Collection;
+
+class SomeClass
+{
+    /**
+     * @param Collection|array $items
+     */
+    public function run($items)
+    {
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+use Doctrine\Common\Collections\Collection;
+
+class SomeClass
+{
+    /**
+     * @param Collection $items
+     */
+    public function run($items)
+    {
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    public function getNodeTypes(): array
+    {
+        return [ClassMethod::class];
+    }
+    /**
+     * @param ClassMethod $node
+     */
+    public function refactor(Node $node): ?ClassMethod
+    {
+        $hasChanged = \false;
+        $classMethodPhpDocInfo = $this->phpDocInfoFactory->createFromNode($node);
+        if (!$classMethodPhpDocInfo instanceof PhpDocInfo) {
+            return null;
+        }
+        foreach ($classMethodPhpDocInfo->getParamTagValueNodes() as $paramTagValueNode) {
+            $hasNativeCollectionType = $this->isParameterNameNativeCollectionType($node, $paramTagValueNode->parameterName);
+            $paramHasChanged = $this->unionCollectionTagValueNodeNarrower->narrow($paramTagValueNode, $hasNativeCollectionType);
+            if ($paramHasChanged) {
+                $hasChanged = \true;
+            }
+        }
+        if ($hasChanged) {
+            $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($node);
+            return $node;
+        }
+        return null;
+    }
+    private function isParameterNameNativeCollectionType(ClassMethod $classMethod, string $parameterName): bool
+    {
+        foreach ($classMethod->getParams() as $param) {
+            if (!$param->var instanceof Variable) {
+                continue;
+            }
+            if (!$this->isName($param->var, ltrim($parameterName, '$'))) {
+                continue;
+            }
+            if (!$param->type instanceof Name) {
+                continue;
+            }
+            return $this->isName($param->type, DoctrineClass::COLLECTION);
+        }
+        return \false;
+    }
+}

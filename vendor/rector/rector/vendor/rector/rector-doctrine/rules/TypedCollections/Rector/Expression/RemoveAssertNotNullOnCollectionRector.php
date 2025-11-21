@@ -1,0 +1,80 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Doctrine\TypedCollections\Rector\Expression;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\StaticCall;
+use Argtyper202511\PhpParser\Node\Stmt\Expression;
+use Argtyper202511\PhpParser\NodeVisitor;
+use Argtyper202511\RectorPrefix202511\PHPUnit\Framework\Assert;
+use Argtyper202511\Rector\Doctrine\TypedCollections\TypeAnalyzer\CollectionTypeDetector;
+use Argtyper202511\Rector\PHPUnit\Enum\PHPUnitClassName;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Doctrine\Tests\TypedCollections\Rector\Expression\RemoveAssertNotNullOnCollectionRector\RemoveAssertNotNullOnCollectionRectorTest
+ */
+final class RemoveAssertNotNullOnCollectionRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\Doctrine\TypedCollections\TypeAnalyzer\CollectionTypeDetector
+     */
+    private $collectionTypeDetector;
+    public function __construct(CollectionTypeDetector $collectionTypeDetector)
+    {
+        $this->collectionTypeDetector = $collectionTypeDetector;
+    }
+    public function getRuleDefinition(): RuleDefinition
+    {
+        return new RuleDefinition('Remove ' . Assert::class . '::assertNotNull() on a Collection type', [new CodeSample(<<<'CODE_SAMPLE'
+use Doctrine\Common\Collections\Collection;
+
+class SomeClass
+{
+    public function run(Collection $collection): void
+    {
+        Assert::assertNotNull($collection);
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+use Doctrine\Common\Collections\Collection;
+
+class SomeClass
+{
+    public function run(Collection $collection): void
+    {
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    public function getNodeTypes(): array
+    {
+        return [Expression::class];
+    }
+    /**
+     * @param Expression $node
+     */
+    public function refactor(Node $node): ?int
+    {
+        if (!$node->expr instanceof StaticCall) {
+            return null;
+        }
+        $staticCall = $node->expr;
+        if (!$this->isName($staticCall->name, 'assertNotNull')) {
+            return null;
+        }
+        if (!$this->isName($staticCall->class, PHPUnitClassName::ASSERT)) {
+            return null;
+        }
+        $firstArg = $staticCall->getArgs()[0];
+        if (!$this->collectionTypeDetector->isCollectionType($firstArg->value)) {
+            return null;
+        }
+        return NodeVisitor::REMOVE_NODE;
+    }
+}

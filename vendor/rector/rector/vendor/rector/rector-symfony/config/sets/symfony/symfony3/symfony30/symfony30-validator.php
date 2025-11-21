@@ -1,0 +1,13 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\RectorPrefix202511;
+
+use Argtyper202511\Rector\Config\RectorConfig;
+use Argtyper202511\Rector\Renaming\Rector\MethodCall\RenameMethodRector;
+use Argtyper202511\Rector\Renaming\Rector\Name\RenameClassRector;
+use Argtyper202511\Rector\Renaming\ValueObject\MethodCallRename;
+return static function (RectorConfig $rectorConfig): void {
+    $rectorConfig->ruleWithConfiguration(RenameClassRector::class, ['Argtyper202511\Symfony\Component\Validator\Constraints\Collection\Optional' => 'Argtyper202511\Symfony\Component\Validator\Constraints\Optional', 'Argtyper202511\Symfony\Component\Validator\Constraints\Collection\Required' => 'Argtyper202511\Symfony\Component\Validator\Constraints\Required', 'Argtyper202511\Symfony\Component\Validator\MetadataInterface' => 'Argtyper202511\Symfony\Component\Validator\Mapping\MetadataInterface', 'Argtyper202511\Symfony\Component\Validator\PropertyMetadataInterface' => 'Argtyper202511\Symfony\Component\Validator\Mapping\PropertyMetadataInterface', 'Argtyper202511\Symfony\Component\Validator\PropertyMetadataContainerInterface' => 'Argtyper202511\Symfony\Component\Validator\Mapping\ClassMetadataInterface', 'Argtyper202511\Symfony\Component\Validator\ClassBasedInterface' => 'Argtyper202511\Symfony\Component\Validator\Mapping\ClassMetadataInterface', 'Argtyper202511\Symfony\Component\Validator\Mapping\ElementMetadata' => 'Argtyper202511\Symfony\Component\Validator\Mapping\GenericMetadata', 'Argtyper202511\Symfony\Component\Validator\ExecutionContextInterface' => 'Argtyper202511\Symfony\Component\Validator\Context\ExecutionContextInterface', 'Argtyper202511\Symfony\Component\Validator\Mapping\ClassMetadataFactory' => 'Argtyper202511\Symfony\Component\Validator\Mapping\Factory\LazyLoadingMetadataFactory', 'Argtyper202511\Symfony\Component\Validator\Mapping\MetadataFactoryInterface' => 'Argtyper202511\Symfony\Component\Validator\Mapping\Factory\MetadataFactoryInterface']);
+    $rectorConfig->ruleWithConfiguration(RenameMethodRector::class, [new MethodCallRename('Argtyper202511\Symfony\Component\Validator\ConstraintViolationInterface', 'getMessageParameters', 'getParameters'), new MethodCallRename('Argtyper202511\Symfony\Component\Validator\ConstraintViolationInterface', 'getMessagePluralization', 'getPlural'), new MethodCallRename('Argtyper202511\Symfony\Component\Validator\ConstraintViolation', 'getMessageParameters', 'getParameters'), new MethodCallRename('Argtyper202511\Symfony\Component\Validator\ConstraintViolation', 'getMessagePluralization', 'getPlural')]);
+};

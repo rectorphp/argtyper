@@ -1,0 +1,60 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\PHPStanStaticTypeMapper\TypeMapper;
+
+use Argtyper202511\PhpParser\Node\Name;
+use Argtyper202511\PHPStan\PhpDocParser\Ast\Type\TypeNode;
+use Argtyper202511\PHPStan\Type\StaticType;
+use Argtyper202511\PHPStan\Type\Type;
+use Argtyper202511\Rector\Enum\ObjectReference;
+use Argtyper202511\Rector\Php\PhpVersionProvider;
+use Argtyper202511\Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
+use Argtyper202511\Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+use Argtyper202511\Rector\StaticTypeMapper\ValueObject\Type\SelfStaticType;
+use Argtyper202511\Rector\StaticTypeMapper\ValueObject\Type\SimpleStaticType;
+use Argtyper202511\Rector\ValueObject\PhpVersionFeature;
+/**
+ * @see \Rector\Tests\NodeTypeResolver\StaticTypeMapper\StaticTypeMapperTest
+ *
+ * @implements TypeMapperInterface<StaticType>
+ */
+final class StaticTypeMapper implements TypeMapperInterface
+{
+    /**
+     * @readonly
+     * @var \Rector\Php\PhpVersionProvider
+     */
+    private $phpVersionProvider;
+    public function __construct(PhpVersionProvider $phpVersionProvider)
+    {
+        $this->phpVersionProvider = $phpVersionProvider;
+    }
+    public function getNodeClass(): string
+    {
+        return StaticType::class;
+    }
+    /**
+     * @param StaticType $type
+     */
+    public function mapToPHPStanPhpDocTypeNode(Type $type): TypeNode
+    {
+        return $type->toPhpDocNode();
+    }
+    /**
+     * @param SimpleStaticType|StaticType $type
+     */
+    public function mapToPhpParserNode(Type $type, string $typeKind): ?\Argtyper202511\PhpParser\Node
+    {
+        if ($type instanceof SelfStaticType) {
+            return new Name(ObjectReference::SELF);
+        }
+        if ($typeKind !== TypeKind::RETURN) {
+            return new Name(ObjectReference::SELF);
+        }
+        if (!$this->phpVersionProvider->isAtLeastPhpVersion(PhpVersionFeature::STATIC_RETURN_TYPE)) {
+            return new Name(ObjectReference::SELF);
+        }
+        return new Name(ObjectReference::STATIC);
+    }
+}

@@ -1,0 +1,49 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Symfony\NodeAnalyzer;
+
+use Argtyper202511\PhpParser\Node\Expr\ClassConstFetch;
+use Argtyper202511\PhpParser\Node\Expr\MethodCall;
+use Argtyper202511\PhpParser\Node\Name;
+use Argtyper202511\PhpParser\Node\Scalar\String_;
+use Argtyper202511\PHPStan\Type\MixedType;
+use Argtyper202511\PHPStan\Type\ObjectType;
+use Argtyper202511\PHPStan\Type\Type;
+use Argtyper202511\Rector\NodeNameResolver\NodeNameResolver;
+use Argtyper202511\Rector\Symfony\DataProvider\ServiceMapProvider;
+final class ServiceTypeMethodCallResolver
+{
+    /**
+     * @readonly
+     * @var \Rector\Symfony\DataProvider\ServiceMapProvider
+     */
+    private $serviceMapProvider;
+    /**
+     * @readonly
+     * @var \Rector\NodeNameResolver\NodeNameResolver
+     */
+    private $nodeNameResolver;
+    public function __construct(ServiceMapProvider $serviceMapProvider, NodeNameResolver $nodeNameResolver)
+    {
+        $this->serviceMapProvider = $serviceMapProvider;
+        $this->nodeNameResolver = $nodeNameResolver;
+    }
+    public function resolve(MethodCall $methodCall): ?Type
+    {
+        if (!isset($methodCall->args[0])) {
+            return new MixedType();
+        }
+        $firstArg = $methodCall->getArgs()[0];
+        $argument = $firstArg->value;
+        $serviceMap = $this->serviceMapProvider->provide();
+        if ($argument instanceof String_) {
+            return $serviceMap->getServiceType($argument->value);
+        }
+        if ($argument instanceof ClassConstFetch && $argument->class instanceof Name) {
+            $className = $this->nodeNameResolver->getName($argument->class);
+            return new ObjectType($className);
+        }
+        return new MixedType();
+    }
+}

@@ -1,0 +1,68 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\ValueObject;
+
+use Argtyper202511\Rector\ValueObject\Error\SystemError;
+use Argtyper202511\Rector\ValueObject\Reporting\FileDiff;
+use Argtyper202511\RectorPrefix202511\Webmozart\Assert\Assert;
+final class ProcessResult
+{
+    /**
+     * @var SystemError[]
+     */
+    private $systemErrors;
+    /**
+     * @var FileDiff[]
+     * @readonly
+     */
+    private $fileDiffs;
+    /**
+     * @readonly
+     * @var int
+     */
+    private $totalChanged;
+    /**
+     * @param SystemError[] $systemErrors
+     * @param FileDiff[] $fileDiffs
+     */
+    public function __construct(array $systemErrors, array $fileDiffs, int $totalChanged)
+    {
+        $this->systemErrors = $systemErrors;
+        $this->fileDiffs = $fileDiffs;
+        $this->totalChanged = $totalChanged;
+        Assert::allIsInstanceOf($systemErrors, SystemError::class);
+        Assert::allIsInstanceOf($fileDiffs, FileDiff::class);
+    }
+    /**
+     * @return SystemError[]
+     */
+    public function getSystemErrors(): array
+    {
+        return $this->systemErrors;
+    }
+    /**
+     * @return FileDiff[]
+     */
+    public function getFileDiffs(bool $onlyWithChanges = \true): array
+    {
+        if ($onlyWithChanges) {
+            return array_filter($this->fileDiffs, function (FileDiff $fileDiff): bool {
+                return $fileDiff->getDiff() !== '';
+            });
+        }
+        return $this->fileDiffs;
+    }
+    /**
+     * @param SystemError[] $systemErrors
+     */
+    public function addSystemErrors(array $systemErrors): void
+    {
+        Assert::allIsInstanceOf($systemErrors, SystemError::class);
+        $this->systemErrors = array_merge($this->systemErrors, $systemErrors);
+    }
+    public function getTotalChanged(): int
+    {
+        return $this->totalChanged;
+    }
+}

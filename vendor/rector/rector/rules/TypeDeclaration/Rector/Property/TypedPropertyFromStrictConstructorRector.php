@@ -1,0 +1,211 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\TypeDeclaration\Rector\Property;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Stmt\Class_;
+use Argtyper202511\PhpParser\Node\Stmt\ClassMethod;
+use Argtyper202511\PHPStan\Reflection\ClassReflection;
+use Argtyper202511\PHPStan\Type\MixedType;
+use Argtyper202511\PHPStan\Type\Type;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger;
+use Argtyper202511\Rector\DeadCode\PhpDoc\TagRemover\VarTagRemover;
+use Argtyper202511\Rector\PHPStanStaticTypeMapper\DoctrineTypeAnalyzer;
+use Argtyper202511\Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\Reflection\ReflectionResolver;
+use Argtyper202511\Rector\StaticTypeMapper\StaticTypeMapper;
+use Argtyper202511\Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector;
+use Argtyper202511\Rector\TypeDeclaration\Guard\PropertyTypeOverrideGuard;
+use Argtyper202511\Rector\TypeDeclaration\TypeAnalyzer\PropertyTypeDefaultValueAnalyzer;
+use Argtyper202511\Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer\TrustedClassMethodPropertyTypeInferer;
+use Argtyper202511\Rector\ValueObject\MethodName;
+use Argtyper202511\Rector\ValueObject\PhpVersionFeature;
+use Argtyper202511\Rector\VersionBonding\Contract\MinPhpVersionInterface;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\TypeDeclaration\Rector\Property\TypedPropertyFromStrictConstructorRector\TypedPropertyFromStrictConstructorRectorTest
+ */
+final class TypedPropertyFromStrictConstructorRector extends AbstractRector implements MinPhpVersionInterface
+{
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer\TrustedClassMethodPropertyTypeInferer
+     */
+    private $trustedClassMethodPropertyTypeInferer;
+    /**
+     * @readonly
+     * @var \Rector\DeadCode\PhpDoc\TagRemover\VarTagRemover
+     */
+    private $varTagRemover;
+    /**
+     * @readonly
+     * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger
+     */
+    private $phpDocTypeChanger;
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector
+     */
+    private $constructorAssignDetector;
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclaration\Guard\PropertyTypeOverrideGuard
+     */
+    private $propertyTypeOverrideGuard;
+    /**
+     * @readonly
+     * @var \Rector\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    /**
+     * @readonly
+     * @var \Rector\PHPStanStaticTypeMapper\DoctrineTypeAnalyzer
+     */
+    private $doctrineTypeAnalyzer;
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclaration\TypeAnalyzer\PropertyTypeDefaultValueAnalyzer
+     */
+    private $propertyTypeDefaultValueAnalyzer;
+    /**
+     * @readonly
+     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
+     */
+    private $phpDocInfoFactory;
+    /**
+     * @readonly
+     * @var \Rector\StaticTypeMapper\StaticTypeMapper
+     */
+    private $staticTypeMapper;
+    public function __construct(TrustedClassMethodPropertyTypeInferer $trustedClassMethodPropertyTypeInferer, VarTagRemover $varTagRemover, PhpDocTypeChanger $phpDocTypeChanger, ConstructorAssignDetector $constructorAssignDetector, PropertyTypeOverrideGuard $propertyTypeOverrideGuard, ReflectionResolver $reflectionResolver, DoctrineTypeAnalyzer $doctrineTypeAnalyzer, PropertyTypeDefaultValueAnalyzer $propertyTypeDefaultValueAnalyzer, PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper)
+    {
+        $this->trustedClassMethodPropertyTypeInferer = $trustedClassMethodPropertyTypeInferer;
+        $this->varTagRemover = $varTagRemover;
+        $this->phpDocTypeChanger = $phpDocTypeChanger;
+        $this->constructorAssignDetector = $constructorAssignDetector;
+        $this->propertyTypeOverrideGuard = $propertyTypeOverrideGuard;
+        $this->reflectionResolver = $reflectionResolver;
+        $this->doctrineTypeAnalyzer = $doctrineTypeAnalyzer;
+        $this->propertyTypeDefaultValueAnalyzer = $propertyTypeDefaultValueAnalyzer;
+        $this->phpDocInfoFactory = $phpDocInfoFactory;
+        $this->staticTypeMapper = $staticTypeMapper;
+    }
+    public function getRuleDefinition(): RuleDefinition
+    {
+        return new RuleDefinition('Add typed properties based only on strict constructor types', [new CodeSample(<<<'CODE_SAMPLE'
+class SomeObject
+{
+    private $name;
+
+    public function __construct(string $name)
+    {
+        $this->name = $name;
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+class SomeObject
+{
+    private string $name;
+
+    public function __construct(string $name)
+    {
+        $this->name = $name;
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes(): array
+    {
+        return [Class_::class];
+    }
+    /**
+     * @param Class_ $node
+     */
+    public function refactor(Node $node): ?Node
+    {
+        $constructClassMethod = $node->getMethod(MethodName::CONSTRUCT);
+        if (!$constructClassMethod instanceof ClassMethod) {
+            return null;
+        }
+        if (!$this->hasSomeUntypedProperties($node)) {
+            return null;
+        }
+        $classReflection = $this->reflectionResolver->resolveClassReflection($node);
+        if (!$classReflection instanceof ClassReflection) {
+            return null;
+        }
+        $hasChanged = \false;
+        foreach ($node->getProperties() as $property) {
+            if (!$this->propertyTypeOverrideGuard->isLegal($property, $classReflection)) {
+                continue;
+            }
+            $propertyType = $this->trustedClassMethodPropertyTypeInferer->inferProperty($node, $property, $constructClassMethod);
+            if ($this->shouldSkipPropertyType($propertyType)) {
+                continue;
+            }
+            $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($property);
+            // public property can be anything
+            if ($property->isPublic()) {
+                if (!$phpDocInfo->getVarType() instanceof MixedType) {
+                    continue;
+                }
+                $this->phpDocTypeChanger->changeVarType($property, $phpDocInfo, $propertyType);
+                $hasChanged = \true;
+                continue;
+            }
+            $propertyTypeNode = $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($propertyType, TypeKind::PROPERTY);
+            if (!$propertyTypeNode instanceof Node) {
+                continue;
+            }
+            $propertyProperty = $property->props[0];
+            $propertyName = $this->getName($property);
+            if ($this->constructorAssignDetector->isPropertyAssigned($node, $propertyName)) {
+                $propertyProperty->default = null;
+                $hasChanged = \true;
+            }
+            if ($this->propertyTypeDefaultValueAnalyzer->doesConflictWithDefaultValue($propertyProperty, $propertyType)) {
+                continue;
+            }
+            $property->type = $propertyTypeNode;
+            $this->varTagRemover->removeVarTagIfUseless($phpDocInfo, $property);
+            $hasChanged = \true;
+        }
+        if ($hasChanged) {
+            return $node;
+        }
+        return null;
+    }
+    public function provideMinPhpVersion(): int
+    {
+        return PhpVersionFeature::TYPED_PROPERTIES;
+    }
+    private function shouldSkipPropertyType(Type $propertyType): bool
+    {
+        if ($propertyType instanceof MixedType) {
+            return \true;
+        }
+        return $this->doctrineTypeAnalyzer->isInstanceOfCollectionType($propertyType);
+    }
+    private function hasSomeUntypedProperties(Class_ $class): bool
+    {
+        if ($class->getProperties() === []) {
+            return \false;
+        }
+        foreach ($class->getProperties() as $property) {
+            if ($property->type instanceof Node) {
+                continue;
+            }
+            return \true;
+        }
+        return \false;
+    }
+}

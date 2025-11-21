@@ -1,0 +1,130 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Php74\Rector\Property;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr;
+use Argtyper202511\PhpParser\Node\Stmt\Class_;
+use Argtyper202511\PhpParser\Node\Stmt\Property;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector;
+use Argtyper202511\Rector\ValueObject\PhpVersionFeature;
+use Argtyper202511\Rector\VersionBonding\Contract\MinPhpVersionInterface;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\Php74\Rector\Property\RestoreDefaultNullToNullableTypePropertyRector\RestoreDefaultNullToNullableTypePropertyRectorTest
+ */
+final class RestoreDefaultNullToNullableTypePropertyRector extends AbstractRector implements MinPhpVersionInterface
+{
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector
+     */
+    private $constructorAssignDetector;
+    /**
+     * @readonly
+     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
+     */
+    private $phpDocInfoFactory;
+    public function __construct(ConstructorAssignDetector $constructorAssignDetector, PhpDocInfoFactory $phpDocInfoFactory)
+    {
+        $this->constructorAssignDetector = $constructorAssignDetector;
+        $this->phpDocInfoFactory = $phpDocInfoFactory;
+    }
+    public function getRuleDefinition(): RuleDefinition
+    {
+        return new RuleDefinition('Add null default to properties with PHP 7.4 property nullable type', [new CodeSample(<<<'CODE_SAMPLE'
+class SomeClass
+{
+    public ?string $name;
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+class SomeClass
+{
+    public ?string $name = null;
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes(): array
+    {
+        return [Class_::class];
+    }
+    /**
+     * @param Class_ $node
+     */
+    public function refactor(Node $node): ?Node
+    {
+        if ($this->isReadonlyClass($node)) {
+            return null;
+        }
+        $hasChanged = \false;
+        foreach ($node->getProperties() as $property) {
+            if ($this->shouldSkipProperty($property, $node)) {
+                continue;
+            }
+            $onlyProperty = $property->props[0];
+            $onlyProperty->default = $this->nodeFactory->createNull();
+            $hasChanged = \true;
+        }
+        if ($hasChanged) {
+            return $node;
+        }
+        return null;
+    }
+    public function provideMinPhpVersion(): int
+    {
+        return PhpVersionFeature::TYPED_PROPERTIES;
+    }
+    private function shouldSkipProperty(Property $property, Class_ $class): bool
+    {
+        if (!$property->type instanceof Node) {
+            return \true;
+        }
+        if (count($property->props) > 1) {
+            return \true;
+        }
+        if ($property->props[0]->default instanceof Expr) {
+            return \true;
+        }
+        if ($this->isReadonlyProperty($property)) {
+            return \true;
+        }
+        if (!$this->nodeTypeResolver->isNullableType($property)) {
+            return \true;
+        }
+        if ($property->hooks !== []) {
+            return \true;
+        }
+        // is variable assigned in constructor
+        $propertyName = $this->getName($property);
+        return $this->constructorAssignDetector->isPropertyAssignedConditionally($class, $propertyName);
+    }
+    private function isReadonlyProperty(Property $property): bool
+    {
+        // native readonly
+        if ($property->isReadonly()) {
+            return \true;
+        }
+        // @readonly annotation
+        $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($property);
+        return $phpDocInfo->hasByName('@readonly');
+    }
+    private function isReadonlyClass(Class_ $class): bool
+    {
+        // native readonly
+        if ($class->isReadonly()) {
+            return \true;
+        }
+        // @immutable annotation
+        $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($class);
+        return $phpDocInfo->hasByName('@immutable');
+    }
+}

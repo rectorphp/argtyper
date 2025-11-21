@@ -1,0 +1,41 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\PHPUnit\NodeAnalyzer;
+
+use Argtyper202511\PhpParser\Node\Identifier;
+use Argtyper202511\PhpParser\Node\Stmt\ClassMethod;
+use Argtyper202511\Rector\PhpParser\AstResolver;
+use Argtyper202511\Rector\Testing\PHPUnit\StaticPHPUnitEnvironment;
+use Argtyper202511\Rector\ValueObject\MethodName;
+/**
+ * Decorate setUp() and tearDown() with "void" when local TestClass class uses them
+ */
+final class SetUpMethodDecorator
+{
+    /**
+     * @readonly
+     * @var \Rector\PhpParser\AstResolver
+     */
+    private $astResolver;
+    public function __construct(AstResolver $astResolver)
+    {
+        $this->astResolver = $astResolver;
+    }
+    public function decorate(ClassMethod $classMethod): void
+    {
+        // skip test run
+        if (StaticPHPUnitEnvironment::isPHPUnitRun()) {
+            return;
+        }
+        $setUpClassMethod = $this->astResolver->resolveClassMethod('Argtyper202511\PHPUnit\Framework\TestCase', MethodName::SET_UP);
+        if (!$setUpClassMethod instanceof ClassMethod) {
+            return;
+        }
+        if ($setUpClassMethod->returnType instanceof Identifier) {
+            $classMethod->returnType = new Identifier($setUpClassMethod->returnType->toString());
+            return;
+        }
+        $classMethod->returnType = null;
+    }
+}

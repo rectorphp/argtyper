@@ -1,0 +1,16 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\RectorPrefix202511;
+
+use Argtyper202511\Rector\Config\RectorConfig;
+use Argtyper202511\Rector\Renaming\Rector\Name\RenameClassRector;
+return static function (RectorConfig $rectorConfig): void {
+    $rectorConfig->ruleWithConfiguration(RenameClassRector::class, [
+        // @see https://github.com/symfony/symfony/commit/9415b438b75204c72ff66b838307b73646393cbf
+        'Argtyper202511\Symfony\Component\Messenger\EventListener\StopWorkerOnSigtermSignalListener' => 'Argtyper202511\Symfony\Component\Messenger\EventListener\StopWorkerOnSignalsListener',
+        // @see https://github.com/symfony/symfony/commit/a7926b2d83f35fe53c41a28d8055490cc1955928
+        'Argtyper202511\Symfony\Component\Messenger\Transport\InMemoryTransport' => 'Argtyper202511\Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport',
+        'Argtyper202511\Symfony\Component\Messenger\Transport\InMemoryTransportFactory' => 'Argtyper202511\Symfony\Component\Messenger\Transport\InMemory\InMemoryTransportFactory',
+    ]);
+};

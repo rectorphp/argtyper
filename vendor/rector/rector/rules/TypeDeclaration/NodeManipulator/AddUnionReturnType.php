@@ -1,0 +1,72 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\TypeDeclaration\NodeManipulator;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\NullableType;
+use Argtyper202511\PhpParser\Node\Stmt\ClassMethod;
+use Argtyper202511\PhpParser\Node\Stmt\Function_;
+use Argtyper202511\PHPStan\Analyser\Scope;
+use Argtyper202511\PHPStan\Type\UnionType;
+use Argtyper202511\Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+use Argtyper202511\Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper;
+use Argtyper202511\Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer;
+use Argtyper202511\Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard;
+final class AddUnionReturnType
+{
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer
+     */
+    private $returnTypeInferer;
+    /**
+     * @readonly
+     * @var \Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper
+     */
+    private $unionTypeMapper;
+    /**
+     * @readonly
+     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
+     */
+    private $classMethodReturnTypeOverrideGuard;
+    public function __construct(ReturnTypeInferer $returnTypeInferer, UnionTypeMapper $unionTypeMapper, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard)
+    {
+        $this->returnTypeInferer = $returnTypeInferer;
+        $this->unionTypeMapper = $unionTypeMapper;
+        $this->classMethodReturnTypeOverrideGuard = $classMethodReturnTypeOverrideGuard;
+    }
+    /**
+     * @template TCallLike as ClassMethod|Function_
+     *
+     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_ $node
+     * @return TCallLike|null
+     */
+    public function add($node, Scope $scope)
+    {
+        if ($node->stmts === null) {
+            return null;
+        }
+        // type is already known
+        if ($node->returnType instanceof Node) {
+            return null;
+        }
+        if ($node instanceof ClassMethod && $this->classMethodReturnTypeOverrideGuard->shouldSkipClassMethod($node, $scope)) {
+            return null;
+        }
+        $inferReturnType = $this->returnTypeInferer->inferFunctionLike($node);
+        if (!$inferReturnType instanceof UnionType) {
+            return null;
+        }
+        $returnType = $this->unionTypeMapper->mapToPhpParserNode($inferReturnType, TypeKind::RETURN);
+        if (!$returnType instanceof Node) {
+            return null;
+        }
+        // handled by another PHP 7.1 rule with broader scope
+        if ($returnType instanceof NullableType) {
+            return null;
+        }
+        $node->returnType = $returnType;
+        return $node;
+    }
+}

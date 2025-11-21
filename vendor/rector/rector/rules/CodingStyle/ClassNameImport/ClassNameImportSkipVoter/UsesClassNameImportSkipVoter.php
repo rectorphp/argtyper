@@ -1,0 +1,42 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\CodingStyle\ClassNameImport\ClassNameImportSkipVoter;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\Rector\CodingStyle\Contract\ClassNameImport\ClassNameImportSkipVoterInterface;
+use Argtyper202511\Rector\PostRector\Collector\UseNodesToAddCollector;
+use Argtyper202511\Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
+use Argtyper202511\Rector\ValueObject\Application\File;
+/**
+ * This prevents importing:
+ * - App\Some\Product
+ *
+ * if there is already:
+ * - use App\Another\Product
+ */
+final class UsesClassNameImportSkipVoter implements ClassNameImportSkipVoterInterface
+{
+    /**
+     * @readonly
+     * @var \Rector\PostRector\Collector\UseNodesToAddCollector
+     */
+    private $useNodesToAddCollector;
+    public function __construct(UseNodesToAddCollector $useNodesToAddCollector)
+    {
+        $this->useNodesToAddCollector = $useNodesToAddCollector;
+    }
+    public function shouldSkip(File $file, FullyQualifiedObjectType $fullyQualifiedObjectType, Node $node): bool
+    {
+        $useImportTypes = $this->useNodesToAddCollector->getUseImportTypesByNode($file);
+        foreach ($useImportTypes as $useImportType) {
+            if (!$useImportType->equals($fullyQualifiedObjectType) && $useImportType->areShortNamesEqual($fullyQualifiedObjectType)) {
+                return \true;
+            }
+            if ($useImportType->equals($fullyQualifiedObjectType)) {
+                return \false;
+            }
+        }
+        return \false;
+    }
+}

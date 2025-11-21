@@ -1,0 +1,131 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\TypeDeclarationDocblocks\Rector\Class_;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Identifier;
+use Argtyper202511\PhpParser\Node\Stmt\Class_;
+use Argtyper202511\PhpParser\Node\Stmt\ClassMethod;
+use Argtyper202511\PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\TypeDeclarationDocblocks\NodeDocblockTypeDecorator;
+use Argtyper202511\Rector\TypeDeclarationDocblocks\NodeFinder\PropertyGetterFinder;
+use Argtyper202511\Rector\TypeDeclarationDocblocks\TagNodeAnalyzer\UsefulArrayTagNodeAnalyzer;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\TypeDeclarationDocblocks\Rector\Class_\DocblockVarArrayFromGetterReturnRector\DocblockVarArrayFromGetterReturnRectorTest
+ */
+final class DocblockVarArrayFromGetterReturnRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
+     */
+    private $phpDocInfoFactory;
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclarationDocblocks\NodeFinder\PropertyGetterFinder
+     */
+    private $propertyGetterFinder;
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclarationDocblocks\TagNodeAnalyzer\UsefulArrayTagNodeAnalyzer
+     */
+    private $usefulArrayTagNodeAnalyzer;
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclarationDocblocks\NodeDocblockTypeDecorator
+     */
+    private $nodeDocblockTypeDecorator;
+    public function __construct(PhpDocInfoFactory $phpDocInfoFactory, PropertyGetterFinder $propertyGetterFinder, UsefulArrayTagNodeAnalyzer $usefulArrayTagNodeAnalyzer, NodeDocblockTypeDecorator $nodeDocblockTypeDecorator)
+    {
+        $this->phpDocInfoFactory = $phpDocInfoFactory;
+        $this->propertyGetterFinder = $propertyGetterFinder;
+        $this->usefulArrayTagNodeAnalyzer = $usefulArrayTagNodeAnalyzer;
+        $this->nodeDocblockTypeDecorator = $nodeDocblockTypeDecorator;
+    }
+    public function getNodeTypes(): array
+    {
+        return [Class_::class];
+    }
+    public function getRuleDefinition(): RuleDefinition
+    {
+        return new RuleDefinition('Add @var array property docblock from its getter @return', [new CodeSample(<<<'CODE_SAMPLE'
+class SomeClass
+{
+    private array $items;
+
+    /**
+     * @return int[]
+     */
+    public function getItems(): array
+    {
+        return $this->items;
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+class SomeClass
+{
+    /**
+     * @var int[]
+     */
+    private array $items;
+
+    /**
+     * @return int[]
+     */
+    public function getItems(): array
+    {
+        return $this->items;
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @param Class_ $node
+     */
+    public function refactor(Node $node): ?Node
+    {
+        $hasChanged = \false;
+        foreach ($node->getProperties() as $property) {
+            // property type must be known
+            if (!$property->type instanceof Identifier) {
+                continue;
+            }
+            if (!$this->isName($property->type, 'array')) {
+                continue;
+            }
+            if (count($property->props) > 1) {
+                continue;
+            }
+            $propertyPhpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($property);
+            // type is already known, skip it
+            if ($this->usefulArrayTagNodeAnalyzer->isUsefulArrayTag($propertyPhpDocInfo->getVarTagValueNode())) {
+                continue;
+            }
+            $propertyGetterMethod = $this->propertyGetterFinder->find($property, $node);
+            if (!$propertyGetterMethod instanceof ClassMethod) {
+                continue;
+            }
+            $classMethodDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($propertyGetterMethod);
+            $returnTagValueNode = $classMethodDocInfo->getReturnTagValue();
+            if (!$returnTagValueNode instanceof ReturnTagValueNode) {
+                continue;
+            }
+            $isPropertyChanged = $this->nodeDocblockTypeDecorator->decorateGenericIterableVarType($classMethodDocInfo->getReturnType(), $propertyPhpDocInfo, $property);
+            if (!$isPropertyChanged) {
+                continue;
+            }
+            $hasChanged = \true;
+        }
+        if (!$hasChanged) {
+            return null;
+        }
+        return $node;
+    }
+}

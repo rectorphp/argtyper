@@ -1,0 +1,164 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Symfony\Symfony73\NodeFactory;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Arg;
+use Argtyper202511\PhpParser\Node\Attribute;
+use Argtyper202511\PhpParser\Node\AttributeGroup;
+use Argtyper202511\PhpParser\Node\Expr;
+use Argtyper202511\PhpParser\Node\Expr\ConstFetch;
+use Argtyper202511\PhpParser\Node\Expr\Variable;
+use Argtyper202511\PhpParser\Node\Identifier;
+use Argtyper202511\PhpParser\Node\Name;
+use Argtyper202511\PhpParser\Node\Name\FullyQualified;
+use Argtyper202511\PhpParser\Node\NullableType;
+use Argtyper202511\PhpParser\Node\Param;
+use Argtyper202511\PHPStan\Type\Type;
+use Argtyper202511\Rector\PhpParser\Node\Value\ValueResolver;
+use Argtyper202511\Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+use Argtyper202511\Rector\StaticTypeMapper\StaticTypeMapper;
+use Argtyper202511\Rector\Symfony\Enum\SymfonyAttribute;
+use Argtyper202511\Rector\Symfony\Symfony73\ValueObject\CommandArgument;
+use Argtyper202511\Rector\Symfony\Symfony73\ValueObject\CommandOption;
+final class CommandInvokeParamsFactory
+{
+    /**
+     * @readonly
+     * @var \Rector\PhpParser\Node\Value\ValueResolver
+     */
+    private $valueResolver;
+    /**
+     * @readonly
+     * @var \Rector\StaticTypeMapper\StaticTypeMapper
+     */
+    private $staticTypeMapper;
+    public function __construct(ValueResolver $valueResolver, StaticTypeMapper $staticTypeMapper)
+    {
+        $this->valueResolver = $valueResolver;
+        $this->staticTypeMapper = $staticTypeMapper;
+    }
+    /**
+     * @param CommandArgument[] $commandArguments
+     * @param CommandOption[] $commandOptions
+     * @return Param[]
+     */
+    public function createParams(array $commandArguments, array $commandOptions): array
+    {
+        $argumentParams = $this->createArgumentParams($commandArguments);
+        $optionParams = $this->createOptionParams($commandOptions);
+        return array_merge($argumentParams, $optionParams);
+    }
+    /**
+     * @param CommandArgument[] $commandArguments
+     * @return Param[]
+     */
+    private function createArgumentParams(array $commandArguments): array
+    {
+        $argumentParams = [];
+        foreach ($commandArguments as $commandArgument) {
+            $variableName = $this->createCamelCase($commandArgument->getNameValue());
+            $argumentParam = new Param(new Variable($variableName));
+            $this->decorateParamType($argumentParam, $commandArgument);
+            if ($commandArgument->getDefault() instanceof Expr) {
+                $argumentParam->default = $commandArgument->getDefault();
+            }
+            if ($this->isOptionalArgument($commandArgument)) {
+                $argumentParam->type = new NullableType($argumentParam->type);
+            }
+            // @todo default string, multiple values array
+            $argumentArgs = [new Arg($commandArgument->getName(), \false, \false, [], new Identifier('name'))];
+            if ($this->isNonEmptyExpr($commandArgument->getDescription())) {
+                $argumentArgs[] = new Arg($commandArgument->getDescription(), \false, \false, [], new Identifier('description'));
+            }
+            $argumentParam->attrGroups[] = new AttributeGroup([new Attribute(new FullyQualified(SymfonyAttribute::COMMAND_ARGUMENT), $argumentArgs)]);
+            $argumentParams[] = $argumentParam;
+        }
+        return $argumentParams;
+    }
+    /**
+     * @param CommandOption[] $commandOptions
+     * @return Param[]
+     */
+    private function createOptionParams(array $commandOptions): array
+    {
+        $optionParams = [];
+        foreach ($commandOptions as $commandOption) {
+            $variableName = $this->createCamelCase($commandOption->getNameValue());
+            $optionParam = new Param(new Variable($variableName));
+            if ($commandOption->getDefault() instanceof Expr) {
+                $optionParam->default = $commandOption->getDefault();
+            } elseif ($commandOption->isImplicitBoolean()) {
+                $optionParam->default = new ConstFetch(new Name('false'));
+            }
+            $this->decorateParamType($optionParam, $commandOption);
+            $optionArgs = [new Arg($commandOption->getName(), \false, \false, [], new Identifier('name'))];
+            if ($this->isNonEmptyExpr($commandOption->getShortcut())) {
+                $optionArgs[] = new Arg($commandOption->getShortcut(), \false, \false, [], new Identifier('shortcut'));
+            }
+            if ($this->isNonEmptyExpr($commandOption->getMode())) {
+                $optionArgs[] = new Arg($commandOption->getMode(), \false, \false, [], new Identifier('mode'));
+            }
+            if ($this->isNonEmptyExpr($commandOption->getDescription())) {
+                $optionArgs[] = new Arg($commandOption->getDescription(), \false, \false, [], new Identifier('description'));
+            }
+            $optionParam->attrGroups[] = new AttributeGroup([new Attribute(new FullyQualified(SymfonyAttribute::COMMAND_OPTION), $optionArgs)]);
+            $optionParams[] = $optionParam;
+        }
+        return $optionParams;
+    }
+    private function createCamelCase(string $value): string
+    {
+        // Replace dashes/underscores with spaces
+        $value = str_replace(['-', '_'], ' ', strtolower($value));
+        // Capitalize each word, then remove spaces
+        $value = str_replace(' ', '', ucwords($value));
+        // Lowercase first character to make it camelCase
+        return lcfirst($value);
+    }
+    private function isOptionalArgument(CommandArgument $commandArgument): bool
+    {
+        if (!$commandArgument->getMode() instanceof Expr) {
+            return \true;
+        }
+        return $this->valueResolver->isValue($commandArgument->getMode(), 2);
+    }
+    private function isNonEmptyExpr(?Expr $expr): bool
+    {
+        if (!$expr instanceof Expr) {
+            return \false;
+        }
+        if ($this->valueResolver->isNull($expr)) {
+            return \false;
+        }
+        return !$this->valueResolver->isValue($expr, '');
+    }
+    /**
+     * @param \Rector\Symfony\Symfony73\ValueObject\CommandArgument|\Rector\Symfony\Symfony73\ValueObject\CommandOption $commandArgumentOrOption
+     */
+    private function decorateParamType(Param $argumentParam, $commandArgumentOrOption): void
+    {
+        if ($commandArgumentOrOption instanceof CommandOption && $commandArgumentOrOption->isImplicitBoolean()) {
+            $argumentParam->type = new Identifier('bool');
+            return;
+        }
+        if ($commandArgumentOrOption->isArray()) {
+            $argumentParam->type = new Identifier('array');
+            return;
+        }
+        $defaultType = $commandArgumentOrOption->getDefaultType();
+        if ($defaultType instanceof Type) {
+            $paramType = $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($defaultType, TypeKind::PARAM);
+            if ($paramType instanceof Node) {
+                $argumentParam->type = $paramType;
+                return;
+            }
+        }
+        // fallback
+        if ($commandArgumentOrOption instanceof CommandOption) {
+            return;
+        }
+        $argumentParam->type = new Identifier('string');
+    }
+}

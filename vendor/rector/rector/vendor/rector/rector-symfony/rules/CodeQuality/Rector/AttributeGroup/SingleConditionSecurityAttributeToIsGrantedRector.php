@@ -1,0 +1,84 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Symfony\CodeQuality\Rector\AttributeGroup;
+
+use Argtyper202511\RectorPrefix202511\Nette\Utils\Strings;
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Arg;
+use Argtyper202511\PhpParser\Node\AttributeGroup;
+use Argtyper202511\PhpParser\Node\Name\FullyQualified;
+use Argtyper202511\PhpParser\Node\Scalar\String_;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\Symfony\CodeQuality\NodeAnalyzer\AttributePresenceDetector;
+use Argtyper202511\Rector\Symfony\Enum\SensioAttribute;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see https://github.com/symfony/symfony/pull/27305/
+ * @see https://stackoverflow.com/a/65439590/1348344
+ *
+ * @see \Rector\Symfony\Tests\CodeQuality\Rector\AttributeGroup\SingleConditionSecurityAttributeToIsGrantedRector\SingleConditionSecurityAttributeToIsGrantedRectorTest
+ */
+final class SingleConditionSecurityAttributeToIsGrantedRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\Symfony\CodeQuality\NodeAnalyzer\AttributePresenceDetector
+     */
+    private $attributePresenceDetector;
+    public function __construct(AttributePresenceDetector $attributePresenceDetector)
+    {
+        $this->attributePresenceDetector = $attributePresenceDetector;
+    }
+    public function getRuleDefinition(): RuleDefinition
+    {
+        return new RuleDefinition('Narrow #[Security] attribute with inner single "is_granted/has_role" condition string to #[IsGranted] attribute', [new CodeSample(<<<'CODE_SAMPLE'
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
+
+#[Security("is_granted('ROLE_USER')")]
+class SomeClass
+{
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+
+#[IsGranted('ROLE_USER')]
+class SomeClass
+{
+}
+CODE_SAMPLE
+)]);
+    }
+    public function getNodeTypes(): array
+    {
+        return [AttributeGroup::class];
+    }
+    /**
+     * @param AttributeGroup $node
+     */
+    public function refactor(Node $node): ?AttributeGroup
+    {
+        if (!$this->attributePresenceDetector->detect(SensioAttribute::SECURITY)) {
+            return null;
+        }
+        foreach ($node->attrs as $attr) {
+            if (!$this->isName($attr->name, SensioAttribute::SECURITY)) {
+                continue;
+            }
+            $firstArgValue = $attr->args[0]->value;
+            if (!$firstArgValue instanceof String_) {
+                continue;
+            }
+            $matches = Strings::match($firstArgValue->value, '#^(is_granted|has_role)\(\'(?<access_right>[A-Za-z_]+)\'\)$#');
+            if (!isset($matches['access_right'])) {
+                continue;
+            }
+            $attr->name = new FullyQualified(SensioAttribute::IS_GRANTED);
+            $attr->args = [new Arg(new String_($matches['access_right']))];
+            return $node;
+        }
+        return null;
+    }
+}

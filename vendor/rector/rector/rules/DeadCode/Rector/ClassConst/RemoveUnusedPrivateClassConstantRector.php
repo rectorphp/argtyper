@@ -1,0 +1,106 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\DeadCode\Rector\ClassConst;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Stmt\ClassConst;
+use Argtyper202511\PhpParser\NodeVisitor;
+use Argtyper202511\PHPStan\Reflection\ClassReflection;
+use Argtyper202511\Rector\NodeManipulator\ClassConstManipulator;
+use Argtyper202511\Rector\PHPStan\ScopeFetcher;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\Reflection\ReflectionResolver;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\DeadCode\Rector\ClassConst\RemoveUnusedPrivateClassConstantRector\RemoveUnusedPrivateClassConstantRectorTest
+ */
+final class RemoveUnusedPrivateClassConstantRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\NodeManipulator\ClassConstManipulator
+     */
+    private $classConstManipulator;
+    /**
+     * @readonly
+     * @var \Rector\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    public function __construct(ClassConstManipulator $classConstManipulator, ReflectionResolver $reflectionResolver)
+    {
+        $this->classConstManipulator = $classConstManipulator;
+        $this->reflectionResolver = $reflectionResolver;
+    }
+    public function getRuleDefinition(): RuleDefinition
+    {
+        return new RuleDefinition('Remove unused class constants', [new CodeSample(<<<'CODE_SAMPLE'
+class SomeClass
+{
+    private const SOME_CONST = 'dead';
+
+    public function run()
+    {
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+class SomeClass
+{
+    public function run()
+    {
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes(): array
+    {
+        return [ClassConst::class];
+    }
+    /**
+     * @param ClassConst $node
+     */
+    public function refactor(Node $node): ?int
+    {
+        if ($this->shouldSkipClassConst($node)) {
+            return null;
+        }
+        $classReflection = $this->reflectionResolver->resolveClassReflection($node);
+        if (!$classReflection instanceof ClassReflection) {
+            return null;
+        }
+        if ($this->classConstManipulator->hasClassConstFetch($node, $classReflection)) {
+            return null;
+        }
+        return NodeVisitor::REMOVE_NODE;
+    }
+    private function shouldSkipClassConst(ClassConst $classConst): bool
+    {
+        if (!$classConst->isPrivate()) {
+            return \true;
+        }
+        if (count($classConst->consts) !== 1) {
+            return \true;
+        }
+        $scope = ScopeFetcher::fetch($classConst);
+        $classReflection = $scope->getClassReflection();
+        if (!$classReflection instanceof ClassReflection) {
+            return \false;
+        }
+        return $this->hasParentClassOfEnumSuffix($classReflection);
+    }
+    private function hasParentClassOfEnumSuffix(ClassReflection $classReflection): bool
+    {
+        foreach ($classReflection->getParentClassesNames() as $parentClassesName) {
+            if (substr_compare($parentClassesName, 'Enum', -strlen('Enum')) === 0) {
+                return \true;
+            }
+        }
+        return \false;
+    }
+}

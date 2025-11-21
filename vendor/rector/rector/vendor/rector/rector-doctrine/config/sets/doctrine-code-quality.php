@@ -1,0 +1,29 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\RectorPrefix202511;
+
+use Argtyper202511\Rector\Config\RectorConfig;
+use Argtyper202511\Rector\Doctrine\Bundle230\Rector\Class_\AddAnnotationToRepositoryRector;
+use Argtyper202511\Rector\Doctrine\CodeQuality\Rector\Class_\MoveCurrentDateTimeDefaultInEntityToConstructorRector;
+use Argtyper202511\Rector\Doctrine\CodeQuality\Rector\Class_\RemoveEmptyTableAttributeRector;
+use Argtyper202511\Rector\Doctrine\CodeQuality\Rector\Property\CorrectDefaultTypesOnEntityPropertyRector;
+use Argtyper202511\Rector\Doctrine\CodeQuality\Rector\Property\TypedPropertyFromColumnTypeRector;
+use Argtyper202511\Rector\Doctrine\CodeQuality\Rector\Property\TypedPropertyFromToOneRelationTypeRector;
+use Argtyper202511\Rector\Doctrine\TypedCollections\Rector\Class_\CompleteReturnDocblockFromToManyRector;
+use Argtyper202511\Rector\Transform\Rector\Attribute\AttributeKeyToClassConstFetchRector;
+use Argtyper202511\Rector\Transform\ValueObject\AttributeKeyToClassConstFetch;
+return static function (RectorConfig $rectorConfig): void {
+    $rectorConfig->rules([
+        MoveCurrentDateTimeDefaultInEntityToConstructorRector::class,
+        CorrectDefaultTypesOnEntityPropertyRector::class,
+        RemoveEmptyTableAttributeRector::class,
+        // typed properties in entities from annotations/attributes
+        TypedPropertyFromColumnTypeRector::class,
+        TypedPropertyFromToOneRelationTypeRector::class,
+        CompleteReturnDocblockFromToManyRector::class,
+        // @extends annotations service repository generics
+        AddAnnotationToRepositoryRector::class,
+    ]);
+    $rectorConfig->ruleWithConfiguration(AttributeKeyToClassConstFetchRector::class, [new AttributeKeyToClassConstFetch('Argtyper202511\Doctrine\ORM\Mapping\Column', 'type', 'Argtyper202511\Doctrine\DBAL\Types\Types', ['array' => 'ARRAY', 'ascii_string' => 'ASCII_STRING', 'bigint' => 'BIGINT', 'binary' => 'BINARY', 'blob' => 'BLOB', 'boolean' => 'BOOLEAN', 'date' => 'DATE_MUTABLE', 'date_immutable' => 'DATE_IMMUTABLE', 'dateinterval' => 'DATEINTERVAL', 'datetime' => 'DATETIME_MUTABLE', 'datetime_immutable' => 'DATETIME_IMMUTABLE', 'datetimetz' => 'DATETIMETZ_MUTABLE', 'datetimetz_immutable' => 'DATETIMETZ_IMMUTABLE', 'decimal' => 'DECIMAL', 'float' => 'FLOAT', 'guid' => 'GUID', 'integer' => 'INTEGER', 'json' => 'JSON', 'object' => 'OBJECT', 'simple_array' => 'SIMPLE_ARRAY', 'smallint' => 'SMALLINT', 'string' => 'STRING', 'text' => 'TEXT', 'time' => 'TIME_MUTABLE', 'time_immutable' => 'TIME_IMMUTABLE'])]);
+};

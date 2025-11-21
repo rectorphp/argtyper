@@ -1,0 +1,44 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Testing\PHPUnit\ValueObject;
+
+use Argtyper202511\Rector\Contract\Rector\RectorInterface;
+use Argtyper202511\Rector\Util\RectorClassesSorter;
+use Argtyper202511\Rector\ValueObject\ProcessResult;
+/**
+ * @api used in tests
+ */
+final class RectorTestResult
+{
+    /**
+     * @readonly
+     * @var string
+     */
+    private $changedContents;
+    /**
+     * @readonly
+     * @var \Rector\ValueObject\ProcessResult
+     */
+    private $processResult;
+    public function __construct(string $changedContents, ProcessResult $processResult)
+    {
+        $this->changedContents = $changedContents;
+        $this->processResult = $processResult;
+    }
+    public function getChangedContents(): string
+    {
+        return $this->changedContents;
+    }
+    /**
+     * @return array<class-string<RectorInterface>>
+     */
+    public function getAppliedRectorClasses(): array
+    {
+        $rectorClasses = [];
+        foreach ($this->processResult->getFileDiffs(\false) as $fileDiff) {
+            $rectorClasses = array_merge($rectorClasses, $fileDiff->getRectorClasses());
+        }
+        return RectorClassesSorter::sortAndFilterOutPostRectors($rectorClasses);
+    }
+}

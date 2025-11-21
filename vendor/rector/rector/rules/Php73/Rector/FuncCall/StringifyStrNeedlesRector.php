@@ -1,0 +1,74 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Php73\Rector\FuncCall;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Arg;
+use Argtyper202511\PhpParser\Node\Expr\Cast\String_;
+use Argtyper202511\PhpParser\Node\Expr\FuncCall;
+use Argtyper202511\PhpParser\Node\Scalar\InterpolatedString;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\ValueObject\PhpVersionFeature;
+use Argtyper202511\Rector\VersionBonding\Contract\MinPhpVersionInterface;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\Php73\Rector\FuncCall\StringifyStrNeedlesRector\StringifyStrNeedlesRectorTest
+ */
+final class StringifyStrNeedlesRector extends AbstractRector implements MinPhpVersionInterface
+{
+    /**
+     * @var string[]
+     */
+    private const NEEDLE_STRING_SENSITIVE_FUNCTIONS = ['strpos', 'strrpos', 'stripos', 'strstr', 'stripos', 'strripos', 'strstr', 'strchr', 'strrchr', 'stristr'];
+    public function provideMinPhpVersion(): int
+    {
+        return PhpVersionFeature::DEPRECATE_INT_IN_STR_NEEDLES;
+    }
+    public function getRuleDefinition(): RuleDefinition
+    {
+        return new RuleDefinition('Make needles explicit strings', [new CodeSample(<<<'CODE_SAMPLE'
+$needle = 5;
+$fivePosition = strpos('725', $needle);
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+$needle = 5;
+$fivePosition = strpos('725', (string) $needle);
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes(): array
+    {
+        return [FuncCall::class];
+    }
+    /**
+     * @param FuncCall $node
+     */
+    public function refactor(Node $node): ?Node
+    {
+        if (!$this->isNames($node, self::NEEDLE_STRING_SENSITIVE_FUNCTIONS)) {
+            return null;
+        }
+        if (!isset($node->args[1])) {
+            return null;
+        }
+        if (!$node->args[1] instanceof Arg) {
+            return null;
+        }
+        // is argument string?
+        $needleArgValue = $node->args[1]->value;
+        $needleType = $this->getType($needleArgValue);
+        if ($needleType->isString()->yes()) {
+            return null;
+        }
+        if ($needleArgValue instanceof InterpolatedString) {
+            return null;
+        }
+        $node->args[1]->value = new String_($node->args[1]->value);
+        return $node;
+    }
+}
