@@ -1,0 +1,165 @@
+<?php
+
+declare (strict_types=1);
+namespace Rector\DowngradePhp80\Rector\FuncCall;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Arg;
+use Argtyper202511\PhpParser\Node\Expr;
+use Argtyper202511\PhpParser\Node\Expr\Array_;
+use Argtyper202511\PhpParser\Node\Expr\ArrowFunction;
+use Argtyper202511\PhpParser\Node\Expr\BinaryOp\Identical;
+use Argtyper202511\PhpParser\Node\Expr\BooleanNot;
+use Argtyper202511\PhpParser\Node\Expr\Closure;
+use Argtyper202511\PhpParser\Node\Expr\ConstFetch;
+use Argtyper202511\PhpParser\Node\Expr\Empty_;
+use Argtyper202511\PhpParser\Node\Expr\FuncCall;
+use Argtyper202511\PhpParser\Node\Expr\Ternary;
+use Argtyper202511\PhpParser\Node\Expr\Variable;
+use Argtyper202511\PhpParser\Node\Identifier;
+use Argtyper202511\PhpParser\Node\Name;
+use Argtyper202511\PhpParser\Node\Param;
+use Argtyper202511\PhpParser\Node\Scalar\Int_;
+use Argtyper202511\PhpParser\Node\Scalar\String_;
+use Argtyper202511\PHPStan\Type\ArrayType;
+use Argtyper202511\PHPStan\Type\ClosureType;
+use Argtyper202511\PHPStan\Type\Constant\ConstantStringType;
+use Argtyper202511\PHPStan\Type\StringType;
+use Rector\NodeAnalyzer\ArgsAnalyzer;
+use Rector\PhpParser\Node\Value\ValueResolver;
+use Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @changelog https://www.php.net/manual/en/function.array-filter.php#refsect1-function.array-filter-changelog
+ * @see https://3v4l.org/lqHFA
+ *
+ * @see \Rector\Tests\DowngradePhp80\Rector\FuncCall\DowngradeArrayFilterNullableCallbackRector\DowngradeArrayFilterNullableCallbackRectorTest
+ */
+final class DowngradeArrayFilterNullableCallbackRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\NodeAnalyzer\ArgsAnalyzer
+     */
+    private $argsAnalyzer;
+    /**
+     * @readonly
+     * @var \Rector\PhpParser\Node\Value\ValueResolver
+     */
+    private $valueResolver;
+    public function __construct(ArgsAnalyzer $argsAnalyzer, ValueResolver $valueResolver)
+    {
+        $this->argsAnalyzer = $argsAnalyzer;
+        $this->valueResolver = $valueResolver;
+    }
+    public function getRuleDefinition(): RuleDefinition
+    {
+        return new RuleDefinition('Unset nullable callback on array_filter', [new CodeSample(<<<'CODE_SAMPLE'
+class SomeClass
+{
+    public function run($callback = null)
+    {
+        $data = [[]];
+        var_dump(array_filter($data, null));
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+class SomeClass
+{
+    public function run($callback = null)
+    {
+        $data = [[]];
+        var_dump(array_filter($data));
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes(): array
+    {
+        return [FuncCall::class];
+    }
+    /**
+     * @param FuncCall $node
+     */
+    public function refactor(Node $node): ?\Argtyper202511\PhpParser\Node\Expr\FuncCall
+    {
+        if (!$this->isName($node, 'array_filter')) {
+            return null;
+        }
+        $args = $node->getArgs();
+        if ($this->argsAnalyzer->hasNamedArg($args)) {
+            return null;
+        }
+        if (!isset($args[1])) {
+            return null;
+        }
+        // direct null check ConstFetch
+        $secondArg = $args[1];
+        if ($secondArg->value instanceof ConstFetch && $this->valueResolver->isNull($secondArg->value)) {
+            $args = [$args[0]];
+            $node->args = $args;
+            return $node;
+        }
+        if ($this->shouldSkip($secondArg->value)) {
+            return null;
+        }
+        $node->args[1] = new Arg($this->createNewArgFirstTernary($args));
+        $node->args[2] = new Arg($this->createNewArgSecondTernary($args));
+        return $node;
+    }
+    private function shouldSkip(Expr $expr): bool
+    {
+        if ($this->isAlreadyConditionedToNull($expr)) {
+            return \true;
+        }
+        if (in_array(get_class($expr), [String_::class, Closure::class, ArrowFunction::class, Array_::class], \true)) {
+            return \true;
+        }
+        $type = $this->nodeTypeResolver->getType($expr);
+        return in_array(get_class($type), [StringType::class, ConstantStringType::class, ArrayType::class, ClosureType::class], \true);
+    }
+    /**
+     * @param Arg[] $args
+     */
+    private function createNewArgFirstTernary(array $args): Ternary
+    {
+        $identical = new Identical($args[1]->value, $this->nodeFactory->createNull());
+        $dummyVariable = new Variable('value');
+        $booleanNot = new BooleanNot(new Empty_($dummyVariable));
+        $arrowFunction = $this->createArrowFunction($booleanNot, $dummyVariable);
+        return new Ternary($identical, $arrowFunction, $args[1]->value);
+    }
+    /**
+     * @param Arg[] $args
+     */
+    private function createNewArgSecondTernary(array $args): Ternary
+    {
+        $identical = new Identical($args[1]->value, $this->nodeFactory->createNull());
+        $constFetch = new ConstFetch(new Name('ARRAY_FILTER_USE_BOTH'));
+        return new Ternary($identical, $constFetch, isset($args[2]) ? $args[2]->value : new Int_(0));
+    }
+    private function isAlreadyConditionedToNull(Expr $expr): bool
+    {
+        if (!$expr instanceof Ternary) {
+            return \false;
+        }
+        if (!$expr->cond instanceof Identical) {
+            return \false;
+        }
+        $identical = $expr->cond;
+        return $this->valueResolver->isNull($identical->right);
+    }
+    private function createArrowFunction(BooleanNot $booleanNot, Variable $dummyVariable): ArrowFunction
+    {
+        $arrowFunction = new ArrowFunction(['expr' => $booleanNot]);
+        $arrowFunction->params = [new Param($dummyVariable), new Param(new Variable('key'))];
+        $arrowFunction->returnType = new Identifier('bool');
+        return $arrowFunction;
+    }
+}

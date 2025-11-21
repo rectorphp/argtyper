@@ -1,0 +1,18 @@
+<?php
+
+declare (strict_types=1);
+namespace RectorPrefix202511;
+
+use Rector\Config\RectorConfig;
+use Rector\Renaming\Rector\ClassConstFetch\RenameClassConstFetchRector;
+use Rector\Renaming\Rector\MethodCall\RenameMethodRector;
+use Rector\Renaming\ValueObject\MethodCallRename;
+use Rector\Renaming\ValueObject\RenameClassConstFetch;
+return static function (RectorConfig $rectorConfig): void {
+    $rectorConfig->ruleWithConfiguration(RenameMethodRector::class, [new MethodCallRename('Argtyper202511\Symfony\Component\HttpKernel\Event\KernelEvent', 'isMasterRequest', 'isMainRequest')]);
+    // rename constant
+    $rectorConfig->ruleWithConfiguration(RenameClassConstFetchRector::class, [
+        // @see https://github.com/symfony/symfony/pull/40536
+        new RenameClassConstFetch('Argtyper202511\Symfony\Component\HttpKernel\HttpKernelInterface', 'MASTER_REQUEST', 'MAIN_REQUEST'),
+    ]);
+};

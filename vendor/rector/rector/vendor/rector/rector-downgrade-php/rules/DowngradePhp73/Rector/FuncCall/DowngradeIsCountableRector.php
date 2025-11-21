@@ -1,0 +1,56 @@
+<?php
+
+declare (strict_types=1);
+namespace Rector\DowngradePhp73\Rector\FuncCall;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\BinaryOp\BooleanOr;
+use Argtyper202511\PhpParser\Node\Expr\FuncCall;
+use Argtyper202511\PhpParser\Node\Expr\Instanceof_;
+use Argtyper202511\PhpParser\Node\Name\FullyQualified;
+use Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @changelog https://wiki.php.net/rfc/is-countable
+ *
+ * @see \Rector\Tests\DowngradePhp73\Rector\FuncCall\DowngradeIsCountableRector\DowngradeIsCountableRectorTest
+ */
+final class DowngradeIsCountableRector extends AbstractRector
+{
+    public function getRuleDefinition(): RuleDefinition
+    {
+        return new RuleDefinition('Downgrade is_countable() to former version', [new CodeSample(<<<'CODE_SAMPLE'
+$items = [];
+return is_countable($items);
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+$items = [];
+return is_array($items) || $items instanceof Countable;
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes(): array
+    {
+        return [FuncCall::class];
+    }
+    /**
+     * @param FuncCall $node
+     */
+    public function refactor(Node $node): ?Node
+    {
+        if (!$this->isName($node, 'is_countable')) {
+            return null;
+        }
+        $args = $node->getArgs();
+        if (!isset($args[0])) {
+            return null;
+        }
+        $isArrayFuncCall = $this->nodeFactory->createFuncCall('is_array', $args);
+        $instanceof = new Instanceof_($args[0]->value, new FullyQualified('Countable'));
+        return new BooleanOr($isArrayFuncCall, $instanceof);
+    }
+}
