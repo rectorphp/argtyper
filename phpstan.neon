@@ -3,6 +3,8 @@ parameters:
         - bin
         - src
         - tests
+        - rector.php
+        - ecs.php
 
     level: 8
 
