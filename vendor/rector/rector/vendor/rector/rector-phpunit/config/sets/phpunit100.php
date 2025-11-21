@@ -1,0 +1,55 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\RectorPrefix202511;
+
+use Argtyper202511\Rector\Config\RectorConfig;
+use Argtyper202511\Rector\PHPUnit\PHPUnit100\Rector\Class_\AddProphecyTraitRector;
+use Argtyper202511\Rector\PHPUnit\PHPUnit100\Rector\Class_\ParentTestClassConstructorRector;
+use Argtyper202511\Rector\PHPUnit\PHPUnit100\Rector\Class_\PublicDataProviderClassMethodRector;
+use Argtyper202511\Rector\PHPUnit\PHPUnit100\Rector\Class_\StaticDataProviderClassMethodRector;
+use Argtyper202511\Rector\PHPUnit\PHPUnit100\Rector\MethodCall\PropertyExistsWithoutAssertRector;
+use Argtyper202511\Rector\PHPUnit\PHPUnit100\Rector\MethodCall\RemoveSetMethodsMethodCallRector;
+use Argtyper202511\Rector\PHPUnit\PHPUnit100\Rector\StmtsAwareInterface\WithConsecutiveRector;
+use Argtyper202511\Rector\PHPUnit\Set\PHPUnitSetList;
+use Argtyper202511\Rector\Renaming\Rector\MethodCall\RenameMethodRector;
+use Argtyper202511\Rector\Renaming\ValueObject\MethodCallRename;
+return static function (RectorConfig $rectorConfig) : void {
+    $rectorConfig->sets([PHPUnitSetList::ANNOTATIONS_TO_ATTRIBUTES]);
+    $rectorConfig->rules([StaticDataProviderClassMethodRector::class, PublicDataProviderClassMethodRector::class, AddProphecyTraitRector::class, WithConsecutiveRector::class, RemoveSetMethodsMethodCallRector::class, PropertyExistsWithoutAssertRector::class, ParentTestClassConstructorRector::class]);
+    $rectorConfig->ruleWithConfiguration(RenameMethodRector::class, [
+        // https://github.com/sebastianbergmann/phpunit/issues/4087
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\Assert', 'assertRegExp', 'assertMatchesRegularExpression'),
+        // https://github.com/sebastianbergmann/phpunit/issues/5220
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\Assert', 'assertObjectHasAttribute', 'assertObjectHasProperty'),
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\Assert', 'assertObjectNotHasAttribute', 'assertObjectNotHasProperty'),
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\MockObject\\Rule\\InvocationOrder', 'getInvocationCount', 'numberOfInvocations'),
+        // https://github.com/sebastianbergmann/phpunit/issues/4090
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\Assert', 'assertNotRegExp', 'assertDoesNotMatchRegularExpression'),
+        // https://github.com/sebastianbergmann/phpunit/issues/4078
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\Assert', 'assertFileNotExists', 'assertFileDoesNotExist'),
+        // https://github.com/sebastianbergmann/phpunit/issues/4081
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\Assert', 'assertFileNotIsReadable', 'assertFileIsNotReadable'),
+        // https://github.com/sebastianbergmann/phpunit/issues/4072
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\Assert', 'assertDirectoryNotIsReadable', 'assertDirectoryIsNotReadable'),
+        // https://github.com/sebastianbergmann/phpunit/issues/4075
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\Assert', 'assertDirectoryNotIsWritable', 'assertDirectoryIsNotWritable'),
+        // https://github.com/sebastianbergmann/phpunit/issues/4069
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\Assert', 'assertDirectoryNotExists', 'assertDirectoryDoesNotExist'),
+        // https://github.com/sebastianbergmann/phpunit/issues/4066
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\Assert', 'assertNotIsWritable', 'assertIsNotWritable'),
+        // https://github.com/sebastianbergmann/phpunit/issues/4063
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\Assert', 'assertNotIsReadable', 'assertIsNotReadable'),
+        // https://github.com/sebastianbergmann/phpunit/pull/3687
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\MockObject\\MockBuilder', 'setMethods', 'onlyMethods'),
+        //https://github.com/sebastianbergmann/phpunit/issues/5062
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\TestCase', 'expectDeprecationMessage', 'expectExceptionMessage'),
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\TestCase', 'expectDeprecationMessageMatches', 'expectExceptionMessageMatches'),
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\TestCase', 'expectNoticeMessage', 'expectExceptionMessage'),
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\TestCase', 'expectNoticeMessageMatches', 'expectExceptionMessageMatches'),
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\TestCase', 'expectWarningMessage', 'expectExceptionMessage'),
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\TestCase', 'expectWarningMessageMatches', 'expectExceptionMessageMatches'),
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\TestCase', 'expectErrorMessage', 'expectExceptionMessage'),
+        new MethodCallRename('Argtyper202511\\PHPUnit\\Framework\\TestCase', 'expectErrorMessageMatches', 'expectExceptionMessageMatches'),
+    ]);
+};

@@ -1,0 +1,42 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\CodeQuality\ValueObject;
+
+use Argtyper202511\PHPStan\Type\Type;
+final class DefinedPropertyWithType
+{
+    /**
+     * @readonly
+     * @var string
+     */
+    private $propertyName;
+    /**
+     * @readonly
+     * @var \PHPStan\Type\Type
+     */
+    private $type;
+    /**
+     * @readonly
+     * @var string|null
+     */
+    private $definedInMethodName;
+    public function __construct(string $propertyName, Type $type, ?string $definedInMethodName)
+    {
+        $this->propertyName = $propertyName;
+        $this->type = $type;
+        $this->definedInMethodName = $definedInMethodName;
+    }
+    public function getName() : string
+    {
+        return $this->propertyName;
+    }
+    public function getType() : Type
+    {
+        return $this->type;
+    }
+    public function getDefinedInMethodName() : ?string
+    {
+        return $this->definedInMethodName;
+    }
+}

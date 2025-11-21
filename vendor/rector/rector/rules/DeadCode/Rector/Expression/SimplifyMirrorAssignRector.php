@@ -1,0 +1,52 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\DeadCode\Rector\Expression;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\Assign;
+use Argtyper202511\PhpParser\Node\Stmt\Expression;
+use Argtyper202511\PhpParser\NodeVisitor;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\DeadCode\Rector\Expression\SimplifyMirrorAssignRector\SimplifyMirrorAssignRectorTest
+ */
+final class SimplifyMirrorAssignRector extends AbstractRector
+{
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Remove unneeded `$value = $value` assigns', [new CodeSample(<<<'CODE_SAMPLE'
+function run() {
+    $result = $result;
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+function run() {
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes() : array
+    {
+        return [Expression::class];
+    }
+    /**
+     * @param Expression $node
+     */
+    public function refactor(Node $node) : ?int
+    {
+        if (!$node->expr instanceof Assign) {
+            return null;
+        }
+        $assign = $node->expr;
+        if (!$this->nodeComparator->areNodesEqual($assign->var, $assign->expr)) {
+            return null;
+        }
+        return NodeVisitor::REMOVE_NODE;
+    }
+}

@@ -1,0 +1,82 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Doctrine\TypedCollections\Rector\Expression;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\AssignOp\Coalesce;
+use Argtyper202511\PhpParser\Node\Stmt\Expression;
+use Argtyper202511\PhpParser\NodeVisitorAbstract;
+use Argtyper202511\Rector\Doctrine\TypedCollections\TypeAnalyzer\CollectionTypeDetector;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Doctrine\Tests\TypedCollections\Rector\Expression\RemoveCoalesceAssignOnCollectionRector\RemoveCoalesceAssignOnCollectionRectorTest
+ */
+final class RemoveCoalesceAssignOnCollectionRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\Doctrine\TypedCollections\TypeAnalyzer\CollectionTypeDetector
+     */
+    private $collectionTypeDetector;
+    public function __construct(CollectionTypeDetector $collectionTypeDetector)
+    {
+        $this->collectionTypeDetector = $collectionTypeDetector;
+    }
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Remove coalesce assign on collection typed property, as it is always assigned in the constructor', [new CodeSample(<<<'CODE_SAMPLE'
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+
+/**
+ * @ORM\Entity
+ */
+class SomeEntity
+{
+    private $collection;
+
+    public function run()
+    {
+        $items = $this->collection ?? new ArrayCollection();
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+use Doctrine\Common\Collections\Collection;
+
+/**
+ * @ORM\Entity
+ */
+class SomeEntity
+{
+    private $collection;
+
+    public function run()
+    {
+        $items = $this->collection;
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    public function getNodeTypes() : array
+    {
+        return [Expression::class];
+    }
+    /**
+     * @param Expression $node
+     */
+    public function refactor(Node $node) : ?int
+    {
+        if (!$node->expr instanceof Coalesce) {
+            return null;
+        }
+        if (!$this->collectionTypeDetector->isCollectionType($node->expr)) {
+            return null;
+        }
+        return NodeVisitorAbstract::REMOVE_NODE;
+    }
+}

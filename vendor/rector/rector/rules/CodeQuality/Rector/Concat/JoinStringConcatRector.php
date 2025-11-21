@@ -1,0 +1,92 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\CodeQuality\Rector\Concat;
+
+use Argtyper202511\RectorPrefix202511\Nette\Utils\Strings;
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\BinaryOp\Concat;
+use Argtyper202511\PhpParser\Node\Scalar\String_;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\Util\StringUtils;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\CodeQuality\Rector\Concat\JoinStringConcatRector\JoinStringConcatRectorTest
+ */
+final class JoinStringConcatRector extends AbstractRector
+{
+    /**
+     * @var int
+     */
+    private const LINE_BREAK_POINT = 100;
+    /**
+     * @var string
+     * @see https://regex101.com/r/VaXM1t/1
+     * @see https://stackoverflow.com/questions/4147646/determine-if-utf-8-text-is-all-ascii
+     */
+    private const ASCII_REGEX = '#[^\\x00-\\x7F]#';
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Joins concat of 2 strings, unless the length is too long', [new CodeSample(<<<'CODE_SAMPLE'
+class SomeClass
+{
+    public function run()
+    {
+        $name = 'Hi' . ' Tom';
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+class SomeClass
+{
+    public function run()
+    {
+        $name = 'Hi Tom';
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes() : array
+    {
+        return [Concat::class];
+    }
+    /**
+     * @param Concat $node
+     */
+    public function refactor(Node $node) : ?Node
+    {
+        if (!$node->left instanceof String_) {
+            return null;
+        }
+        if (!$node->right instanceof String_) {
+            return null;
+        }
+        $leftStartLine = $node->left->getStartLine();
+        $rightStartLine = $node->right->getStartLine();
+        if ($leftStartLine > 0 && $rightStartLine > 0 && $rightStartLine > $leftStartLine) {
+            return null;
+        }
+        return $this->joinConcatIfStrings($node->left, $node->right);
+    }
+    private function joinConcatIfStrings(String_ $leftString, String_ $rightString) : ?String_
+    {
+        $leftValue = $leftString->value;
+        $rightValue = $rightString->value;
+        if (\strpos($leftValue, "\n") !== \false || \strpos($rightValue, "\n") !== \false) {
+            return null;
+        }
+        $joinedStringValue = $leftValue . $rightValue;
+        if (StringUtils::isMatch($joinedStringValue, self::ASCII_REGEX)) {
+            return null;
+        }
+        if (Strings::length($joinedStringValue) >= self::LINE_BREAK_POINT) {
+            return null;
+        }
+        return new String_($joinedStringValue);
+    }
+}

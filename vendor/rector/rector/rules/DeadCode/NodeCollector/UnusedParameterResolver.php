@@ -1,0 +1,35 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\DeadCode\NodeCollector;
+
+use Argtyper202511\PhpParser\Node\Param;
+use Argtyper202511\PhpParser\Node\Stmt\ClassMethod;
+use Argtyper202511\Rector\NodeAnalyzer\ParamAnalyzer;
+final class UnusedParameterResolver
+{
+    /**
+     * @readonly
+     * @var \Rector\NodeAnalyzer\ParamAnalyzer
+     */
+    private $paramAnalyzer;
+    public function __construct(ParamAnalyzer $paramAnalyzer)
+    {
+        $this->paramAnalyzer = $paramAnalyzer;
+    }
+    /**
+     * @return array<int, Param>
+     */
+    public function resolve(ClassMethod $classMethod) : array
+    {
+        /** @var array<int, Param> $unusedParameters */
+        $unusedParameters = [];
+        foreach ($classMethod->params as $i => $param) {
+            if ($this->paramAnalyzer->isParamUsedInClassMethod($classMethod, $param)) {
+                continue;
+            }
+            $unusedParameters[$i] = $param;
+        }
+        return $unusedParameters;
+    }
+}

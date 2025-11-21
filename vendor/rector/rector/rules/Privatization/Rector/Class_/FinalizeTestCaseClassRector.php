@@ -1,0 +1,84 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Privatization\Rector\Class_;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Stmt\Class_;
+use Argtyper202511\PHPStan\Reflection\ReflectionProvider;
+use Argtyper202511\Rector\Privatization\NodeManipulator\VisibilityManipulator;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\Privatization\Rector\Class_\FinalizeTestCaseClassRector\FinalizeTestCaseClassRectorTest
+ */
+final class FinalizeTestCaseClassRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \PHPStan\Reflection\ReflectionProvider
+     */
+    private $reflectionProvider;
+    /**
+     * @readonly
+     * @var \Rector\Privatization\NodeManipulator\VisibilityManipulator
+     */
+    private $visibilityManipulator;
+    public function __construct(ReflectionProvider $reflectionProvider, VisibilityManipulator $visibilityManipulator)
+    {
+        $this->reflectionProvider = $reflectionProvider;
+        $this->visibilityManipulator = $visibilityManipulator;
+    }
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Make PHPUnit test case final', [new CodeSample(<<<'CODE_SAMPLE'
+use PHPUnit\Framework\TestCase;
+
+class SomeClass extends TestCase
+{
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+use PHPUnit\Framework\TestCase;
+
+final class SomeClass extends TestCase
+{
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes() : array
+    {
+        return [Class_::class];
+    }
+    /**
+     * @param Class_ $node
+     */
+    public function refactor(Node $node) : ?Node
+    {
+        // skip obvious cases
+        if ($node->isAbstract() || $node->isAnonymous() || $node->isFinal()) {
+            return null;
+        }
+        $className = $this->getName($node);
+        if (!\is_string($className)) {
+            return null;
+        }
+        if (\substr_compare($className, 'TestCase', -\strlen('TestCase')) === 0) {
+            return null;
+        }
+        if (!$this->reflectionProvider->hasClass($className)) {
+            return null;
+        }
+        $classReflection = $this->reflectionProvider->getClass($className);
+        if (!$classReflection->is('Argtyper202511\\PHPUnit\\Framework\\TestCase')) {
+            return null;
+        }
+        $this->visibilityManipulator->makeFinal($node);
+        return $node;
+    }
+}

@@ -1,0 +1,91 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\StaticTypeMapper\PhpParser;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Name;
+use Argtyper202511\PhpParser\Node\Name\FullyQualified;
+use Argtyper202511\PHPStan\Reflection\ClassReflection;
+use Argtyper202511\PHPStan\Type\MixedType;
+use Argtyper202511\PHPStan\Type\ObjectWithoutClassType;
+use Argtyper202511\PHPStan\Type\StaticType;
+use Argtyper202511\PHPStan\Type\Type;
+use Argtyper202511\Rector\Enum\ObjectReference;
+use Argtyper202511\Rector\NodeTypeResolver\Node\AttributeKey;
+use Argtyper202511\Rector\Reflection\ReflectionResolver;
+use Argtyper202511\Rector\StaticTypeMapper\Contract\PhpParser\PhpParserNodeMapperInterface;
+use Argtyper202511\Rector\StaticTypeMapper\ValueObject\Type\ParentObjectWithoutClassType;
+use Argtyper202511\Rector\StaticTypeMapper\ValueObject\Type\ParentStaticType;
+use Argtyper202511\Rector\StaticTypeMapper\ValueObject\Type\SelfStaticType;
+/**
+ * @implements PhpParserNodeMapperInterface<Name>
+ */
+final class NameNodeMapper implements PhpParserNodeMapperInterface
+{
+    /**
+     * @readonly
+     * @var \Rector\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    /**
+     * @readonly
+     * @var \Rector\StaticTypeMapper\PhpParser\FullyQualifiedNodeMapper
+     */
+    private $fullyQualifiedNodeMapper;
+    public function __construct(ReflectionResolver $reflectionResolver, \Argtyper202511\Rector\StaticTypeMapper\PhpParser\FullyQualifiedNodeMapper $fullyQualifiedNodeMapper)
+    {
+        $this->reflectionResolver = $reflectionResolver;
+        $this->fullyQualifiedNodeMapper = $fullyQualifiedNodeMapper;
+    }
+    public function getNodeType() : string
+    {
+        return Name::class;
+    }
+    /**
+     * @param Name $node
+     */
+    public function mapToPHPStan(Node $node) : Type
+    {
+        $name = $node->toString();
+        if ($node->isSpecialClassName()) {
+            return $this->createClassReferenceType($node, $name);
+        }
+        $expandedNamespacedName = $this->expandedNamespacedName($node);
+        if ($expandedNamespacedName instanceof FullyQualified) {
+            return $this->fullyQualifiedNodeMapper->mapToPHPStan($expandedNamespacedName);
+        }
+        return new MixedType();
+    }
+    private function expandedNamespacedName(Name $name) : ?FullyQualified
+    {
+        if (\get_class($name) !== Name::class) {
+            return null;
+        }
+        if (!$name->hasAttribute(AttributeKey::NAMESPACED_NAME)) {
+            return null;
+        }
+        return new FullyQualified($name->getAttribute(AttributeKey::NAMESPACED_NAME));
+    }
+    /**
+     * @return \PHPStan\Type\MixedType|\PHPStan\Type\StaticType|\Rector\StaticTypeMapper\ValueObject\Type\SelfStaticType|\PHPStan\Type\ObjectWithoutClassType
+     */
+    private function createClassReferenceType(Name $name, string $reference)
+    {
+        $classReflection = $this->reflectionResolver->resolveClassReflection($name);
+        if (!$classReflection instanceof ClassReflection) {
+            return new MixedType();
+        }
+        if ($reference === ObjectReference::STATIC) {
+            return new StaticType($classReflection);
+        }
+        if ($reference === ObjectReference::SELF) {
+            return new SelfStaticType($classReflection);
+        }
+        $parentClassReflection = $classReflection->getParentClass();
+        if ($parentClassReflection instanceof ClassReflection) {
+            return new ParentStaticType($parentClassReflection);
+        }
+        return new ParentObjectWithoutClassType();
+    }
+}

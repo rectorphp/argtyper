@@ -1,0 +1,310 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Php80\Rector\Class_;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\AttributeGroup;
+use Argtyper202511\PhpParser\Node\Expr\ArrowFunction;
+use Argtyper202511\PhpParser\Node\Expr\Closure;
+use Argtyper202511\PhpParser\Node\Param;
+use Argtyper202511\PhpParser\Node\Stmt\Class_;
+use Argtyper202511\PhpParser\Node\Stmt\ClassMethod;
+use Argtyper202511\PhpParser\Node\Stmt\Function_;
+use Argtyper202511\PhpParser\Node\Stmt\Interface_;
+use Argtyper202511\PhpParser\Node\Stmt\Property;
+use Argtyper202511\PhpParser\Node\Stmt\Use_;
+use Argtyper202511\PHPStan\PhpDocParser\Ast\Node as DocNode;
+use Argtyper202511\PHPStan\PhpDocParser\Ast\PhpDoc\GenericTagValueNode;
+use Argtyper202511\PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocChildNode;
+use Argtyper202511\PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
+use Argtyper202511\PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTextNode;
+use Argtyper202511\PHPStan\Reflection\ReflectionProvider;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTagRemover;
+use Argtyper202511\Rector\Comments\NodeDocBlock\DocBlockUpdater;
+use Argtyper202511\Rector\Contract\Rector\ConfigurableRectorInterface;
+use Argtyper202511\Rector\Exception\Configuration\InvalidConfigurationException;
+use Argtyper202511\Rector\Naming\Naming\UseImportsResolver;
+use Argtyper202511\Rector\Php80\NodeAnalyzer\PhpAttributeAnalyzer;
+use Argtyper202511\Rector\Php80\NodeFactory\AttrGroupsFactory;
+use Argtyper202511\Rector\Php80\NodeManipulator\AttributeGroupNamedArgumentManipulator;
+use Argtyper202511\Rector\Php80\ValueObject\AnnotationToAttribute;
+use Argtyper202511\Rector\Php80\ValueObject\AttributeValueAndDocComment;
+use Argtyper202511\Rector\Php80\ValueObject\DoctrineTagAndAnnotationToAttribute;
+use Argtyper202511\Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory;
+use Argtyper202511\Rector\PhpDocParser\PhpDocParser\PhpDocNodeTraverser;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\ValueObject\PhpVersionFeature;
+use Argtyper202511\Rector\VersionBonding\Contract\MinPhpVersionInterface;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+use Argtyper202511\RectorPrefix202511\Webmozart\Assert\Assert;
+/**
+ * @see \Rector\Tests\Php80\Rector\Class_\AnnotationToAttributeRector\AnnotationToAttributeRectorTest
+ * @see \Rector\Tests\Php80\Rector\Class_\AnnotationToAttributeRector\Php81NestedAttributesRectorTest
+ * @see \Rector\Tests\Php80\Rector\Class_\AnnotationToAttributeRector\MultipleCallAnnotationToAttributeRectorTest
+ */
+final class AnnotationToAttributeRector extends AbstractRector implements ConfigurableRectorInterface, MinPhpVersionInterface
+{
+    /**
+     * @readonly
+     * @var \Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory
+     */
+    private $phpAttributeGroupFactory;
+    /**
+     * @readonly
+     * @var \Rector\Php80\NodeFactory\AttrGroupsFactory
+     */
+    private $attrGroupsFactory;
+    /**
+     * @readonly
+     * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTagRemover
+     */
+    private $phpDocTagRemover;
+    /**
+     * @readonly
+     * @var \Rector\Php80\NodeManipulator\AttributeGroupNamedArgumentManipulator
+     */
+    private $attributeGroupNamedArgumentManipulator;
+    /**
+     * @readonly
+     * @var \Rector\Naming\Naming\UseImportsResolver
+     */
+    private $useImportsResolver;
+    /**
+     * @readonly
+     * @var \Rector\Php80\NodeAnalyzer\PhpAttributeAnalyzer
+     */
+    private $phpAttributeAnalyzer;
+    /**
+     * @readonly
+     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
+     */
+    private $docBlockUpdater;
+    /**
+     * @readonly
+     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
+     */
+    private $phpDocInfoFactory;
+    /**
+     * @readonly
+     * @var \PHPStan\Reflection\ReflectionProvider
+     */
+    private $reflectionProvider;
+    /**
+     * @readonly
+     * @var \Rector\Php80\Rector\Class_\AttributeValueResolver
+     */
+    private $attributeValueResolver;
+    /**
+     * @var AnnotationToAttribute[]
+     */
+    private $annotationsToAttributes = [];
+    public function __construct(PhpAttributeGroupFactory $phpAttributeGroupFactory, AttrGroupsFactory $attrGroupsFactory, PhpDocTagRemover $phpDocTagRemover, AttributeGroupNamedArgumentManipulator $attributeGroupNamedArgumentManipulator, UseImportsResolver $useImportsResolver, PhpAttributeAnalyzer $phpAttributeAnalyzer, DocBlockUpdater $docBlockUpdater, PhpDocInfoFactory $phpDocInfoFactory, ReflectionProvider $reflectionProvider, \Argtyper202511\Rector\Php80\Rector\Class_\AttributeValueResolver $attributeValueResolver)
+    {
+        $this->phpAttributeGroupFactory = $phpAttributeGroupFactory;
+        $this->attrGroupsFactory = $attrGroupsFactory;
+        $this->phpDocTagRemover = $phpDocTagRemover;
+        $this->attributeGroupNamedArgumentManipulator = $attributeGroupNamedArgumentManipulator;
+        $this->useImportsResolver = $useImportsResolver;
+        $this->phpAttributeAnalyzer = $phpAttributeAnalyzer;
+        $this->docBlockUpdater = $docBlockUpdater;
+        $this->phpDocInfoFactory = $phpDocInfoFactory;
+        $this->reflectionProvider = $reflectionProvider;
+        $this->attributeValueResolver = $attributeValueResolver;
+    }
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Change annotation to attribute', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
+use Symfony\Component\Routing\Annotation\Route;
+
+class SymfonyRoute
+{
+    /**
+     * @Route("/path", name="action")
+     */
+    public function action()
+    {
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+use Symfony\Component\Routing\Annotation\Route;
+
+class SymfonyRoute
+{
+    #[Route(path: '/path', name: 'action')]
+    public function action()
+    {
+    }
+}
+CODE_SAMPLE
+, [new AnnotationToAttribute('Argtyper202511\\Symfony\\Component\\Routing\\Annotation\\Route')])]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes() : array
+    {
+        return [Class_::class, Property::class, Param::class, ClassMethod::class, Function_::class, Closure::class, ArrowFunction::class, Interface_::class];
+    }
+    /**
+     * @param Class_|Property|Param|ClassMethod|Function_|Closure|ArrowFunction|Interface_ $node
+     */
+    public function refactor(Node $node) : ?Node
+    {
+        if ($this->annotationsToAttributes === []) {
+            throw new InvalidConfigurationException(\sprintf('The "%s" rule requires configuration.', self::class));
+        }
+        $phpDocInfo = $this->phpDocInfoFactory->createFromNode($node);
+        if (!$phpDocInfo instanceof PhpDocInfo) {
+            return null;
+        }
+        $uses = $this->useImportsResolver->resolveBareUses();
+        // 1. Doctrine annotation classes
+        $annotationAttributeGroups = $this->processDoctrineAnnotationClasses($phpDocInfo, $uses);
+        // 2. bare tags without annotation class, e.g. "@require"
+        $genericAttributeGroups = $this->processGenericTags($phpDocInfo);
+        $attributeGroups = \array_merge($annotationAttributeGroups, $genericAttributeGroups);
+        if ($attributeGroups === []) {
+            return null;
+        }
+        // 3. Reprint docblock
+        $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($node);
+        $this->attributeGroupNamedArgumentManipulator->decorate($attributeGroups);
+        $node->attrGroups = \array_merge($node->attrGroups, $attributeGroups);
+        return $node;
+    }
+    /**
+     * @param mixed[] $configuration
+     */
+    public function configure(array $configuration) : void
+    {
+        Assert::allIsAOf($configuration, AnnotationToAttribute::class);
+        $this->annotationsToAttributes = $this->resolveWithChangedAttributesClass($configuration);
+    }
+    public function provideMinPhpVersion() : int
+    {
+        return PhpVersionFeature::ATTRIBUTES;
+    }
+    /**
+     * @param AnnotationToAttribute[] $configuration
+     * @return AnnotationToAttribute[] $configuration
+     */
+    private function resolveWithChangedAttributesClass(array $configuration) : array
+    {
+        foreach ($configuration as $config) {
+            /** @var AnnotationToAttribute $config */
+            if ($config->getAttributeClass() !== $config->getTag()) {
+                // add to make sure apply after use statement changed
+                $configuration[] = new AnnotationToAttribute($config->getAttributeClass(), $config->getAttributeClass(), $config->getClassReferenceFields(), $config->getUseValueAsAttributeArgument());
+            }
+        }
+        return $configuration;
+    }
+    /**
+     * @return AttributeGroup[]
+     */
+    private function processGenericTags(PhpDocInfo $phpDocInfo) : array
+    {
+        $attributeGroups = [];
+        $phpDocNodeTraverser = new PhpDocNodeTraverser();
+        $phpDocNodeTraverser->traverseWithCallable($phpDocInfo->getPhpDocNode(), '', function (DocNode $docNode) use(&$attributeGroups) {
+            if (!$docNode instanceof PhpDocTagNode) {
+                return null;
+            }
+            if (!$docNode->value instanceof GenericTagValueNode && !$docNode->value instanceof DoctrineAnnotationTagValueNode) {
+                return null;
+            }
+            $tag = \trim($docNode->name, '@');
+            // not a basic one
+            if (\strpos($tag, '\\') !== \false) {
+                return null;
+            }
+            foreach ($this->annotationsToAttributes as $annotationToAttribute) {
+                $desiredTag = $annotationToAttribute->getTag();
+                if (\strtolower($desiredTag) !== \strtolower($tag)) {
+                    continue;
+                }
+                // make sure the attribute class really exists to avoid error on early upgrade
+                if (!$this->reflectionProvider->hasClass($annotationToAttribute->getAttributeClass())) {
+                    continue;
+                }
+                $attributeValueAndDocComment = $this->attributeValueResolver->resolve($annotationToAttribute, $docNode);
+                $attributeGroups[] = $this->phpAttributeGroupFactory->createFromSimpleTag($annotationToAttribute, $attributeValueAndDocComment instanceof AttributeValueAndDocComment ? $attributeValueAndDocComment->attributeValue : null);
+                // keep partial original comment, if useful
+                if ($attributeValueAndDocComment instanceof AttributeValueAndDocComment && $attributeValueAndDocComment->docComment) {
+                    return new PhpDocTextNode($attributeValueAndDocComment->docComment);
+                }
+                return PhpDocNodeTraverser::NODE_REMOVE;
+            }
+            return null;
+        });
+        return $attributeGroups;
+    }
+    /**
+     * @param Use_[] $uses
+     * @return AttributeGroup[]
+     */
+    private function processDoctrineAnnotationClasses(PhpDocInfo $phpDocInfo, array $uses) : array
+    {
+        if ($phpDocInfo->getPhpDocNode()->children === []) {
+            return [];
+        }
+        $doctrineTagAndAnnotationToAttributes = [];
+        $doctrineTagValueNodes = [];
+        foreach ($phpDocInfo->getPhpDocNode()->children as $phpDocChildNode) {
+            if (!$phpDocChildNode instanceof PhpDocTagNode) {
+                continue;
+            }
+            if (!$phpDocChildNode->value instanceof DoctrineAnnotationTagValueNode) {
+                continue;
+            }
+            $doctrineTagValueNode = $phpDocChildNode->value;
+            $annotationToAttribute = $this->matchAnnotationToAttribute($doctrineTagValueNode);
+            if (!$annotationToAttribute instanceof AnnotationToAttribute) {
+                continue;
+            }
+            if ($annotationToAttribute->getUseValueAsAttributeArgument()) {
+                /* Will be processed by processGenericTags instead */
+                continue;
+            }
+            if (!$this->isExistingAttributeClass($annotationToAttribute)) {
+                continue;
+            }
+            $doctrineTagAndAnnotationToAttributes[] = new DoctrineTagAndAnnotationToAttribute($doctrineTagValueNode, $annotationToAttribute);
+            $doctrineTagValueNodes[] = $doctrineTagValueNode;
+        }
+        $attributeGroups = $this->attrGroupsFactory->create($doctrineTagAndAnnotationToAttributes, $uses);
+        if ($this->phpAttributeAnalyzer->hasRemoveArrayState($attributeGroups)) {
+            return [];
+        }
+        foreach ($doctrineTagValueNodes as $doctrineTagValueNode) {
+            $this->phpDocTagRemover->removeTagValueFromNode($phpDocInfo, $doctrineTagValueNode);
+        }
+        return $attributeGroups;
+    }
+    private function matchAnnotationToAttribute(DoctrineAnnotationTagValueNode $doctrineAnnotationTagValueNode) : ?\Argtyper202511\Rector\Php80\ValueObject\AnnotationToAttribute
+    {
+        foreach ($this->annotationsToAttributes as $annotationToAttribute) {
+            if (!$doctrineAnnotationTagValueNode->hasClassName($annotationToAttribute->getTag())) {
+                continue;
+            }
+            return $annotationToAttribute;
+        }
+        return null;
+    }
+    private function isExistingAttributeClass(AnnotationToAttribute $annotationToAttribute) : bool
+    {
+        // make sure the attribute class really exists to avoid error on early upgrade
+        if (!$this->reflectionProvider->hasClass($annotationToAttribute->getAttributeClass())) {
+            return \false;
+        }
+        // make sure the class is marked as attribute
+        $classReflection = $this->reflectionProvider->getClass($annotationToAttribute->getAttributeClass());
+        return $classReflection->isAttributeClass();
+    }
+}

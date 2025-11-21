@@ -1,0 +1,103 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Symfony\JMS\Rector\Property;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\AttributeGroup;
+use Argtyper202511\PhpParser\Node\Identifier;
+use Argtyper202511\PhpParser\Node\Stmt\Property;
+use Argtyper202511\Rector\Comments\NodeDocBlock\DocBlockUpdater;
+use Argtyper202511\Rector\Php80\ValueObject\AnnotationToAttribute;
+use Argtyper202511\Rector\PhpAttribute\GenericAnnotationToAttributeConverter;
+use Argtyper202511\Rector\PhpParser\Node\Value\ValueResolver;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\Symfony\Enum\JMSAnnotation;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Symfony\Tests\JMS\Rector\Property\AccessorAnnotationToAttributeRector\AccessorAnnotationToAttributeRectorTest
+ */
+final class AccessorAnnotationToAttributeRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
+     */
+    private $docBlockUpdater;
+    /**
+     * @readonly
+     * @var \Rector\PhpParser\Node\Value\ValueResolver
+     */
+    private $valueResolver;
+    /**
+     * @readonly
+     * @var \Rector\PhpAttribute\GenericAnnotationToAttributeConverter
+     */
+    private $genericAnnotationToAttributeConverter;
+    public function __construct(DocBlockUpdater $docBlockUpdater, ValueResolver $valueResolver, GenericAnnotationToAttributeConverter $genericAnnotationToAttributeConverter)
+    {
+        $this->docBlockUpdater = $docBlockUpdater;
+        $this->valueResolver = $valueResolver;
+        $this->genericAnnotationToAttributeConverter = $genericAnnotationToAttributeConverter;
+    }
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Changes @Accessor annotation to #[Accessor] attribute with specific "getter" or "setter" keys', [new CodeSample(<<<'CODE_SAMPLE'
+use JMS\Serializer\Annotation\Accessor;
+
+class User
+{
+    /**
+     * @Accessor("getValue")
+     */
+    private $value;
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+use JMS\Serializer\Annotation\Accessor;
+
+class User
+{
+    #[Accessor(getter: 'getValue')]
+    private $value;
+}
+CODE_SAMPLE
+)]);
+    }
+    public function getNodeTypes() : array
+    {
+        return [Property::class];
+    }
+    /**
+     * @param Property $node
+     */
+    public function refactor(Node $node) : ?\Argtyper202511\PhpParser\Node\Stmt\Property
+    {
+        $annotationToAttribute = new AnnotationToAttribute(JMSAnnotation::ACCESSOR);
+        $attributeGroup = $this->genericAnnotationToAttributeConverter->convert($node, $annotationToAttribute);
+        if (!$attributeGroup instanceof AttributeGroup) {
+            return null;
+        }
+        $attribute = $attributeGroup->attrs[0];
+        foreach ($attribute->args as $attributeArg) {
+            // already known
+            if ($attributeArg->name instanceof Identifier) {
+                continue;
+            }
+            $value = $this->valueResolver->getValue($attributeArg->value);
+            if (\strncmp((string) $value, 'get', \strlen('get')) === 0) {
+                $attributeArg->name = new Identifier('getter');
+            } elseif (\strncmp((string) $value, 'set', \strlen('set')) === 0) {
+                $attributeArg->name = new Identifier('setter');
+            } else {
+                // skip, not getter/setter
+                continue;
+            }
+        }
+        // 2. Reprint docblock
+        $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($node);
+        $node->attrGroups = \array_merge($node->attrGroups, [$attributeGroup]);
+        return $node;
+    }
+}

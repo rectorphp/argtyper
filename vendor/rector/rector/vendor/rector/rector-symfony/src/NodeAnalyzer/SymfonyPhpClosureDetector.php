@@ -1,0 +1,73 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Symfony\NodeAnalyzer;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\Closure;
+use Argtyper202511\PhpParser\Node\Expr\MethodCall;
+use Argtyper202511\PhpParser\Node\Name\FullyQualified;
+use Argtyper202511\PhpParser\NodeVisitor;
+use Argtyper202511\Rector\NodeNameResolver\NodeNameResolver;
+use Argtyper202511\Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
+use Argtyper202511\Rector\PhpParser\Node\BetterNodeFinder;
+use Argtyper202511\Rector\Symfony\Enum\SymfonyClass;
+final class SymfonyPhpClosureDetector
+{
+    /**
+     * @readonly
+     * @var \Rector\NodeNameResolver\NodeNameResolver
+     */
+    private $nodeNameResolver;
+    /**
+     * @readonly
+     * @var \Rector\PhpParser\Node\BetterNodeFinder
+     */
+    private $betterNodeFinder;
+    /**
+     * @readonly
+     * @var \Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser
+     */
+    private $simpleCallableNodeTraverser;
+    public function __construct(NodeNameResolver $nodeNameResolver, BetterNodeFinder $betterNodeFinder, SimpleCallableNodeTraverser $simpleCallableNodeTraverser)
+    {
+        $this->nodeNameResolver = $nodeNameResolver;
+        $this->betterNodeFinder = $betterNodeFinder;
+        $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;
+    }
+    public function detect(Closure $closure) : bool
+    {
+        if (\count($closure->params) !== 1) {
+            return \false;
+        }
+        $firstParam = $closure->params[0];
+        if (!$firstParam->type instanceof FullyQualified) {
+            return \false;
+        }
+        return $this->nodeNameResolver->isName($firstParam->type, SymfonyClass::CONTAINER_CONFIGURATOR);
+    }
+    public function hasDefaultsConfigured(Closure $closure, string $desiredMethodName) : bool
+    {
+        $hasDefaultsAutoconfigure = \false;
+        // has defaults autoconfigure?
+        $this->simpleCallableNodeTraverser->traverseNodesWithCallable($closure, function (Node $node) use(&$hasDefaultsAutoconfigure, $desiredMethodName) : ?int {
+            if (!$node instanceof MethodCall) {
+                return null;
+            }
+            if (!$this->nodeNameResolver->isName($node->name, $desiredMethodName)) {
+                return null;
+            }
+            /** @var MethodCall[] $methodCalls */
+            $methodCalls = $this->betterNodeFinder->findInstanceOf($node, MethodCall::class);
+            foreach ($methodCalls as $methodCall) {
+                if (!$this->nodeNameResolver->isName($methodCall->name, 'defaults')) {
+                    continue;
+                }
+                $hasDefaultsAutoconfigure = \true;
+                return NodeVisitor::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
+            }
+            return null;
+        });
+        return $hasDefaultsAutoconfigure;
+    }
+}

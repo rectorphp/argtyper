@@ -1,46 +1,64 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\ArgTyper\Rector\ValueObject;
 
-final readonly class ClassMethodType
+final class ClassMethodType
 {
-    public function __construct(
-        private string $class,
-        private string $method,
-        private int $position,
-        private string $type,
-        private bool $isNullable = false,
-    ) {
+    /**
+     * @readonly
+     * @var string
+     */
+    private $class;
+    /**
+     * @readonly
+     * @var string
+     */
+    private $method;
+    /**
+     * @readonly
+     * @var int
+     */
+    private $position;
+    /**
+     * @readonly
+     * @var string
+     */
+    private $type;
+    /**
+     * @readonly
+     * @var bool
+     */
+    private $isNullable = \false;
+    public function __construct(string $class, string $method, int $position, string $type, bool $isNullable = \false)
+    {
+        $this->class = $class;
+        $this->method = $method;
+        $this->position = $position;
+        $this->type = $type;
+        $this->isNullable = $isNullable;
     }
-
-    public function getPosition(): int
+    public function getPosition() : int
     {
         return $this->position;
     }
-
-    public function getClass(): string
+    public function getClass() : string
     {
         return $this->class;
     }
-
-    public function getMethod(): string
+    public function getMethod() : string
     {
         return $this->method;
     }
-
-    public function getType(): string
+    public function getType() : string
     {
         return $this->type;
     }
-
-    public function isObjectType(): bool
+    public function isObjectType() : bool
     {
-        return str_starts_with($this->type, 'object:');
+        return \strncmp($this->type, 'object:', \strlen('object:')) === 0;
     }
-
-    public function isNullable(): bool
+    public function isNullable() : bool
     {
         return $this->isNullable;
     }

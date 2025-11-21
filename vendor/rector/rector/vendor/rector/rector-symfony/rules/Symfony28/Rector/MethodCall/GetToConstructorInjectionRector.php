@@ -1,0 +1,113 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Symfony\Symfony28\Rector\MethodCall;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\MethodCall;
+use Argtyper202511\PhpParser\Node\Stmt\Class_;
+use Argtyper202511\Rector\NodeManipulator\ClassDependencyManipulator;
+use Argtyper202511\Rector\PostRector\ValueObject\PropertyMetadata;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\Symfony\NodeAnalyzer\DependencyInjectionMethodCallAnalyzer;
+use Argtyper202511\Rector\Symfony\TypeAnalyzer\ContainerAwareAnalyzer;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Symfony\Tests\Symfony28\Rector\MethodCall\GetToConstructorInjectionRector\GetToConstructorInjectionRectorTest
+ */
+final class GetToConstructorInjectionRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\Symfony\NodeAnalyzer\DependencyInjectionMethodCallAnalyzer
+     */
+    private $dependencyInjectionMethodCallAnalyzer;
+    /**
+     * @readonly
+     * @var \Rector\Symfony\TypeAnalyzer\ContainerAwareAnalyzer
+     */
+    private $containerAwareAnalyzer;
+    /**
+     * @readonly
+     * @var \Rector\NodeManipulator\ClassDependencyManipulator
+     */
+    private $classDependencyManipulator;
+    public function __construct(DependencyInjectionMethodCallAnalyzer $dependencyInjectionMethodCallAnalyzer, ContainerAwareAnalyzer $containerAwareAnalyzer, ClassDependencyManipulator $classDependencyManipulator)
+    {
+        $this->dependencyInjectionMethodCallAnalyzer = $dependencyInjectionMethodCallAnalyzer;
+        $this->containerAwareAnalyzer = $containerAwareAnalyzer;
+        $this->classDependencyManipulator = $classDependencyManipulator;
+    }
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Turns fetching of dependencies via `$this->get()` to constructor injection in Command and Controller', [new CodeSample(<<<'CODE_SAMPLE'
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+
+final class SomeController extend Controller
+{
+    public function someMethod()
+    {
+        // ...
+        $this->get('some_service');
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+
+final class SomeController extend Controller
+{
+    public function __construct(SomeService $someService)
+    {
+        $this->someService = $someService;
+    }
+
+    public function someMethod()
+    {
+        $this->someService;
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes() : array
+    {
+        return [Class_::class];
+    }
+    /**
+     * @param Class_ $node
+     */
+    public function refactor(Node $node) : ?Node
+    {
+        $class = $node;
+        $propertyMetadatas = [];
+        $this->traverseNodesWithCallable($class, function (Node $node) use($class, &$propertyMetadatas) : ?Node {
+            if (!$node instanceof MethodCall) {
+                return null;
+            }
+            if (!$this->isName($node->name, 'get')) {
+                return null;
+            }
+            if (!$this->containerAwareAnalyzer->isGetMethodAwareType($node->var)) {
+                return null;
+            }
+            $propertyMetadata = $this->dependencyInjectionMethodCallAnalyzer->replaceMethodCallWithPropertyFetchAndDependency($class, $node);
+            if (!$propertyMetadata instanceof PropertyMetadata) {
+                return null;
+            }
+            $propertyMetadatas[] = $propertyMetadata;
+            return $this->nodeFactory->createPropertyFetch('this', $propertyMetadata->getName());
+        });
+        if ($propertyMetadatas === []) {
+            return null;
+        }
+        foreach ($propertyMetadatas as $propertyMetadata) {
+            $this->classDependencyManipulator->addConstructorDependency($node, $propertyMetadata);
+        }
+        return $node;
+    }
+}

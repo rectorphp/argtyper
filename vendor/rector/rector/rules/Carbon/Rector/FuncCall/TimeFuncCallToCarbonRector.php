@@ -1,0 +1,69 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Carbon\Rector\FuncCall;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\ArrowFunction;
+use Argtyper202511\PhpParser\Node\Expr\FuncCall;
+use Argtyper202511\PhpParser\Node\Expr\MethodCall;
+use Argtyper202511\PhpParser\Node\Expr\StaticCall;
+use Argtyper202511\PhpParser\Node\Name\FullyQualified;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\Carbon\Rector\FuncCall\TimeFuncCallToCarbonRector\TimeFuncCallToCarbonRectorTest
+ */
+final class TimeFuncCallToCarbonRector extends AbstractRector
+{
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Convert `time()` function call to `Carbon::now()->getTimestamp()`', [new CodeSample(<<<'CODE_SAMPLE'
+class SomeClass
+{
+    public function run()
+    {
+        $time = time();
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+class SomeClass
+{
+    public function run()
+    {
+        $time = \Carbon\Carbon::now()->getTimestamp();
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes() : array
+    {
+        return [FuncCall::class];
+    }
+    /**
+     * @param FuncCall $node
+     */
+    public function refactor(Node $node) : ?Node
+    {
+        if (!$this->isName($node->name, 'time')) {
+            return null;
+        }
+        $firstClassCallable = $node->isFirstClassCallable();
+        if (!$firstClassCallable && \count($node->getArgs()) !== 0) {
+            return null;
+        }
+        // create now and format()
+        $nowStaticCall = new StaticCall(new FullyQualified('Argtyper202511\\Carbon\\Carbon'), 'now');
+        $methodCall = new MethodCall($nowStaticCall, 'getTimestamp');
+        if ($firstClassCallable) {
+            return new ArrowFunction(['static' => \true, 'expr' => $methodCall]);
+        }
+        return $methodCall;
+    }
+}

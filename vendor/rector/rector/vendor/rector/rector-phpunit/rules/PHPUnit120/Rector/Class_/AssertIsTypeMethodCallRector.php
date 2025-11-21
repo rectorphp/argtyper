@@ -1,0 +1,98 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\PHPUnit\PHPUnit120\Rector\Class_;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Arg;
+use Argtyper202511\PhpParser\Node\Expr\MethodCall;
+use Argtyper202511\PhpParser\Node\Expr\StaticCall;
+use Argtyper202511\Rector\PhpParser\Node\Value\ValueResolver;
+use Argtyper202511\Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see https://github.com/sebastianbergmann/phpunit/issues/6053
+ * @see https://github.com/sebastianbergmann/phpunit/blob/12.0.0/ChangeLog-12.0.md
+ * @see \Rector\PHPUnit\Tests\PHPUnit120\Rector\MethodCall\AssertIsTypeMethodCallRector\AssertIsTypeMethodCallRectorTest
+ */
+final class AssertIsTypeMethodCallRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\PhpParser\Node\Value\ValueResolver
+     */
+    private $valueResolver;
+    /**
+     * @readonly
+     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
+     */
+    private $testsNodeAnalyzer;
+    private const IS_TYPE_VALUE_TO_METHOD = ['array' => 'isArray', 'bool' => 'isBool', 'boolean' => 'isBool', 'callable' => 'isCallable', 'double' => 'isFloat', 'float' => 'isFloat', 'integer' => 'isInt', 'int' => 'isInt', 'iterable' => 'isIterable', 'null' => 'isNull', 'numeric' => 'isNumeric', 'object' => 'isObject', 'real' => 'isFloat', 'resource' => 'isResource', 'resource (closed)' => 'isClosedResource', 'scalar' => 'isScalar', 'string' => 'isString'];
+    public function __construct(ValueResolver $valueResolver, TestsNodeAnalyzer $testsNodeAnalyzer)
+    {
+        $this->valueResolver = $valueResolver;
+        $this->testsNodeAnalyzer = $testsNodeAnalyzer;
+    }
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Replaces `Assert::isType()` calls with type-specific `Assert::is*()` calls', [new CodeSample(<<<'CODE_SAMPLE'
+use PHPUnit\Framework\TestCase;
+
+final class SomeClass extends TestCase
+{
+    public function testMethod(): void
+    {
+        $this->assertThat([], $this->isType('array'));
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+use PHPUnit\Framework\TestCase;
+
+final class SomeClass extends TestCase
+{
+    public function testMethod(): void
+    {
+        $this->assertThat([], $this->isArray());
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes() : array
+    {
+        return [MethodCall::class, StaticCall::class];
+    }
+    /**
+     * @param MethodCall|StaticCall $node
+     */
+    public function refactor(Node $node) : ?\Argtyper202511\PhpParser\Node
+    {
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        if (!$this->testsNodeAnalyzer->isPHPUnitTestCaseCall($node) || !$this->isName($node->name, 'isType')) {
+            return null;
+        }
+        if (\count($node->getArgs()) !== 1) {
+            return null;
+        }
+        $arg = $node->getArg('type', 0);
+        if (!$arg instanceof Arg) {
+            return null;
+        }
+        $argValue = $this->valueResolver->getValue($arg);
+        if (isset(self::IS_TYPE_VALUE_TO_METHOD[$argValue])) {
+            if ($node instanceof MethodCall) {
+                return new MethodCall($node->var, self::IS_TYPE_VALUE_TO_METHOD[$argValue]);
+            }
+            return new StaticCall($node->class, self::IS_TYPE_VALUE_TO_METHOD[$argValue]);
+        }
+        return null;
+    }
+}

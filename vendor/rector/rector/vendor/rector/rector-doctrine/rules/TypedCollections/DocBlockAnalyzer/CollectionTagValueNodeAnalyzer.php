@@ -1,0 +1,26 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Doctrine\TypedCollections\DocBlockAnalyzer;
+
+use Argtyper202511\PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
+use Argtyper202511\PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode;
+use Argtyper202511\PHPStan\PhpDocParser\Ast\Type\GenericTypeNode;
+use Argtyper202511\Rector\Doctrine\Enum\DoctrineClass;
+final class CollectionTagValueNodeAnalyzer
+{
+    /**
+     * @param \PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode|\PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode $tagValueNode
+     */
+    public function detect($tagValueNode) : bool
+    {
+        if (!$tagValueNode->type instanceof GenericTypeNode) {
+            return \false;
+        }
+        $genericTypeNode = $tagValueNode->type;
+        if ($genericTypeNode->type->name === 'Collection') {
+            return \true;
+        }
+        return $genericTypeNode->type->name === DoctrineClass::COLLECTION;
+    }
+}

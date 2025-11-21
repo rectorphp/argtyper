@@ -1,0 +1,61 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\TypeDeclaration\NodeAnalyzer;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Identifier;
+use Argtyper202511\PhpParser\Node\IntersectionType;
+use Argtyper202511\PhpParser\Node\Name;
+use Argtyper202511\PhpParser\Node\NullableType;
+use Argtyper202511\PhpParser\Node\UnionType;
+use Argtyper202511\Rector\PhpParser\Comparing\NodeComparator;
+final class TypeNodeUnwrapper
+{
+    /**
+     * @readonly
+     * @var \Rector\PhpParser\Comparing\NodeComparator
+     */
+    private $nodeComparator;
+    public function __construct(NodeComparator $nodeComparator)
+    {
+        $this->nodeComparator = $nodeComparator;
+    }
+    /**
+     * @param array<UnionType|NullableType|Name|Identifier|IntersectionType> $typeNodes
+     * @return array<Name|Identifier>
+     */
+    public function unwrapNullableUnionTypes(array $typeNodes) : array
+    {
+        $unwrappedTypeNodes = [];
+        foreach ($typeNodes as $typeNode) {
+            if ($typeNode instanceof UnionType) {
+                $unwrappedTypeNodes = \array_merge($unwrappedTypeNodes, $this->unwrapNullableUnionTypes($typeNode->types));
+            } elseif ($typeNode instanceof NullableType) {
+                $unwrappedTypeNodes[] = $typeNode->type;
+                $unwrappedTypeNodes[] = new Identifier('null');
+            } elseif ($typeNode instanceof IntersectionType) {
+                $unwrappedTypeNodes = \array_merge($unwrappedTypeNodes, $this->unwrapNullableUnionTypes($typeNode->types));
+            } else {
+                $unwrappedTypeNodes[] = $typeNode;
+            }
+        }
+        return $this->uniquateNodes($unwrappedTypeNodes);
+    }
+    /**
+     * @template TNode as Node
+     *
+     * @param TNode[] $nodes
+     * @return TNode[]
+     */
+    public function uniquateNodes(array $nodes) : array
+    {
+        $uniqueNodes = [];
+        foreach ($nodes as $node) {
+            $uniqueHash = $this->nodeComparator->printWithoutComments($node);
+            $uniqueNodes[$uniqueHash] = $node;
+        }
+        // reset keys from 0, for further compatibility
+        return \array_values($uniqueNodes);
+    }
+}

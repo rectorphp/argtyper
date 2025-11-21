@@ -1,0 +1,151 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\DowngradePhp83\Rector\FuncCall;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\Assign;
+use Argtyper202511\PhpParser\Node\Expr\CallLike;
+use Argtyper202511\PhpParser\Node\Expr\Closure;
+use Argtyper202511\PhpParser\Node\Expr\FuncCall;
+use Argtyper202511\PhpParser\Node\Expr\Variable;
+use Argtyper202511\PhpParser\Node\Stmt\Echo_;
+use Argtyper202511\PhpParser\Node\Stmt\Expression;
+use Argtyper202511\PhpParser\Node\Stmt\Return_;
+use Argtyper202511\PhpParser\Node\Stmt\Switch_;
+use Argtyper202511\PHPStan\Analyser\Scope;
+use Argtyper202511\Rector\Contract\PhpParser\Node\StmtsAwareInterface;
+use Argtyper202511\Rector\Exception\ShouldNotHappenException;
+use Argtyper202511\Rector\Naming\Naming\VariableNaming;
+use Argtyper202511\Rector\NodeAnalyzer\ExprInTopStmtMatcher;
+use Argtyper202511\Rector\NodeTypeResolver\Node\AttributeKey;
+use Argtyper202511\Rector\PhpParser\Parser\InlineCodeParser;
+use Argtyper202511\Rector\PHPStan\ScopeFetcher;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @changelog https://wiki.php.net/rfc/json_validate
+ *
+ * @see \Rector\Tests\DowngradePhp83\Rector\FuncCall\DowngradeJsonValidateRector\DowngradeJsonValidateRectorTest
+ */
+final class DowngradeJsonValidateRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\PhpParser\Parser\InlineCodeParser
+     */
+    private $inlineCodeParser;
+    /**
+     * @readonly
+     * @var \Rector\Naming\Naming\VariableNaming
+     */
+    private $variableNaming;
+    /**
+     * @readonly
+     * @var \Rector\NodeAnalyzer\ExprInTopStmtMatcher
+     */
+    private $exprInTopStmtMatcher;
+    /**
+     * @var \PhpParser\Node\Expr\Closure|null
+     */
+    private $cachedClosure;
+    public function __construct(InlineCodeParser $inlineCodeParser, VariableNaming $variableNaming, ExprInTopStmtMatcher $exprInTopStmtMatcher)
+    {
+        $this->inlineCodeParser = $inlineCodeParser;
+        $this->variableNaming = $variableNaming;
+        $this->exprInTopStmtMatcher = $exprInTopStmtMatcher;
+    }
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Replace json_validate() function', [new CodeSample(<<<'CODE_SAMPLE'
+json_validate('{"foo": "bar"}');
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+$jsonValidate = function (string $json, int $depth = 512, int $flags = 0) {
+    if (function_exists('json_validate'))  {
+        return json_validate($json, $depth, $flags);
+    }
+
+    $maxDepth = 0x7FFFFFFF;
+
+    if (0 !== $flags && \defined('JSON_INVALID_UTF8_IGNORE') && \JSON_INVALID_UTF8_IGNORE !== $flags) {
+        throw new \ValueError('json_validate(): Argument #3 ($flags) must be a valid flag (allowed flags: JSON_INVALID_UTF8_IGNORE)');
+    }
+
+    if ($depth <= 0) {
+        throw new \ValueError('json_validate(): Argument #2 ($depth) must be greater than 0');
+    }
+
+    if ($depth > $maxDepth) {
+        throw new \ValueError(sprintf('json_validate(): Argument #2 ($depth) must be less than %d', $maxDepth));
+    }
+
+    json_decode($json, true, $depth, $flags);
+    return \JSON_ERROR_NONE === json_last_error();
+};
+$jsonValidate('{"foo": "bar"}');
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes() : array
+    {
+        return [StmtsAwareInterface::class, Switch_::class, Return_::class, Expression::class, Echo_::class];
+    }
+    /**
+     * @param StmtsAwareInterface|Switch_|Return_|Expression|Echo_ $node
+     * @return Node[]|null
+     */
+    public function refactor(Node $node) : ?array
+    {
+        $expr = $this->exprInTopStmtMatcher->match($node, function (Node $subNode) : bool {
+            if (!$subNode instanceof FuncCall) {
+                return \false;
+            }
+            // need pull Scope from target traversed sub Node
+            return !$this->shouldSkip($subNode);
+        });
+        if (!$expr instanceof FuncCall) {
+            return null;
+        }
+        $scope = ScopeFetcher::fetch($node);
+        $variable = new Variable($this->variableNaming->createCountedValueName('jsonValidate', $scope));
+        $function = $this->createClosure();
+        $expression = new Expression(new Assign($variable, $function));
+        $expr->name = $variable;
+        return [$expression, $node];
+    }
+    private function createClosure() : Closure
+    {
+        if ($this->cachedClosure instanceof Closure) {
+            return clone $this->cachedClosure;
+        }
+        $stmts = $this->inlineCodeParser->parseFile(__DIR__ . '/../../snippet/json_validate_closure.php.inc');
+        /** @var Expression $expression */
+        $expression = $stmts[0];
+        $expr = $expression->expr;
+        if (!$expr instanceof Closure) {
+            throw new ShouldNotHappenException();
+        }
+        $this->cachedClosure = $expr;
+        return $expr;
+    }
+    private function shouldSkip(CallLike $callLike) : bool
+    {
+        if (!$callLike instanceof FuncCall) {
+            return \false;
+        }
+        if (!$this->isName($callLike, 'json_validate')) {
+            return \true;
+        }
+        $scope = $callLike->getAttribute(AttributeKey::SCOPE);
+        if ($scope instanceof Scope && $scope->isInFunctionExists('json_validate')) {
+            return \true;
+        }
+        $args = $callLike->args;
+        return \count($args) < 1;
+    }
+}

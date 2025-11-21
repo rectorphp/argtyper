@@ -1,0 +1,99 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Php84\Rector\Param;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\ComplexType;
+use Argtyper202511\PhpParser\Node\Expr\ConstFetch;
+use Argtyper202511\PhpParser\Node\IntersectionType;
+use Argtyper202511\PhpParser\Node\Name;
+use Argtyper202511\PhpParser\Node\NullableType;
+use Argtyper202511\PhpParser\Node\Param;
+use Argtyper202511\PhpParser\Node\UnionType;
+use Argtyper202511\PHPStan\Type\MixedType;
+use Argtyper202511\PHPStan\Type\TypeCombinator;
+use Argtyper202511\Rector\PhpParser\Node\Value\ValueResolver;
+use Argtyper202511\Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\StaticTypeMapper\StaticTypeMapper;
+use Argtyper202511\Rector\ValueObject\PhpVersionFeature;
+use Argtyper202511\Rector\VersionBonding\Contract\MinPhpVersionInterface;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\Php84\Rector\Param\ExplicitNullableParamTypeRector\ExplicitNullableParamTypeRectorTest
+ */
+final class ExplicitNullableParamTypeRector extends AbstractRector implements MinPhpVersionInterface
+{
+    /**
+     * @readonly
+     * @var \Rector\PhpParser\Node\Value\ValueResolver
+     */
+    private $valueResolver;
+    /**
+     * @readonly
+     * @var \Rector\StaticTypeMapper\StaticTypeMapper
+     */
+    private $staticTypeMapper;
+    public function __construct(ValueResolver $valueResolver, StaticTypeMapper $staticTypeMapper)
+    {
+        $this->valueResolver = $valueResolver;
+        $this->staticTypeMapper = $staticTypeMapper;
+    }
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Make implicit nullable param to explicit', [new CodeSample(<<<'CODE_SAMPLE'
+function foo(string $param = null) {}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+function foo(?string $param = null) {}
+CODE_SAMPLE
+)]);
+    }
+    public function getNodeTypes() : array
+    {
+        return [Param::class];
+    }
+    /**
+     * @param Param $node
+     */
+    public function refactor(Node $node) : ?Param
+    {
+        if (!$node->type instanceof Node) {
+            return null;
+        }
+        if (!$node->default instanceof ConstFetch || !$this->valueResolver->isNull($node->default)) {
+            return null;
+        }
+        $nodeType = $this->staticTypeMapper->mapPhpParserNodePHPStanType($node->type);
+        if (TypeCombinator::containsNull($nodeType)) {
+            return null;
+        }
+        // mixed can't be nullable, ref https://3v4l.org/YUkhH/rfc#vgit.master
+        if ($nodeType instanceof MixedType) {
+            return null;
+        }
+        $newNodeType = TypeCombinator::addNull($nodeType);
+        $paramType = $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($newNodeType, TypeKind::PARAM);
+        // ensure it process valid Node, otherwise, just return null
+        if (!$paramType instanceof Node) {
+            return null;
+        }
+        // re-use existing node instead of reprint Node that may cause unnecessary FQCN
+        if ($node->type instanceof UnionType) {
+            $node->type->types[] = new Name('null');
+        } elseif ($node->type instanceof ComplexType) {
+            /** @var IntersectionType $nodeType */
+            $nodeType = $node->type;
+            $node->type = new UnionType([$nodeType, new Name('null')]);
+        } else {
+            $node->type = new NullableType($node->type);
+        }
+        return $node;
+    }
+    public function provideMinPhpVersion() : int
+    {
+        return PhpVersionFeature::DEPRECATE_IMPLICIT_NULLABLE_PARAM_TYPE;
+    }
+}

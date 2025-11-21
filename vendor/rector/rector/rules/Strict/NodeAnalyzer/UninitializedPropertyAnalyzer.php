@@ -1,0 +1,76 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Strict\NodeAnalyzer;
+
+use Argtyper202511\PhpParser\Node\Expr;
+use Argtyper202511\PhpParser\Node\Expr\PropertyFetch;
+use Argtyper202511\PhpParser\Node\Expr\StaticPropertyFetch;
+use Argtyper202511\PhpParser\Node\Stmt\ClassLike;
+use Argtyper202511\PhpParser\Node\Stmt\Property;
+use Argtyper202511\PHPStan\Type\ThisType;
+use Argtyper202511\Rector\NodeNameResolver\NodeNameResolver;
+use Argtyper202511\Rector\NodeTypeResolver\NodeTypeResolver;
+use Argtyper202511\Rector\PhpParser\AstResolver;
+use Argtyper202511\Rector\StaticTypeMapper\Resolver\ClassNameFromObjectTypeResolver;
+use Argtyper202511\Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector;
+final class UninitializedPropertyAnalyzer
+{
+    /**
+     * @readonly
+     * @var \Rector\PhpParser\AstResolver
+     */
+    private $astResolver;
+    /**
+     * @readonly
+     * @var \Rector\NodeTypeResolver\NodeTypeResolver
+     */
+    private $nodeTypeResolver;
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector
+     */
+    private $constructorAssignDetector;
+    /**
+     * @readonly
+     * @var \Rector\NodeNameResolver\NodeNameResolver
+     */
+    private $nodeNameResolver;
+    public function __construct(AstResolver $astResolver, NodeTypeResolver $nodeTypeResolver, ConstructorAssignDetector $constructorAssignDetector, NodeNameResolver $nodeNameResolver)
+    {
+        $this->astResolver = $astResolver;
+        $this->nodeTypeResolver = $nodeTypeResolver;
+        $this->constructorAssignDetector = $constructorAssignDetector;
+        $this->nodeNameResolver = $nodeNameResolver;
+    }
+    public function isUninitialized(Expr $expr) : bool
+    {
+        if (!$expr instanceof PropertyFetch && !$expr instanceof StaticPropertyFetch) {
+            return \false;
+        }
+        $varType = $expr instanceof PropertyFetch ? $this->nodeTypeResolver->getType($expr->var) : $this->nodeTypeResolver->getType($expr->class);
+        if ($varType instanceof ThisType) {
+            $varType = $varType->getStaticObjectType();
+        }
+        $className = ClassNameFromObjectTypeResolver::resolve($varType);
+        if ($className === null) {
+            return \false;
+        }
+        $classLike = $this->astResolver->resolveClassFromName($className);
+        if (!$classLike instanceof ClassLike) {
+            return \false;
+        }
+        $propertyName = (string) $this->nodeNameResolver->getName($expr);
+        $property = $classLike->getProperty($propertyName);
+        if (!$property instanceof Property) {
+            return \false;
+        }
+        if (\count($property->props) !== 1) {
+            return \false;
+        }
+        if ($property->props[0]->default instanceof Expr) {
+            return \false;
+        }
+        return !$this->constructorAssignDetector->isPropertyAssigned($classLike, $propertyName);
+    }
+}

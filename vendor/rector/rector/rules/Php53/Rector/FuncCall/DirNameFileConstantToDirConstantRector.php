@@ -1,0 +1,76 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Php53\Rector\FuncCall;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\FuncCall;
+use Argtyper202511\PhpParser\Node\Scalar\MagicConst\Dir;
+use Argtyper202511\PhpParser\Node\Scalar\MagicConst\File;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\ValueObject\PhpVersionFeature;
+use Argtyper202511\Rector\VersionBonding\Contract\MinPhpVersionInterface;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\Php53\Rector\FuncCall\DirNameFileConstantToDirConstantRector\DirNameFileConstantToDirConstantRectorTest
+ */
+final class DirNameFileConstantToDirConstantRector extends AbstractRector implements MinPhpVersionInterface
+{
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Convert `dirname(__FILE__)` to `__DIR__`', [new CodeSample(<<<'CODE_SAMPLE'
+class SomeClass
+{
+    public function run()
+    {
+        return dirname(__FILE__);
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+class SomeClass
+{
+    public function run()
+    {
+        return __DIR__;
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes() : array
+    {
+        return [FuncCall::class];
+    }
+    /**
+     * @param FuncCall $node
+     */
+    public function refactor(Node $node) : ?Node
+    {
+        if (!$this->isName($node, 'dirname')) {
+            return null;
+        }
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        if (\count($node->args) !== 1) {
+            return null;
+        }
+        if (!isset($node->getArgs()[0])) {
+            return null;
+        }
+        $firstArg = $node->getArgs()[0];
+        if (!$firstArg->value instanceof File) {
+            return null;
+        }
+        return new Dir();
+    }
+    public function provideMinPhpVersion() : int
+    {
+        return PhpVersionFeature::DIR_CONSTANT;
+    }
+}

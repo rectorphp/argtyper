@@ -1,51 +1,45 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\ArgTyper\Rector;
 
-use PhpParser\Node\Identifier;
-use PhpParser\Node\Name\FullyQualified;
-use PHPStan\Type\ArrayType;
-use PHPStan\Type\BooleanType;
-use PHPStan\Type\Constant\ConstantArrayType;
-use PHPStan\Type\FloatType;
-use PHPStan\Type\IntegerType;
-use PHPStan\Type\StringType;
+use Argtyper202511\PhpParser\Node\Identifier;
+use Argtyper202511\PhpParser\Node\Name\FullyQualified;
+use Argtyper202511\PHPStan\Type\ArrayType;
+use Argtyper202511\PHPStan\Type\BooleanType;
+use Argtyper202511\PHPStan\Type\Constant\ConstantArrayType;
+use Argtyper202511\PHPStan\Type\FloatType;
+use Argtyper202511\PHPStan\Type\IntegerType;
+use Argtyper202511\PHPStan\Type\StringType;
 use Rector\ArgTyper\Exception\NotImplementedException;
-
 final class TypeResolver
 {
-    public static function resolveTypeNode(string $type): FullyQualified|Identifier
+    /**
+     * @return \PhpParser\Node\Name\FullyQualified|\PhpParser\Node\Identifier
+     */
+    public static function resolveTypeNode(string $type)
     {
-        if (str_starts_with($type, 'object:')) {
-            return new FullyQualified(substr($type, 7));
+        if (\strncmp($type, 'object:', \strlen('object:')) === 0) {
+            return new FullyQualified((string) \substr($type, 7));
         }
-
-        if (in_array($type, ['array', ArrayType::class, ConstantArrayType::class], true)) {
+        if (\in_array($type, ['array', ArrayType::class, ConstantArrayType::class], \true)) {
             return new Identifier('array');
         }
-
-        if (str_starts_with($type, 'array')) {
+        if (\strncmp($type, 'array', \strlen('array')) === 0) {
             return new Identifier('array');
         }
-
         if ($type === StringType::class) {
             return new Identifier('string');
         }
-
         if ($type === IntegerType::class) {
             return new Identifier('int');
         }
-
         if ($type === FloatType::class) {
             return new Identifier('float');
         }
-
         if ($type === BooleanType::class) {
             return new Identifier('bool');
         }
-
         throw new NotImplementedException($type);
     }
 }

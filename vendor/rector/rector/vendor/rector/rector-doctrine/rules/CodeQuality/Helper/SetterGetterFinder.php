@@ -1,0 +1,40 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\Doctrine\CodeQuality\Helper;
+
+use Argtyper202511\PhpParser\Node\Stmt\Class_;
+use Argtyper202511\PhpParser\Node\Stmt\ClassMethod;
+use Argtyper202511\Rector\TypeDeclaration\NodeAnalyzer\ClassMethodAndPropertyAnalyzer;
+final class SetterGetterFinder
+{
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclaration\NodeAnalyzer\ClassMethodAndPropertyAnalyzer
+     */
+    private $classMethodAndPropertyAnalyzer;
+    public function __construct(ClassMethodAndPropertyAnalyzer $classMethodAndPropertyAnalyzer)
+    {
+        $this->classMethodAndPropertyAnalyzer = $classMethodAndPropertyAnalyzer;
+    }
+    public function findGetterClassMethod(Class_ $class, string $propertyName) : ?ClassMethod
+    {
+        foreach ($class->getMethods() as $classMethod) {
+            if (!$this->classMethodAndPropertyAnalyzer->hasPropertyFetchReturn($classMethod, $propertyName)) {
+                continue;
+            }
+            return $classMethod;
+        }
+        return null;
+    }
+    public function findSetterClassMethod(Class_ $class, string $propertyName) : ?ClassMethod
+    {
+        foreach ($class->getMethods() as $classMethod) {
+            if (!$this->classMethodAndPropertyAnalyzer->hasOnlyPropertyAssign($classMethod, $propertyName)) {
+                continue;
+            }
+            return $classMethod;
+        }
+        return null;
+    }
+}

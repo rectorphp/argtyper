@@ -1,0 +1,132 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\TypeDeclarationDocblocks\Rector\Class_;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Stmt\Class_;
+use Argtyper202511\PhpParser\Node\Stmt\ClassMethod;
+use Argtyper202511\PhpParser\Node\Stmt\Property;
+use Argtyper202511\PHPStan\Type\ArrayType;
+use Argtyper202511\Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Rector\TypeDeclarationDocblocks\NodeAnalyzer\ConstructorAssignedTypeResolver;
+use Argtyper202511\Rector\TypeDeclarationDocblocks\NodeDocblockTypeDecorator;
+use Argtyper202511\Rector\TypeDeclarationDocblocks\TagNodeAnalyzer\UsefulArrayTagNodeAnalyzer;
+use Argtyper202511\Rector\ValueObject\MethodName;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\TypeDeclarationDocblocks\Rector\Class_\DocblockVarFromParamDocblockInConstructorRector\DocblockVarFromParamDocblockInConstructorRectorTest
+ */
+final class DocblockVarFromParamDocblockInConstructorRector extends AbstractRector
+{
+    /**
+     * @readonly
+     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
+     */
+    private $phpDocInfoFactory;
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclarationDocblocks\NodeAnalyzer\ConstructorAssignedTypeResolver
+     */
+    private $constructorAssignedTypeResolver;
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclarationDocblocks\TagNodeAnalyzer\UsefulArrayTagNodeAnalyzer
+     */
+    private $usefulArrayTagNodeAnalyzer;
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclarationDocblocks\NodeDocblockTypeDecorator
+     */
+    private $nodeDocblockTypeDecorator;
+    public function __construct(PhpDocInfoFactory $phpDocInfoFactory, ConstructorAssignedTypeResolver $constructorAssignedTypeResolver, UsefulArrayTagNodeAnalyzer $usefulArrayTagNodeAnalyzer, NodeDocblockTypeDecorator $nodeDocblockTypeDecorator)
+    {
+        $this->phpDocInfoFactory = $phpDocInfoFactory;
+        $this->constructorAssignedTypeResolver = $constructorAssignedTypeResolver;
+        $this->usefulArrayTagNodeAnalyzer = $usefulArrayTagNodeAnalyzer;
+        $this->nodeDocblockTypeDecorator = $nodeDocblockTypeDecorator;
+    }
+    public function getNodeTypes() : array
+    {
+        return [Class_::class];
+    }
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Add @var array docblock to a property based on @param of constructor assign', [new CodeSample(<<<'CODE_SAMPLE'
+class SomeClass
+{
+    private array $items;
+
+    /**
+     * @param string[] $items
+     */
+    public function __construct(array $items)
+    {
+        $this->items = $items;
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+class SomeClass
+{
+    /**
+     * @var string[]
+     */
+    private array $items;
+
+    /**
+     * @param string[] $items
+     */
+    public function __construct(array $items)
+    {
+        $this->items = $items;
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @param Class_ $node
+     */
+    public function refactor(Node $node) : ?Node
+    {
+        $constructorClassMethod = $node->getMethod(MethodName::CONSTRUCT);
+        if (!$constructorClassMethod instanceof ClassMethod) {
+            return null;
+        }
+        $hasChanged = \false;
+        foreach ($node->getProperties() as $property) {
+            if (!$this->isArrayTypedProperty($property)) {
+                continue;
+            }
+            $propertyPhpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($property);
+            // @var tag already given
+            if ($this->usefulArrayTagNodeAnalyzer->isUsefulArrayTag($propertyPhpDocInfo->getVarTagValueNode())) {
+                continue;
+            }
+            $propertyName = $this->getName($property);
+            $assignedType = $this->constructorAssignedTypeResolver->resolve($node, $propertyName);
+            if (!$assignedType instanceof ArrayType) {
+                continue;
+            }
+            $hasPropertyChanged = $this->nodeDocblockTypeDecorator->decorateGenericIterableVarType($assignedType, $propertyPhpDocInfo, $property);
+            if (!$hasPropertyChanged) {
+                continue;
+            }
+            $hasChanged = \true;
+        }
+        if (!$hasChanged) {
+            return null;
+        }
+        return $node;
+    }
+    private function isArrayTypedProperty(Property $property) : bool
+    {
+        if (!$property->type instanceof Node) {
+            return \false;
+        }
+        return $this->isName($property->type, 'array');
+    }
+}

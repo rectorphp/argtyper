@@ -1,0 +1,63 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\DowngradePhp81\Rector\MethodCall;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Arg;
+use Argtyper202511\PhpParser\Node\Expr\MethodCall;
+use Argtyper202511\PhpParser\Node\Expr\Ternary;
+use Argtyper202511\PhpParser\Node\Scalar\String_;
+use Argtyper202511\PHPStan\Type\ObjectType;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\DowngradePhp81\Rector\MethodCall\DowngradeIsEnumRector\DowngradeIsEnumRectorTest
+ */
+final class DowngradeIsEnumRector extends AbstractRector
+{
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Downgrades isEnum() on class reflection', [new CodeSample(<<<'CODE_SAMPLE'
+class SomeClass
+{
+    public function run(ReflectionClass $reflectionClass)
+    {
+        return $reflectionClass->isEnum();
+    }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+class SomeClass
+{
+    public function run(ReflectionClass $reflectionClass)
+    {
+        return method_exists($reflectionClass, 'isEnum') ? $reflectionClass->isEnum() : false;
+    }
+}
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes() : array
+    {
+        return [MethodCall::class];
+    }
+    /**
+     * @param MethodCall $node
+     */
+    public function refactor(Node $node) : ?Node
+    {
+        if (!$this->isName($node->name, 'isEnum')) {
+            return null;
+        }
+        if (!$this->isObjectType($node->var, new ObjectType('ReflectionClass'))) {
+            return null;
+        }
+        $args = [new Arg($node->var), new Arg(new String_('isEnum'))];
+        return new Ternary($this->nodeFactory->createFuncCall('method_exists', $args), $node, $this->nodeFactory->createFalse());
+    }
+}

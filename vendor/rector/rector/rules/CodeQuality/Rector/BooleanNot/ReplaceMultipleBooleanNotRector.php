@@ -1,0 +1,54 @@
+<?php
+
+declare (strict_types=1);
+namespace Argtyper202511\Rector\CodeQuality\Rector\BooleanNot;
+
+use Argtyper202511\PhpParser\Node;
+use Argtyper202511\PhpParser\Node\Expr\BooleanNot;
+use Argtyper202511\PhpParser\Node\Expr\Cast\Bool_;
+use Argtyper202511\Rector\Rector\AbstractRector;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Argtyper202511\Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
+/**
+ * @see \Rector\Tests\CodeQuality\Rector\BooleanNot\ReplaceMultipleBooleanNotRector\ReplaceMultipleBooleanNotRectorTest
+ */
+final class ReplaceMultipleBooleanNotRector extends AbstractRector
+{
+    public function getRuleDefinition() : RuleDefinition
+    {
+        return new RuleDefinition('Replace the Double not operator (!!) by type-casting to boolean', [new CodeSample(<<<'CODE_SAMPLE'
+$bool = !!$var;
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+$bool = (bool) $var;
+CODE_SAMPLE
+)]);
+    }
+    /**
+     * @return array<class-string<Node>>
+     */
+    public function getNodeTypes() : array
+    {
+        return [BooleanNot::class];
+    }
+    /**
+     * @param BooleanNot $node
+     */
+    public function refactor(Node $node) : ?Node
+    {
+        $depth = 0;
+        $expr = $node->expr;
+        while ($expr instanceof BooleanNot) {
+            ++$depth;
+            $expr = $expr->expr;
+        }
+        if ($depth === 0) {
+            return null;
+        }
+        if ($depth % 2 === 0) {
+            $node->expr = $expr;
+            return $node;
+        }
+        return new Bool_($expr);
+    }
+}
