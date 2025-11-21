@@ -105,7 +105,7 @@ final class AddTypesCommand extends Command
         $cmd = sprintf(
             'vendor/bin/rector process %s --config=%s --clear-cache',
             implode(' ', $projectDirs),
-            'rector-argtyper.php'
+            realpath(__DIR__ . '/../../rector-argtyper.php')
         );
 
         // show output, so we know what exactly has changed
