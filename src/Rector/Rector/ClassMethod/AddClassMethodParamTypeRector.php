@@ -70,9 +70,11 @@ final class AddClassMethodParamTypeRector extends AbstractRector
                 if ($param->type instanceof UnionType) {
                     continue;
                 }
+
                 if ($param->type instanceof IntersectionType) {
                     continue;
                 }
+
                 $paramClassMethodTypes = $classMethodTypesByPosition[$position] ?? null;
                 if ($paramClassMethodTypes === null) {
                     continue;

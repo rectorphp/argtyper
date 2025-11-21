@@ -47,9 +47,11 @@ final class AddParamIterableDocblockTypeRector extends AbstractRector
             if ($classMethod->isMagic()) {
                 continue;
             }
+
             if ($classMethod->getParams() === []) {
                 continue;
             }
+
             $classMethodTypesByPosition = $this->callLikeTypesConfigurationProvider->matchByPosition($classMethod);
             if ($classMethodTypesByPosition === []) {
                 continue;
