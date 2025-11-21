@@ -23,4 +23,4 @@ jobs:
 
             -   run: composer require rector/argtyper
 
-            -   run: vendor/bin/argtyper list --ansi
+            -   run: vendor/bin/argtyper list
