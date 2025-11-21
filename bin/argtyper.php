@@ -27,7 +27,10 @@ $argTyperCommand = new ArgTyperCommand(
     new SymfonyStyle(new ArrayInput([]), new ConsoleOutput())
 );
 
-$argvInput = new ArgvInput(null, $argTyperCommand->getDefinition());
-$resultCode = $argTyperCommand->execute($argvInput, new ConsoleOutput());
+$application = new \Symfony\Component\Console\Application();
+$application->add($argTyperCommand);
 
+$resultCode = $application->run(
+    new ArgvInput(null, $argTyperCommand->getDefinition())
+);
 exit($resultCode);
