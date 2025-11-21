@@ -21,6 +21,6 @@ jobs:
                     php-version: ${{ matrix.php_version }}
                     coverage: none
 
-            -   run: composer require tomasvotruba/class-leak
+            -   run: composer require rector/argtyper
 
-            -   run: vendor/bin/class-leak list --ansi
+            -   run: vendor/bin/argtyper list --ansi

@@ -53,6 +53,10 @@ final class TypeMapper
             return new IntegerType();
         }
 
+        if ($type instanceof ClassStringType) {
+            return new StringType();
+        }
+
         // allow adding "array" type in case of passing multiple array and constant array types
         if ($type instanceof ConstantArrayType) {
             return new ArrayType(new MixedType(), new MixedType());
