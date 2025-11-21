@@ -35,7 +35,8 @@
         ]
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "platform-check": false
     },
     "scripts": {
         "check-cs": "vendor/bin/ecs check --ansi",
