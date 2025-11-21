@@ -85,7 +85,7 @@ final class AddTypesCommand extends Command
         $cmd = sprintf(
             'vendor/bin/phpstan analyse %s --configuration=%s --autoload-file=%s',
             implode(' ', $dirs),
-            'phpstan-data-collector.neon',
+            realpath(__DIR__ . '/../../phpstan-data-collector.neon'),
             escapeshellarg($projectPath . '/vendor/autoload.php')
         );
 
