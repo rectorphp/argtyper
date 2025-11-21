@@ -2,13 +2,6 @@
 
 declare(strict_types=1);
 
-use Rector\ArgTyper\Command\AddTypesCommand;
-use Rector\ArgTyper\Helpers\ProjectSourceDirFinder;
-use Symfony\Component\Console\Input\ArgvInput;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Style\SymfonyStyle;
-
 // installed as dependency
 if (file_exists(__DIR__ . '/../../../../vendor/autoload.php')) {
     require_once __DIR__ . '/../../../../vendor/autoload.php';
@@ -22,13 +15,11 @@ if (file_exists(__DIR__ . '/../vendor/scoper-autoload.php')) {
     require_once __DIR__ . '/../vendor/autoload.php';
 }
 
-$argTyperCommand = new AddTypesCommand(
-    new ProjectSourceDirFinder(),
-    new SymfonyStyle(new ArrayInput([]), new ConsoleOutput())
-);
+$containerFactory = new \Rector\ArgTyper\DependencyInjection\ContainerFactory();
+$container = $containerFactory->create();
 
-$application = new \Symfony\Component\Console\Application();
-$application->add($argTyperCommand);
+/** @var \Symfony\Component\Console\Application $application */
+$application = $container->make(\Symfony\Component\Console\Application::class);
 
 $resultCode = $application->run();
 exit($resultCode);

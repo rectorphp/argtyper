@@ -24,11 +24,12 @@ final class AddTypesCommand extends Command
         parent::__construct();
     }
 
-
-
     protected function configure(): void
     {
         $this->setName('add-types');
+        $this->setDescription(
+            'Find all passed values and their types to your local methods/functions calls, then add them as type declarations'
+        );
 
         $this->addArgument('project-path', InputArgument::REQUIRED, 'Path to the target project root');
 
