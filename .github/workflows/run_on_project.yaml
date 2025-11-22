@@ -25,4 +25,4 @@ jobs:
             -   run: composer create-project laravel/framework
 
             # on whole project, to be able to load vendor/autoload.php
-            -   run: vendor/bin/argtyper type framework
+            -   run: vendor/bin/argtyper add-types framework
