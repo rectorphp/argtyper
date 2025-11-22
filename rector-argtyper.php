@@ -7,6 +7,9 @@ use Rector\ArgTyper\Rector\Rector\Function_\AddFunctionParamTypeRector;
 use Rector\Config\RectorConfig;
 
 return RectorConfig::configure()
+    ->withBootstrapFiles([
+        __DIR__ . '/vendor/autoload.php'
+    ])
     ->withRules([
         AddFunctionParamTypeRector::class,
         AddClassMethodParamTypeRector::class,

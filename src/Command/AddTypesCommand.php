@@ -103,10 +103,9 @@ final class AddTypesCommand extends Command
         $this->symfonyStyle->title('2. Running Rector to add types...');
 
         $cmd = sprintf(
-            'vendor/bin/rector process %s --config=%s --clear-cache --autoload-file=%s',
+            'vendor/bin/rector process %s --config=%s --clear-cache',
             implode(' ', $projectDirs),
             realpath(__DIR__ . '/../../rector-argtyper.php'),
-            escapeshellarg(getcwd() . '/vendor/autoload.php')
         );
 
         // show output, so we know what exactly has changed
