@@ -31,7 +31,7 @@ final class AddTypesCommand extends Command
             'Find all passed values and their types to your local methods/functions calls, then add them as type declarations'
         );
 
-        $this->addArgument('project-path', InputArgument::REQUIRED, 'Path to the target project root', getcwd());
+        $this->addArgument('project-path', InputArgument::OPTIONAL, 'Path to the target project root', getcwd());
 
         $this->addOption('debug', null, null, 'Enable debug output');
     }
