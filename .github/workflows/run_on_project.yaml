@@ -22,7 +22,7 @@ jobs:
                     coverage: none
 
             -   run: composer require rector/argtyper --ansi
-            -   run: composer create-project laravel/framework
+            -   run: composer create-project laravel/framework --ansi
 
             # on whole project, to be able to load vendor/autoload.php
             -   run: vendor/bin/argtyper add-types framework
