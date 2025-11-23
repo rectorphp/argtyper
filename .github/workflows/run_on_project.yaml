@@ -26,7 +26,7 @@ jobs:
 
             # clone laravel project with dependencies
             -   run: git clone https://github.com/laravel/framework.git --depth=1
-            -   run: composer install --working-dir framework
+            -   run: composer install --working-dir framework --ansi
 
             # on whole project, to be able to load vendor/autoload.php
             -   run: vendor/bin/argtyper add-types framework
