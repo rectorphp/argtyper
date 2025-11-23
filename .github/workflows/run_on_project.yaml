@@ -23,7 +23,10 @@ jobs:
                     coverage: none
 
             -   run: composer require rector/argtyper --ansi
-            -   run: composer create-project laravel/framework --ansi
+
+            # clone laravel project with dependencies
+            -   run: git clone git@github.com:laravel/framework.git --depth=1
+            -   run: composer install --working-dir framework
 
             # on whole project, to be able to load vendor/autoload.php
             -   run: vendor/bin/argtyper add-types framework
