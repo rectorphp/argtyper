@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\Command;
 
+use Nette\Utils\Strings;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Helpers\ProjectDirectoryFinder;
@@ -81,17 +82,22 @@ final class AddTypesCommand extends Command
     {
         $this->symfonyStyle->title('1. Running PHPStan to collect data...');
 
-        dump($projectDirs);
-        die;
+        // use relative paths, as cwd is project path
+        $relativeProjectDirs = array_map(
+            fn (string $dir): string => Strings::after($dir, $projectPath, 1),
+            $projectDirs
+        );
+        sort($relativeProjectDirs);
 
         // Keep paths the same as in the original script
         $commands = [
-            'vendor/bin/phpstan', 'analyse', $projectDirs,
+            'vendor/bin/phpstan',
+            'analyse',
+            ...$relativeProjectDirs,
             '--configuration',
-            '--autoload-file',
-            implode(' ', $projectDirs),
             realpath(__DIR__ . '/../../config/phpstan-collecting-data.neon'),
-            realpath(__DIR__ . '/../bin/autoload.php'),
+            '--autoload-file',
+            realpath(__DIR__ . '/../../bin/autoload.php'),
         ];
 
         $process = new Process($commands, cwd: $projectPath);
