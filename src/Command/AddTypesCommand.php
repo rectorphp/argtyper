@@ -59,7 +59,6 @@ final class AddTypesCommand extends Command
         $this->symfonyStyle->newLine();
         $this->symfonyStyle->listing($projectDirs);
 
-
         // 1. Run PHPStan data collection
         $this->runPhpStan($projectDirs, $projectPath, $isDebug);
 
