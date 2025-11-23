@@ -109,7 +109,7 @@ final class AddTypesCommand extends Command
         );
 
         // show output, so we know what exactly has changed
-        $rectorOutput = $this->runShell($cmd, $isDebug, true);
+        $rectorOutput = $this->runShell($cmd, $isDebug);
         $addedTypesCount = $this->resolveAddedTypesCount($rectorOutput);
 
         if ($addedTypesCount === 0) {
@@ -121,7 +121,7 @@ final class AddTypesCommand extends Command
         $this->symfonyStyle->success(sprintf('Finished! We have added %d new types', $addedTypesCount));
     }
 
-    private function runShell(string $commandLine, bool $isDebug, bool $mustBeSuccess = false): string
+    private function runShell(string $commandLine, bool $isDebug): string
     {
         $process = Process::fromShellCommandline($commandLine);
         $process->setTimeout(null);
@@ -131,12 +131,7 @@ final class AddTypesCommand extends Command
             $this->symfonyStyle->newLine();
         }
 
-        if ($mustBeSuccess) {
-            $process->mustRun();
-        } else {
-            $process->run();
-        }
-
+        $process->mustRun();
         return $process->getOutput();
     }
 
