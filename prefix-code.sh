@@ -23,7 +23,7 @@ note()
 # ---------------------------
 
 # 2. scope it
-note "Downloading php-scoper 0.18.3"
+note "Downloading php-scoper"
 wget https://github.com/humbug/php-scoper/releases/download/0.18.18/php-scoper.phar -N --no-verbose
 
 
