@@ -4,9 +4,10 @@ on:
     push:
         branches:
             - main
+    pull_request: null
 
 jobs:
-    bare_run:
+    run_on_project:
         runs-on: ubuntu-latest
 
         strategy:
