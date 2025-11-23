@@ -3,7 +3,7 @@ parameters:
     customRulesetUsed: true
 
     bootstrapFiles:
-        - bin/autoload.php
+        - ../bin/autoload.php
 
     excludePaths:
         - "*/Fixture/*"
