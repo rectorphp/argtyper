@@ -84,7 +84,7 @@ final class AddTypesCommand extends Command
 
         // use relative paths, as cwd is project path
         $relativeProjectDirs = array_map(
-            fn (string $dir): string => Strings::after($dir, $projectPath, 1),
+            fn (string $dir): string => (string) Strings::after($dir, $projectPath, 1),
             $projectDirs
         );
         sort($relativeProjectDirs);
