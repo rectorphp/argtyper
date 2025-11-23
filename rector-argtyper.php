@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+// to local classes in Rector autoload if not run from the same project
+require __DIR__ . '/bin/autoload.php';
+
 use Rector\ArgTyper\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector;
 use Rector\ArgTyper\Rector\Rector\Function_\AddFunctionParamTypeRector;
 use Rector\Config\RectorConfig;

@@ -51,21 +51,21 @@ final class AddTypesCommand extends Command
         );
 
         // Discover source dirs
-        $projectDirs = $this->projectSourceDirFinder->find($projectPath);
+        $sourceDirs = $this->projectSourceDirFinder->find($projectPath);
 
         $isDebug = (bool) $input->getOption('debug');
 
         $this->symfonyStyle->writeln('<fg=green>Found project code directories</>');
         $this->symfonyStyle->newLine();
-        $this->symfonyStyle->listing($projectDirs);
+        $this->symfonyStyle->listing($sourceDirs);
 
         // 1. Run PHPStan data collection
-        $this->runPhpStan($projectDirs, $projectPath, $isDebug);
+        $this->runPhpStan($sourceDirs, $projectPath, $isDebug);
 
         $this->symfonyStyle->newLine();
 
         // 2. Run Rector to apply types
-        $this->runRector($projectDirs, $isDebug);
+        $this->runRector($sourceDirs, $isDebug);
 
         $this->removeTempFiles();
 
