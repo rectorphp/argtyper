@@ -22,7 +22,8 @@ final class FilesLoader
             touch($filePath);
         }
 
-        $line = Json::encode($record);
+        // newline is important for JSONL format
+        $line = Json::encode($record) . PHP_EOL;
 
         // Append the line and lock the file to prevent race conditions
         file_put_contents($filePath, $line, FILE_APPEND | LOCK_EX);

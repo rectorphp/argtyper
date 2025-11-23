@@ -85,6 +85,7 @@ final class CollectCallLikeArgTypesRuleTest extends RuleTestCase
             'position' => 0,
             'type' => FloatType::class,
         ], $collectedType[0]);
+
         $this->assertSame([
             'class' => ObjectWithConstructor::class,
             'method' => '__construct',
