@@ -91,7 +91,7 @@ final class AddTypesCommand extends Command
             '--autoload-file',
             implode(' ', $projectDirs),
             realpath(__DIR__ . '/../../config/phpstan-collecting-data.neon'),
-            realpath(__DIR__ . '/../bin/autoload.php')
+            realpath(__DIR__ . '/../bin/autoload.php'),
         ];
 
         $process = new Process($commands, cwd: $projectPath);
@@ -122,7 +122,7 @@ final class AddTypesCommand extends Command
             ...$projectDirs,
             '--config',
             realpath(__DIR__ . '/../../rector/rector-argtyper.php'),
-            '--clear-cache'
+            '--clear-cache',
         ];
 
         $process = new Process($command, timeout: null);
