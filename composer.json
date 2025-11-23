@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "illuminate/container": "^12.39",
+        "nette/utils": "^4.0",
         "phpstan/phpstan": "^2.1",
         "rector/rector": "^2.2",
         "symfony/console": "^6.4",
@@ -17,8 +18,9 @@
     },
     "require-dev": {
         "php-parallel-lint/php-parallel-lint": "^1.4",
-        "phpunit/phpunit": "^11.5",
         "phpecs/phpecs": "^2.2",
+        "phpunit/phpunit": "^11.5",
+        "shipmonk/composer-dependency-analyser": "^1.8",
         "tomasvotruba/class-leak": "^2.0",
         "tracy/tracy": "^2.10"
     },
@@ -31,6 +33,9 @@
         "psr-4": {
             "Rector\\ArgTyper\\Tests\\": "tests"
         },
+        "classmap": [
+            "tests/Rector/Rector/ClassMethod/AddClassMethodParamTypeRector/Fixture"
+        ],
         "files": [
             "tests/PHPStan/CollectFuncCallArgTypesRule/Source/some_function.php"
         ]
