@@ -6,7 +6,7 @@ namespace Rector\ArgTyper\Command;
 
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
-use Rector\ArgTyper\Helpers\ProjectSourceDirFinder;
+use Rector\ArgTyper\Helpers\ProjectDirectoryFinder;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,7 +18,7 @@ use Webmozart\Assert\Assert;
 final class AddTypesCommand extends Command
 {
     public function __construct(
-        private readonly ProjectSourceDirFinder $projectSourceDirFinder,
+        private readonly ProjectDirectoryFinder $projectSourceDirFinder,
         private readonly SymfonyStyle $symfonyStyle,
     ) {
         parent::__construct();
