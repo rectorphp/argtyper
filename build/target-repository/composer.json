@@ -3,7 +3,7 @@
     "description": "Analyze real method argument types, and add them as type declarations",
     "license": "proprietary",
     "require": {
-        "php": ">=7.2",
+        "php": ">=7.4",
         "phpstan/phpstan": "^2.0",
         "rector/rector": "^2.0"
     },
