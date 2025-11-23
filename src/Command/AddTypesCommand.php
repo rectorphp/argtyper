@@ -18,7 +18,7 @@ use Webmozart\Assert\Assert;
 final class AddTypesCommand extends Command
 {
     public function __construct(
-        private readonly ProjectDirectoryFinder $projectSourceDirFinder,
+        private readonly ProjectDirectoryFinder $projectDirectoryFinder,
         private readonly SymfonyStyle $symfonyStyle,
     ) {
         parent::__construct();
@@ -51,7 +51,7 @@ final class AddTypesCommand extends Command
         );
 
         // Discover source dirs
-        $projectDirs = $this->projectSourceDirFinder->find($projectPath);
+        $projectDirs = $this->projectDirectoryFinder->find($projectPath);
 
         $isDebug = (bool) $input->getOption('debug');
 
@@ -66,7 +66,7 @@ final class AddTypesCommand extends Command
 
         // 2. Run Rector to apply types, not on tests, just source
         // Discover source dirs
-        $sourceDirs = $this->projectSourceDirFinder->findSource($projectPath);
+        $sourceDirs = $this->projectDirectoryFinder->findSource($projectPath);
         $this->runRector($sourceDirs, $isDebug);
 
         $this->removeTempFiles();
