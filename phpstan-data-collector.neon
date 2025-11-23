@@ -2,6 +2,9 @@ parameters:
     # avoid any other rules
     customRulesetUsed: true
 
+    bootstrapFiles:
+        - bin/autoload.php
+
 rules:
     - Rector\ArgTyper\PHPStan\Rule\CollectFuncCallArgTypesRule
     - Rector\ArgTyper\PHPStan\Rule\CollectCallLikeArgTypesRule
