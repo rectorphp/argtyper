@@ -40,7 +40,7 @@ final class CollectFuncCallArgTypesRuleTest extends RuleTestCase
      */
     public static function getAdditionalConfigFiles(): array
     {
-        return [__DIR__ . '/../../../phpstan-data-collector.neon'];
+        return [__DIR__ . '/../../../config/phpstan-collecting-data.neon'];
     }
 
     protected function getRule(): Rule

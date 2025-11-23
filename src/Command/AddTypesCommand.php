@@ -87,7 +87,7 @@ final class AddTypesCommand extends Command
         $cmd = sprintf(
             'vendor/bin/phpstan analyse %s --configuration=%s --autoload-file=%s',
             implode(' ', $dirs),
-            realpath(__DIR__ . '/../../phpstan-data-collector.neon'),
+            realpath(__DIR__ . '/../../config/phpstan-collecting-data.neon'),
             escapeshellarg($projectPath . '/vendor/autoload.php')
         );
 
@@ -107,7 +107,7 @@ final class AddTypesCommand extends Command
         $cmd = sprintf(
             'vendor/bin/rector process %s --config=%s --clear-cache',
             implode(' ', $projectDirs),
-            realpath(__DIR__ . '/../../rector-argtyper.php'),
+            realpath(__DIR__ . '/../../rector/rector-argtyper.php'),
         );
 
         // show output, so we know what exactly has changed
