@@ -13,6 +13,14 @@ return RectorConfig::configure()
     ->withBootstrapFiles([
         __DIR__ . '/bin/autoload.php'
     ])
+    ->withSkip([
+        // run only on source code
+        'test',
+        'tests',
+        'Fixture',
+        'test',
+        'Tests',
+    ])
     ->withRules([
         AddFunctionParamTypeRector::class,
         AddClassMethodParamTypeRector::class,
