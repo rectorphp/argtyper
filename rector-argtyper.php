@@ -11,7 +11,7 @@ use Rector\Config\RectorConfig;
 
 return RectorConfig::configure()
     ->withBootstrapFiles([
-        __DIR__ . '/vendor/autoload.php'
+        __DIR__ . '/bin/autoload.php'
     ])
     ->withRules([
         AddFunctionParamTypeRector::class,
