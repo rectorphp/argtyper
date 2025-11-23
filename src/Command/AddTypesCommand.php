@@ -81,17 +81,29 @@ final class AddTypesCommand extends Command
     {
         $this->symfonyStyle->title('1. Running PHPStan to collect data...');
 
-        $dirs = array_map(escapeshellarg(...), $projectDirs);
+        dump($projectDirs);
+        die;
 
         // Keep paths the same as in the original script
-        $cmd = sprintf(
-            'vendor/bin/phpstan analyse %s --configuration=%s --autoload-file=%s',
-            implode(' ', $dirs),
+        $commands = [
+            'vendor/bin/phpstan', 'analyse', $projectDirs,
+            '--configuration',
+            '--autoload-file',
+            implode(' ', $projectDirs),
             realpath(__DIR__ . '/../../config/phpstan-collecting-data.neon'),
-            escapeshellarg($projectPath . '/vendor/autoload.php')
-        );
+            realpath(__DIR__ . '/../bin/autoload.php')
+        ];
 
-        $this->runShell($cmd, $isDebug);
+        $process = new Process($commands, cwd: $projectPath);
+        $process->setTimeout(null);
+
+        if ($isDebug) {
+            $this->symfonyStyle->writeln(sprintf('<info>$ %s</info>', implode(' ', $commands)));
+            $this->symfonyStyle->newLine();
+        }
+
+        $process->mustRun();
+        $process->getOutput();
 
         $collectedFileItems = FilesLoader::loadJsonl(ConfigFilePath::callLikes());
         $this->symfonyStyle->success(sprintf('Finished! Found %d arg types', count($collectedFileItems)));
@@ -104,14 +116,27 @@ final class AddTypesCommand extends Command
     {
         $this->symfonyStyle->title('2. Running Rector to add types...');
 
-        $cmd = sprintf(
-            'vendor/bin/rector process %s --config=%s --clear-cache',
-            implode(' ', $projectDirs),
+        $command = [
+            'vendor/bin/rector',
+            'process',
+            ...$projectDirs,
+            '--config',
             realpath(__DIR__ . '/../../rector/rector-argtyper.php'),
-        );
+            '--clear-cache'
+        ];
+
+        $process = new Process($command, timeout: null);
+
+        if ($isDebug) {
+            $this->symfonyStyle->writeln(sprintf('<info>$ %s</info>', implode(' ', $command)));
+            $this->symfonyStyle->newLine();
+        }
+
+        $process->mustRun();
 
         // show output, so we know what exactly has changed
-        $rectorOutput = $this->runShell($cmd, $isDebug);
+        $rectorOutput = $process->getOutput();
+
         $addedTypesCount = $this->resolveAddedTypesCount($rectorOutput);
 
         if ($addedTypesCount === 0) {
@@ -121,20 +146,6 @@ final class AddTypesCommand extends Command
         }
 
         $this->symfonyStyle->success(sprintf('Finished! We have added %d new types', $addedTypesCount));
-    }
-
-    private function runShell(string $commandLine, bool $isDebug): string
-    {
-        $process = Process::fromShellCommandline($commandLine);
-        $process->setTimeout(null);
-
-        if ($isDebug) {
-            $this->symfonyStyle->writeln(sprintf('<info>$ %s</info>', $commandLine));
-            $this->symfonyStyle->newLine();
-        }
-
-        $process->mustRun();
-        return $process->getOutput();
     }
 
     private function resolveAddedTypesCount(string $rectorOutput): int

@@ -2,9 +2,6 @@ parameters:
     # avoid any other rules
     customRulesetUsed: true
 
-    bootstrapFiles:
-        - ../bin/autoload.php
-
     excludePaths:
         - "*/Fixture/*"
         - "*/Fixtures/*"
