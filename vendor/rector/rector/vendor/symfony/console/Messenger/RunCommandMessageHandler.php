@@ -1,0 +1,51 @@
+<?php
+
+/*
+ * This file is part of the Symfony package.
+ *
+ * (c) Fabien Potencier <fabien@symfony.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+namespace RectorPrefix202511\Symfony\Component\Console\Messenger;
+
+use RectorPrefix202511\Symfony\Component\Console\Application;
+use RectorPrefix202511\Symfony\Component\Console\Command\Command;
+use RectorPrefix202511\Symfony\Component\Console\Exception\RunCommandFailedException;
+use RectorPrefix202511\Symfony\Component\Console\Input\StringInput;
+use RectorPrefix202511\Symfony\Component\Console\Output\BufferedOutput;
+use RectorPrefix202511\Symfony\Component\Messenger\Exception\RecoverableExceptionInterface;
+use RectorPrefix202511\Symfony\Component\Messenger\Exception\UnrecoverableExceptionInterface;
+/**
+ * @author Kevin Bond <kevinbond@gmail.com>
+ */
+final class RunCommandMessageHandler
+{
+    /**
+     * @readonly
+     * @var \RectorPrefix202511\Symfony\Component\Console\Application
+     */
+    private $application;
+    public function __construct(Application $application)
+    {
+        $this->application = $application;
+    }
+    public function __invoke(\RectorPrefix202511\Symfony\Component\Console\Messenger\RunCommandMessage $message): \RectorPrefix202511\Symfony\Component\Console\Messenger\RunCommandContext
+    {
+        $input = new StringInput($message->input);
+        $output = new BufferedOutput();
+        $this->application->setCatchExceptions($message->catchExceptions);
+        try {
+            $exitCode = $this->application->run($input, $output);
+        } catch (UnrecoverableExceptionInterface|RecoverableExceptionInterface $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw new RunCommandFailedException($e, new \RectorPrefix202511\Symfony\Component\Console\Messenger\RunCommandContext($message, Command::FAILURE, $output->fetch()));
+        }
+        if ($message->throwOnFailure && Command::SUCCESS !== $exitCode) {
+            throw new RunCommandFailedException(\sprintf('Command "%s" exited with code "%s".', $message->input, $exitCode), new \RectorPrefix202511\Symfony\Component\Console\Messenger\RunCommandContext($message, $exitCode, $output->fetch()));
+        }
+        return new \RectorPrefix202511\Symfony\Component\Console\Messenger\RunCommandContext($message, $exitCode, $output->fetch());
+    }
+}

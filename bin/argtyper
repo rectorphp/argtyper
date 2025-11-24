@@ -1,4 +1,5 @@
 #!/usr/bin/env php
-<?php
+<?php 
+namespace Argtyper202511;
 
 require_once __DIR__ . '/argtyper.php';
