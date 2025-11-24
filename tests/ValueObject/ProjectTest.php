@@ -27,7 +27,9 @@ final class ProjectTest extends TestCase
 
     public function testMissingAutoload(): void
     {
-        $this->expectExceptionMessage('Could not find "vendor/autoload.php" in the project. Make sure its dependencies are installed');
+        $this->expectExceptionMessage(
+            'Could not find "vendor/autoload.php" in the project. Make sure its dependencies are installed'
+        );
 
         new Project(__DIR__);
     }
