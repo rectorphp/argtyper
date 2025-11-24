@@ -1,13 +1,11 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\ArgTyper\Helpers;
 
 use SplFileInfo;
-use Symfony\Component\Finder\Finder;
-use Webmozart\Assert\Assert;
-
+use Argtyper202511\Symfony\Component\Finder\Finder;
+use Argtyper202511\Webmozart\Assert\Assert;
 final class ProjectDirectoryFinder
 {
     /**
@@ -15,44 +13,33 @@ final class ProjectDirectoryFinder
      * @var string[]
      */
     private const POSSIBLE_SOURCE_DIRECTORIES = ['src', 'lib', 'app'];
-
     /**
      * Directory names commonly used as PHP source directories
      * @var string[]
      */
     private const POSSIBLE_CODE_DIRECTORIES = ['src', 'lib', 'app', 'test', 'tests'];
-
     /**
      * @return string[]
      */
     public function findCodeDirsRelative(string $projectPath): array
     {
         $fileInfos = $this->findDirectoriesInPaths($projectPath, self::POSSIBLE_CODE_DIRECTORIES);
-
         $relativeDirs = [];
         foreach ($fileInfos as $fileInfo) {
-            $relativePath = substr(
-                (string) realpath($fileInfo->getRealPath()),
-                strlen((string) realpath($projectPath)) + 1
-            );
+            $relativePath = (string) substr((string) realpath($fileInfo->getRealPath()), strlen((string) realpath($projectPath)) + 1);
             $relativeDirs[] = $relativePath;
         }
-
         sort($relativeDirs);
-
         return $relativeDirs;
     }
-
     /**
      * @return string[]
      */
     public function findSource(string $projectPath): array
     {
         $fileInfos = $this->findDirectoriesInPaths($projectPath, self::POSSIBLE_SOURCE_DIRECTORIES);
-
         return $this->mapToDirectoryPaths($fileInfos);
     }
-
     /**
      * @param SplFileInfo[] $fileInfos
      * @return string[]
@@ -63,13 +50,10 @@ final class ProjectDirectoryFinder
         foreach ($fileInfos as $fileInfo) {
             $dirs[] = $fileInfo->getPathname();
         }
-
         Assert::notEmpty($dirs);
         Assert::allString($dirs);
-
         return $dirs;
     }
-
     /**
      * @param string[] $desiredDirectoryNames
      * @return SplFileInfo[]
@@ -77,13 +61,7 @@ final class ProjectDirectoryFinder
     private function findDirectoriesInPaths(string $projectPath, array $desiredDirectoryNames): array
     {
         Assert::allString($desiredDirectoryNames);
-
-        $finder = (new Finder())
-            ->in($projectPath)
-            ->directories()
-            ->depth('== 0')
-            ->name($desiredDirectoryNames);
-
+        $finder = (new Finder())->in($projectPath)->directories()->depth('== 0')->name($desiredDirectoryNames);
         /** @var SplFileInfo[] $fileInfos */
         $fileInfos = iterator_to_array($finder->getIterator());
         return $fileInfos;
