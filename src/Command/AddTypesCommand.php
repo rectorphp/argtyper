@@ -7,6 +7,7 @@ namespace Rector\ArgTyper\Command;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Helpers\ProjectDirectoryFinder;
+use Rector\ArgTyper\Process\ProcessRunner;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,6 +21,7 @@ final class AddTypesCommand extends Command
     public function __construct(
         private readonly ProjectDirectoryFinder $projectDirectoryFinder,
         private readonly SymfonyStyle $symfonyStyle,
+        private readonly ProcessRunner $processRunner,
     ) {
         parent::__construct();
     }
@@ -67,7 +69,7 @@ final class AddTypesCommand extends Command
         // 2. Run Rector to apply types, not on tests, just source
         // Discover source dirs
         $sourceDirs = $this->projectDirectoryFinder->findSource($projectPath);
-        $this->runRector($sourceDirs, $isDebug);
+        $this->runRector($sourceDirs, $projectPath, $isDebug);
 
         $this->removeTempFiles();
 
@@ -89,16 +91,7 @@ final class AddTypesCommand extends Command
             realpath(__DIR__ . '/../../bin/autoload.php'),
         ];
 
-        $process = new Process($commands, cwd: $projectPath);
-        $process->setTimeout(null);
-
-        if ($isDebug) {
-            $this->symfonyStyle->writeln(sprintf('<info>$ %s</info>', implode(' ', $commands)));
-            $this->symfonyStyle->newLine();
-        }
-
-        $process->mustRun();
-        $process->getOutput();
+        $this->processRunner->runProcess($commands, $projectPath, $isDebug);
 
         $collectedFileItems = FilesLoader::loadJsonl(ConfigFilePath::callLikes());
         $this->symfonyStyle->success(sprintf('Finished! Found %d arg types', count($collectedFileItems)));
@@ -107,7 +100,7 @@ final class AddTypesCommand extends Command
     /**
      * @param string[] $projectDirs
      */
-    private function runRector(array $projectDirs, bool $isDebug): void
+    private function runRector(array $projectDirs, string $projectPath, bool $isDebug): void
     {
         $this->symfonyStyle->title('2. Running Rector to add types...');
 
@@ -120,17 +113,8 @@ final class AddTypesCommand extends Command
             '--clear-cache',
         ];
 
-        $process = new Process($command, timeout: null);
-
-        if ($isDebug) {
-            $this->symfonyStyle->writeln(sprintf('<info>$ %s</info>', implode(' ', $command)));
-            $this->symfonyStyle->newLine();
-        }
-
-        $process->mustRun();
-
         // show output, so we know what exactly has changed
-        $rectorOutput = $process->getOutput();
+        $rectorOutput = $this->processRunner->runProcess($command, $projectPath, $isDebug)
 
         $addedTypesCount = $this->resolveAddedTypesCount($rectorOutput);
 
@@ -165,4 +149,5 @@ final class AddTypesCommand extends Command
             unlink(ConfigFilePath::callLikes());
         }
     }
+
 }
