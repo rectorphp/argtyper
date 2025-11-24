@@ -65,7 +65,7 @@ final class AddFunctionParamTypeRector extends AbstractRector
                 continue;
             }
 
-            $isNullable = NodeTypeChecker::isParamNullable($param);
+            $isNullable = $paramFunctionType->isNullable();
             $typeNode = TypeResolver::resolveTypeNode($paramFunctionType->getType());
 
             if ($paramFunctionType->isObjectType() && ($param->type instanceof Name || ($param->type instanceof NullableType && $param->type->type instanceof Name))) {

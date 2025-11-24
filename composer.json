@@ -22,6 +22,7 @@
         "phpstan/extension-installer": "^1.4",
         "phpunit/phpunit": "^11.5",
         "shipmonk/composer-dependency-analyser": "^1.8",
+        "symplify/phpstan-extensions": "^12.0",
         "tomasvotruba/class-leak": "^2.1",
         "tomasvotruba/unused-public": "^2.1",
         "tracy/tracy": "^2.10"

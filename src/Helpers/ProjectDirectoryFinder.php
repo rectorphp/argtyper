@@ -25,16 +25,6 @@ final class ProjectDirectoryFinder
     /**
      * @return string[]
      */
-    public function find(string $projectPath): array
-    {
-        $fileInfos = $this->findDirectoriesInPaths($projectPath, self::POSSIBLE_CODE_DIRECTORIES);
-
-        return $this->mapToDirectoryPaths($fileInfos);
-    }
-
-    /**
-     * @return string[]
-     */
     public function findCodeDirsRelative(string $projectPath): array
     {
         $fileInfos = $this->findDirectoriesInPaths($projectPath, self::POSSIBLE_CODE_DIRECTORIES);

@@ -6,3 +6,5 @@
 {"function":"Rector\\ArgTyper\\Tests\\PHPStan\\CollectFuncCallArgTypesRule\\Source\\someFunction","position":1,"type":"PHPStan\\Type\\FloatType"}
 {"function":"Rector\\ArgTyper\\Tests\\PHPStan\\CollectFuncCallArgTypesRule\\Source\\someFunction","position":0,"type":"PHPStan\\Type\\IntegerType"}
 {"function":"Rector\\ArgTyper\\Tests\\PHPStan\\CollectFuncCallArgTypesRule\\Source\\someFunction","position":1,"type":"PHPStan\\Type\\FloatType"}
+{"function":"Rector\\ArgTyper\\Tests\\PHPStan\\CollectFuncCallArgTypesRule\\Source\\someFunction","position":0,"type":"PHPStan\\Type\\IntegerType"}
+{"function":"Rector\\ArgTyper\\Tests\\PHPStan\\CollectFuncCallArgTypesRule\\Source\\someFunction","position":1,"type":"PHPStan\\Type\\FloatType"}

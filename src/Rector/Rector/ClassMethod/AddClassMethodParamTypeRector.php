@@ -91,7 +91,7 @@ final class AddClassMethodParamTypeRector extends AbstractRector
                     continue;
                 }
 
-                $isNullable = NodeTypeChecker::isParamNullable($param);
+                $isNullable = $classMethodType->isNullable();
                 $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
 
                 if ($this->shouldSkipOverride($param, $classMethodType)) {
