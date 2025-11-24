@@ -1,4 +1,4 @@
-name: Bare Run on various PHP versions
+name: Run on Project
 
 on:
     push:
