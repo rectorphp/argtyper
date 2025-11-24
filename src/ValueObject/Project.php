@@ -7,6 +7,9 @@ namespace Rector\ArgTyper\ValueObject;
 use Rector\ArgTyper\Helpers\ProjectDirectoryFinder;
 use Webmozart\Assert\Assert;
 
+/**
+ * @see \Rector\ArgTyper\Tests\ValueObject\ProjectTest
+ */
 final readonly class Project
 {
     public function __construct(

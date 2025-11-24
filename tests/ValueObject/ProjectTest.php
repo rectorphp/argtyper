@@ -9,6 +9,15 @@ use Rector\ArgTyper\ValueObject\Project;
 
 final class ProjectTest extends TestCase
 {
+    public function testDirs(): void
+    {
+        $project = new Project(__DIR__ . '/Fixture');
+
+        $this->assertSame(__DIR__ . '/Fixture', $project->getDirectory());
+
+        $this->assertSame(['src', 'tests'], $project->getCodeDirectories());
+    }
+
     public function testMessage(): void
     {
         $this->expectExceptionMessage('The path "non-existing-path" is not a directory');
