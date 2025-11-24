@@ -8,7 +8,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Process\Process;
 use Webmozart\Assert\Assert;
 
-final class ProcessRunner
+final readonly class ProcessRunner
 {
     public function __construct(
         private SymfonyStyle $symfonyStyle
