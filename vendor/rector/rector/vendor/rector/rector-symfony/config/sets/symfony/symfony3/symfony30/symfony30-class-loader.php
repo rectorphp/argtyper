@@ -1,0 +1,13 @@
+<?php
+
+declare (strict_types=1);
+namespace RectorPrefix202511;
+
+use Rector\Config\RectorConfig;
+use Rector\Renaming\Rector\MethodCall\RenameMethodRector;
+use Rector\Renaming\Rector\Name\RenameClassRector;
+use Rector\Renaming\ValueObject\MethodCallRename;
+return static function (RectorConfig $rectorConfig): void {
+    $rectorConfig->ruleWithConfiguration(RenameMethodRector::class, [new MethodCallRename('Argtyper202511\Symfony\Component\ClassLoader\UniversalClassLoader\UniversalClassLoader', 'registerNamespaces', 'addPrefixes'), new MethodCallRename('Argtyper202511\Symfony\Component\ClassLoader\UniversalClassLoader\UniversalClassLoader', 'registerPrefixes', 'addPrefixes'), new MethodCallRename('Argtyper202511\Symfony\Component\ClassLoader\UniversalClassLoader\UniversalClassLoader', 'registerNamespace', 'addPrefix'), new MethodCallRename('Argtyper202511\Symfony\Component\ClassLoader\UniversalClassLoader\UniversalClassLoader', 'registerPrefix', 'addPrefix'), new MethodCallRename('Argtyper202511\Symfony\Component\ClassLoader\UniversalClassLoader\UniversalClassLoader', 'getNamespaces', 'getPrefixes'), new MethodCallRename('Argtyper202511\Symfony\Component\ClassLoader\UniversalClassLoader\UniversalClassLoader', 'getNamespaceFallbacks', 'getFallbackDirs'), new MethodCallRename('Argtyper202511\Symfony\Component\ClassLoader\UniversalClassLoader\UniversalClassLoader', 'getPrefixFallbacks', 'getFallbackDirs')]);
+    $rectorConfig->ruleWithConfiguration(RenameClassRector::class, ['Argtyper202511\Symfony\Component\ClassLoader\UniversalClassLoader\UniversalClassLoader' => 'Argtyper202511\Symfony\Component\ClassLoader\ClassLoader']);
+};
