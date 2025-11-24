@@ -47,7 +47,7 @@ final class AddTypesCommand extends Command
 
         $this->symfonyStyle->writeln(sprintf('<fg=green>Code dirs found in the "%s" project</>', $projectPath));
         $this->symfonyStyle->listing($project->getCodeDirectories());
-        $this->symfonyStyle->newLine();
+        $this->symfonyStyle->newLine(2);
 
         // 1. Run PHPStan data collection
         $this->runPhpStan($project, $isDebug);

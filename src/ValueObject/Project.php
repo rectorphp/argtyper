@@ -7,7 +7,7 @@ namespace Rector\ArgTyper\ValueObject;
 use Rector\ArgTyper\Helpers\ProjectDirectoryFinder;
 use Webmozart\Assert\Assert;
 
-final class Project
+final readonly class Project
 {
     public function __construct(
         private string $directory
