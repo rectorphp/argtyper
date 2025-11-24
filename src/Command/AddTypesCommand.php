@@ -91,7 +91,7 @@ final class AddTypesCommand extends Command
         $command = [
             'vendor/bin/rector',
             'process',
-            ...$project->getCodeDirectories(),
+            ...$project->getAbsoluteCodeDirectories(),
             '--config',
             (string) realpath(__DIR__ . '/../../config/rector-argtyper.php'),
             '--clear-cache',
