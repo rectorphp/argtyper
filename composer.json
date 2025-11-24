@@ -21,7 +21,7 @@
         "phpecs/phpecs": "^2.2",
         "phpunit/phpunit": "^11.5",
         "shipmonk/composer-dependency-analyser": "^1.8",
-        "tomasvotruba/class-leak": "^2.0",
+        "tomasvotruba/class-leak": "^2.1",
         "tracy/tracy": "^2.10"
     },
     "autoload": {
