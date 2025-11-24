@@ -21,20 +21,30 @@ final class ProjectDirectoryFinder
      */
     public function findCodeDirsRelative(string $projectPath): array
     {
-        $fileInfos = $this->findDirectoriesInPaths($projectPath, self::POSSIBLE_CODE_DIRECTORIES);
-
         $relativeDirs = [];
-        foreach ($fileInfos as $fileInfo) {
-            $relativePath = substr(
-                (string) realpath($fileInfo->getRealPath()),
+        foreach ($this->findCodeDirsAbsolute($projectPath) as $absoluteDir) {
+            $relativeDirs[] = substr(
+                $absoluteDir,
                 strlen((string) realpath($projectPath)) + 1
             );
-            $relativeDirs[] = $relativePath;
         }
 
-        sort($relativeDirs);
-
         return $relativeDirs;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function findCodeDirsAbsolute(string $projectPath): array
+    {
+        $fileInfos = $this->findDirectoriesInPaths($projectPath, self::POSSIBLE_CODE_DIRECTORIES);
+
+        $absoluteDirs = [];
+        foreach ($fileInfos as $fileInfo) {
+            $absoluteDirs[] = $fileInfo->getRealPath();
+        }
+
+        return $absoluteDirs;
     }
 
     /**
@@ -49,7 +59,8 @@ final class ProjectDirectoryFinder
             ->in($projectPath)
             ->directories()
             ->depth('== 0')
-            ->name($desiredDirectoryNames);
+            ->name($desiredDirectoryNames)
+            ->sortByName();
 
         /** @var SplFileInfo[] $fileInfos */
         $fileInfos = iterator_to_array($finder->getIterator());

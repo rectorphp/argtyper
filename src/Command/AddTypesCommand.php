@@ -93,12 +93,13 @@ final class AddTypesCommand extends Command
             'process',
             ...$project->getCodeDirectories(),
             '--config',
-            (string) realpath(__DIR__ . '/../../rector/rector-argtyper.php'),
+            (string) realpath(__DIR__ . '/../../config/rector-argtyper.php'),
             '--clear-cache',
         ];
 
         // show output, so we know what exactly has changed
-        $rectorOutput = $this->processRunner->runProcess($command, $project->getDirectory(), $isDebug);
+        // we have to use getcwd() as Rector is only available in project here
+        $rectorOutput = $this->processRunner->runProcess($command, getcwd(), $isDebug);
 
         $addedTypesCount = $this->resolveAddedTypesCount($rectorOutput);
 

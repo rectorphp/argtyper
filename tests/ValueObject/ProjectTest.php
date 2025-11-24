@@ -16,6 +16,7 @@ final class ProjectTest extends TestCase
         $this->assertSame(__DIR__ . '/Fixture', $project->getDirectory());
 
         $this->assertSame(['src', 'tests'], $project->getCodeDirectories());
+        $this->assertSame([__DIR__ . '/Fixture/src', __DIR__ . '/Fixture/tests'], $project->getAbsoluteCodeDirectories());
     }
 
     public function testMessage(): void

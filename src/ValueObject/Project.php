@@ -34,6 +34,15 @@ final readonly class Project
         return $projectDirectoryFinder->findCodeDirsRelative($this->directory);
     }
 
+    /**
+     * @return string[]
+     */
+    public function getAbsoluteCodeDirectories(): array
+    {
+        $projectDirectoryFinder = new ProjectDirectoryFinder();
+        return $projectDirectoryFinder->findCodeDirsAbsolute($this->directory);
+    }
+
     public function getDirectory(): string
     {
         return $this->directory;
