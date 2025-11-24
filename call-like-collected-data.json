@@ -1,2 +1,0 @@
-{"class":"Rector\\ArgTyper\\Tests\\PHPStan\\CollectCallLikeArgTypesRule\\Source\\ObjectWithConstructor","method":"__construct","position":0,"type":"PHPStan\\Type\\FloatType"}
-{"class":"Rector\\ArgTyper\\Tests\\PHPStan\\CollectCallLikeArgTypesRule\\Source\\ObjectWithConstructor","method":"__construct","position":0,"type":"PHPStan\\Type\\FloatType"}

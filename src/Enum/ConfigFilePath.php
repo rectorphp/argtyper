@@ -8,11 +8,11 @@ final class ConfigFilePath
 {
     public static function callLikes(): string
     {
-        return getcwd() . '/call-like-collected-data.json';
+        return sys_get_temp_dir() . '/argtyper-call-likes.json';
     }
 
     public static function funcCalls(): string
     {
-        return getcwd() . '/func-call-collected-data.json';
+        return sys_get_temp_dir() . '/argtyper-func-calls.json';
     }
 }
