@@ -2,6 +2,9 @@ parameters:
     # avoid any other rules
     customRulesetUsed: true
 
+    # avoid inline-ignores to be reported
+    reportUnmatchedIgnoredErrors: false
+
     excludePaths:
         - "*/Fixture/*"
         - "*/Fixtures/*"
