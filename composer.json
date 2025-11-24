@@ -19,9 +19,11 @@
     "require-dev": {
         "php-parallel-lint/php-parallel-lint": "^1.4",
         "phpecs/phpecs": "^2.2",
+        "phpstan/extension-installer": "^1.4",
         "phpunit/phpunit": "^11.5",
         "shipmonk/composer-dependency-analyser": "^1.8",
         "tomasvotruba/class-leak": "^2.1",
+        "tomasvotruba/unused-public": "^2.1",
         "tracy/tracy": "^2.10"
     },
     "autoload": {
@@ -42,7 +44,10 @@
     },
     "config": {
         "sort-packages": true,
-        "platform-check": false
+        "platform-check": false,
+        "allow-plugins": {
+            "phpstan/extension-installer": true
+        }
     },
     "replace": {
         "symfony/polyfill-ctype": "*",
