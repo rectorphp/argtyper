@@ -6,6 +6,4 @@ composer.lock
 .phpunit.result.cache
 
 # local metadata
-call-like-collected-data.json
-func-call-collected-data.json
 debug.json

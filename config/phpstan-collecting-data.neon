@@ -5,6 +5,8 @@ parameters:
     excludePaths:
         - "*/Fixture/*"
         - "*/Fixtures/*"
+        - "*/fixtures/*"
+        - "*/fixture/*"
 
 rules:
     - Rector\ArgTyper\PHPStan\Rule\CollectFuncCallArgTypesRule
