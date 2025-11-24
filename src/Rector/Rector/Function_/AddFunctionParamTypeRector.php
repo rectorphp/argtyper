@@ -13,7 +13,6 @@ use PHPStan\Type\NullType;
 use PHPStan\Type\ResourceType;
 use Rector\ArgTyper\Configuration\FuncCallTypesConfigurationProvider;
 use Rector\ArgTyper\Exception\NotImplementedException;
-use Rector\ArgTyper\Rector\NodeTypeChecker;
 use Rector\ArgTyper\Rector\TypeResolver;
 use Rector\Rector\AbstractRector;
 
