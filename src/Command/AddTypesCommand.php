@@ -74,9 +74,6 @@ final class AddTypesCommand extends Command
         return Command::SUCCESS;
     }
 
-    /**
-     * @param string[] $projectDirs
-     */
     private function runPhpStan(array $relativeCodeDirs, string $projectPath, bool $isDebug): void
     {
         $this->symfonyStyle->title('1. Running PHPStan to collect data...');

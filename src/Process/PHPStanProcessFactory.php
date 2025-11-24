@@ -6,5 +6,4 @@ namespace Rector\ArgTyper\Process;
 
 final class PHPStanProcessFactory
 {
-
 }
