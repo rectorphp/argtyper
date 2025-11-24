@@ -35,6 +35,24 @@ final class ProjectDirectoryFinder
     /**
      * @return string[]
      */
+    public function findCodeDirsRelative(string $projectPath): array
+    {
+        $fileInfos = $this->findDirectoriesInPaths($projectPath, self::POSSIBLE_CODE_DIRECTORIES);
+
+        $relativeDirs = [];
+        foreach ($fileInfos as $fileInfo) {
+            $relativePath = substr(realpath($fileInfo->getRealPath()), strlen(realpath($projectPath)) + 1);
+            $relativeDirs[] = $relativePath;
+        }
+
+        sort($relativeDirs);
+
+        return $relativeDirs;
+    }
+
+    /**
+     * @return string[]
+     */
     public function findSource(string $projectPath): array
     {
         $fileInfos = $this->findDirectoriesInPaths($projectPath, self::POSSIBLE_SOURCE_DIRECTORIES);

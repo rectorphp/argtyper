@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Rector\ArgTyper\Command;
 
-use Nette\Utils\Strings;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Helpers\ProjectDirectoryFinder;
@@ -52,16 +51,16 @@ final class AddTypesCommand extends Command
         );
 
         // Discover source dirs
-        $projectDirs = $this->projectDirectoryFinder->find($projectPath);
+        $relativeCodeDirs = $this->projectDirectoryFinder->findCodeDirsRelative($projectPath);
 
         $isDebug = (bool) $input->getOption('debug');
 
-        $this->symfonyStyle->writeln('<fg=green>Found project code directories</>');
+        $this->symfonyStyle->writeln(sprintf('<fg=green>Code dirs found in the "%s" project</>', $projectPath));
+        $this->symfonyStyle->listing($relativeCodeDirs);
         $this->symfonyStyle->newLine();
-        $this->symfonyStyle->listing($projectDirs);
 
         // 1. Run PHPStan data collection
-        $this->runPhpStan($projectDirs, $projectPath, $isDebug);
+        $this->runPhpStan($relativeCodeDirs, $projectPath, $isDebug);
 
         $this->symfonyStyle->newLine();
 
@@ -78,22 +77,15 @@ final class AddTypesCommand extends Command
     /**
      * @param string[] $projectDirs
      */
-    private function runPhpStan(array $projectDirs, string $projectPath, bool $isDebug): void
+    private function runPhpStan(array $relativeCodeDirs, string $projectPath, bool $isDebug): void
     {
         $this->symfonyStyle->title('1. Running PHPStan to collect data...');
-
-        // use relative paths, as cwd is project path
-        $relativeProjectDirs = array_map(
-            fn (string $dir): string => (string) Strings::after($dir, $projectPath, 1),
-            $projectDirs
-        );
-        sort($relativeProjectDirs);
 
         // Keep paths the same as in the original script
         $commands = [
             'vendor/bin/phpstan',
             'analyse',
-            ...$relativeProjectDirs,
+            ...$relativeCodeDirs,
             '--configuration',
             realpath(__DIR__ . '/../../config/phpstan-collecting-data.neon'),
             '--autoload-file',
