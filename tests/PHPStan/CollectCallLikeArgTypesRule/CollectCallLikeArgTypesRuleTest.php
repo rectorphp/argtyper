@@ -29,6 +29,13 @@ final class CollectCallLikeArgTypesRuleTest extends RuleTestCase
         @unlink(ConfigFilePath::callLikes());
     }
 
+    public function testMissingParent(): void
+    {
+        $collectedTypes = $this->collectDataInFile(__DIR__ . '/Fixture/AllowMissingParentType.php');
+
+        $this->assertCount(1, $collectedTypes);
+    }
+
     public function testMethodCallAndStaticCall(): void
     {
         $collectedTypes = $this->collectDataInFile(__DIR__ . '/Fixture/MethodCalledArgs.php');

@@ -16,7 +16,6 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
-use Rector\ArgTyper\Configuration\ProjectAutoloadGuard;
 use Rector\ArgTyper\Enum\ConfigFilePath;
 use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Helpers\ReflectionChecker;
@@ -37,12 +36,7 @@ final readonly class CollectCallLikeArgTypesRule implements Rule
     public function __construct(ReflectionProvider $reflectionProvider)
     {
         $this->typeMapper = new TypeMapper();
-        $projectAutoloadGuard = new ProjectAutoloadGuard();
-
-        $this->callLikeClassReflectionResolver = new CallLikeClassReflectionResolver(
-            $reflectionProvider,
-            $projectAutoloadGuard
-        );
+        $this->callLikeClassReflectionResolver = new CallLikeClassReflectionResolver($reflectionProvider);
     }
 
     /**
