@@ -23,10 +23,7 @@ final class ProjectDirectoryFinder
     {
         $relativeDirs = [];
         foreach ($this->findCodeDirsAbsolute($projectPath) as $absoluteDir) {
-            $relativeDirs[] = substr(
-                $absoluteDir,
-                strlen((string) realpath($projectPath)) + 1
-            );
+            $relativeDirs[] = substr($absoluteDir, strlen((string) realpath($projectPath)) + 1);
         }
 
         return $relativeDirs;
