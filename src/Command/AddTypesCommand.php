@@ -75,6 +75,9 @@ final class AddTypesCommand extends Command
         return Command::SUCCESS;
     }
 
+    /**
+     * @param string[] $relativeCodeDirs
+     */
     private function runPhpStan(array $relativeCodeDirs, string $projectPath, bool $isDebug): void
     {
         $this->symfonyStyle->title('1. Running PHPStan to collect data...');
@@ -108,7 +111,7 @@ final class AddTypesCommand extends Command
             'process',
             ...$projectDirs,
             '--config',
-            realpath(__DIR__ . '/../../rector/rector-argtyper.php'),
+            (string) realpath(__DIR__ . '/../../rector/rector-argtyper.php'),
             '--clear-cache',
         ];
 
