@@ -14,12 +14,6 @@ final class ProjectDirectoryFinder
      * Directory names commonly used as PHP source directories
      * @var string[]
      */
-    private const POSSIBLE_SOURCE_DIRECTORIES = ['src', 'lib', 'app'];
-
-    /**
-     * Directory names commonly used as PHP source directories
-     * @var string[]
-     */
     private const POSSIBLE_CODE_DIRECTORIES = ['src', 'lib', 'app', 'test', 'tests'];
 
     /**
@@ -41,33 +35,6 @@ final class ProjectDirectoryFinder
         sort($relativeDirs);
 
         return $relativeDirs;
-    }
-
-    /**
-     * @return string[]
-     */
-    public function findSource(string $projectPath): array
-    {
-        $fileInfos = $this->findDirectoriesInPaths($projectPath, self::POSSIBLE_SOURCE_DIRECTORIES);
-
-        return $this->mapToDirectoryPaths($fileInfos);
-    }
-
-    /**
-     * @param SplFileInfo[] $fileInfos
-     * @return string[]
-     */
-    private function mapToDirectoryPaths(array $fileInfos): array
-    {
-        $dirs = [];
-        foreach ($fileInfos as $fileInfo) {
-            $dirs[] = $fileInfo->getPathname();
-        }
-
-        Assert::notEmpty($dirs);
-        Assert::allString($dirs);
-
-        return $dirs;
     }
 
     /**
