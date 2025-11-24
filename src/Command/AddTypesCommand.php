@@ -88,9 +88,9 @@ final class AddTypesCommand extends Command
             'analyse',
             ...$relativeCodeDirs,
             '--configuration',
-            realpath(__DIR__ . '/../../config/phpstan-collecting-data.neon'),
+            (string) realpath(__DIR__ . '/../../config/phpstan-collecting-data.neon'),
             '--autoload-file',
-            realpath(__DIR__ . '/../../bin/autoload.php'),
+            (string) realpath(__DIR__ . '/../../bin/autoload.php'),
         ];
 
         $this->processRunner->runProcess($commands, $projectPath, $isDebug);
