@@ -41,7 +41,7 @@ final class ProjectDirectoryFinder
 
         $relativeDirs = [];
         foreach ($fileInfos as $fileInfo) {
-            $relativePath = substr(realpath($fileInfo->getRealPath()), strlen(realpath($projectPath)) + 1);
+            $relativePath = substr((string) realpath($fileInfo->getRealPath()), (string) strlen(realpath($projectPath)) + 1);
             $relativeDirs[] = $relativePath;
         }
 
