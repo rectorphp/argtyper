@@ -114,7 +114,7 @@ final class AddTypesCommand extends Command
         ];
 
         // show output, so we know what exactly has changed
-        $rectorOutput = $this->processRunner->runProcess($command, $projectPath, $isDebug)
+        $rectorOutput = $this->processRunner->runProcess($command, $projectPath, $isDebug);
 
         $addedTypesCount = $this->resolveAddedTypesCount($rectorOutput);
 
