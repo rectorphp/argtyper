@@ -1,39 +1,53 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\ArgTyper\Rector\ValueObject;
 
-final readonly class FuncCallType
+final class FuncCallType
 {
-    public function __construct(
-        private string $function,
-        private int $position,
-        private string $type,
-        private bool $isNullable = false
-    ) {
+    /**
+     * @readonly
+     * @var string
+     */
+    private $function;
+    /**
+     * @readonly
+     * @var int
+     */
+    private $position;
+    /**
+     * @readonly
+     * @var string
+     */
+    private $type;
+    /**
+     * @readonly
+     * @var bool
+     */
+    private $isNullable = \false;
+    public function __construct(string $function, int $position, string $type, bool $isNullable = \false)
+    {
+        $this->function = $function;
+        $this->position = $position;
+        $this->type = $type;
+        $this->isNullable = $isNullable;
     }
-
     public function getFunction(): string
     {
         return $this->function;
     }
-
     public function getPosition(): int
     {
         return $this->position;
     }
-
     public function getType(): string
     {
         return $this->type;
     }
-
     public function isObjectType(): bool
     {
-        return str_starts_with($this->type, 'object:');
+        return strncmp($this->type, 'object:', strlen('object:')) === 0;
     }
-
     public function isNullable(): bool
     {
         return $this->isNullable;

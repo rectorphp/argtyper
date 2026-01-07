@@ -1,0 +1,10 @@
+<?php
+
+declare (strict_types=1);
+namespace RectorPrefix202512;
+
+use Rector\Config\RectorConfig;
+use Rector\Renaming\Rector\Name\RenameClassRector;
+return static function (RectorConfig $rectorConfig): void {
+    $rectorConfig->ruleWithConfiguration(RenameClassRector::class, ['Argtyper202601\Symfony\Component\Translation\TranslatorInterface' => 'Argtyper202601\Symfony\Contracts\Translation\TranslatorInterface']);
+};

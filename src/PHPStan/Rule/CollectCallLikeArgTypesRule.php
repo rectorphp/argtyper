@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\ArgTyper\PHPStan\Rule;
 
 use PhpParser\Node;
@@ -21,24 +20,28 @@ use Rector\ArgTyper\Helpers\FilesLoader;
 use Rector\ArgTyper\Helpers\ReflectionChecker;
 use Rector\ArgTyper\PHPStan\CallLikeClassReflectionResolver;
 use Rector\ArgTyper\PHPStan\TypeMapper;
-
 /**
  * @implements Rule<CallLike>
  *
  * @see \Rector\ArgTyper\Tests\PHPStan\CollectCallLikeArgTypesRule\CollectCallLikeArgTypesRuleTest
  */
-final readonly class CollectCallLikeArgTypesRule implements Rule
+final class CollectCallLikeArgTypesRule implements Rule
 {
-    private TypeMapper $typeMapper;
-
-    private CallLikeClassReflectionResolver $callLikeClassReflectionResolver;
-
+    /**
+     * @readonly
+     * @var \Rector\ArgTyper\PHPStan\TypeMapper
+     */
+    private $typeMapper;
+    /**
+     * @readonly
+     * @var \Rector\ArgTyper\PHPStan\CallLikeClassReflectionResolver
+     */
+    private $callLikeClassReflectionResolver;
     public function __construct(ReflectionProvider $reflectionProvider)
     {
         $this->typeMapper = new TypeMapper();
         $this->callLikeClassReflectionResolver = new CallLikeClassReflectionResolver($reflectionProvider);
     }
-
     /**
      * @return class-string<Node>
      */
@@ -46,7 +49,6 @@ final readonly class CollectCallLikeArgTypesRule implements Rule
     {
         return CallLike::class;
     }
-
     /**
      * @param MethodCall|FuncCall|StaticCall|NullsafeMethodCall $node
      */
@@ -56,11 +58,9 @@ final readonly class CollectCallLikeArgTypesRule implements Rule
         if ($node->isFirstClassCallable() || $node->getArgs() === []) {
             return [];
         }
-
         if ($node instanceof FuncCall) {
             return [];
         }
-
         // 1.
         if ($node instanceof New_) {
             $methodName = '__construct';
@@ -69,35 +69,21 @@ final readonly class CollectCallLikeArgTypesRule implements Rule
         } else {
             return [];
         }
-
         $classReflection = $this->callLikeClassReflectionResolver->resolve($node, $scope);
-
         // nothing to find here
-        if (! $classReflection instanceof ClassReflection) {
+        if (!$classReflection instanceof ClassReflection) {
             return [];
         }
-
         if (ReflectionChecker::shouldSkipClassReflection($classReflection, $methodName)) {
             return [];
         }
-
         foreach ($node->getArgs() as $key => $arg) {
             $typeString = $this->typeMapper->mapToStringIfUseful($arg, $scope);
-            if (! is_string($typeString)) {
+            if (!is_string($typeString)) {
                 continue;
             }
-
-            FilesLoader::writeJsonl(
-                ConfigFilePath::callLikes(),
-                [
-                    'class' => $classReflection->getName(),
-                    'method' => $methodName,
-                    'position' => $key,
-                    'type' => $typeString,
-                ]
-            );
+            FilesLoader::writeJsonl(ConfigFilePath::callLikes(), ['class' => $classReflection->getName(), 'method' => $methodName, 'position' => $key, 'type' => $typeString]);
         }
-
         // comply with contract, but never used
         return [];
     }
