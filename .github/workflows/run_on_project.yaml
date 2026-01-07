@@ -29,7 +29,7 @@ jobs:
             -   run: composer install --working-dir console --ansi
 
             # ensure phpstan is available
-            -   run: composer require --working-dir console phpstan/phpstan --ansi
+            -   run: composer require phpstan/phpstan --ansi
 
             # on whole project, to be able to load vendor/autoload.php
             -   run: vendor/bin/argtyper add-types console --ansi
