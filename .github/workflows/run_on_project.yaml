@@ -25,8 +25,8 @@ jobs:
             -   run: composer require rector/argtyper --ansi
 
             # clone laravel project with dependencies
-            -   run: git clone https://github.com/laravel/framework.git --depth=1
-            -   run: composer install --working-dir framework --ansi
+            -   run: git clone https://github.com/symfony/console.git --depth=1
+            -   run: composer install --working-dir console --ansi
 
             # on whole project, to be able to load vendor/autoload.php
-            -   run: vendor/bin/argtyper add-types framework --ansi
+            -   run: vendor/bin/argtyper add-types console --ansi
