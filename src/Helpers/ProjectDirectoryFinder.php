@@ -14,7 +14,7 @@ final class ProjectDirectoryFinder
      * Directory names commonly used as PHP source directories
      * @var string[]
      */
-    private const POSSIBLE_CODE_DIRECTORIES = ['src', 'lib', 'app', 'test', 'tests'];
+    private const array POSSIBLE_CODE_DIRECTORIES = ['src', 'lib', 'app', 'test', 'tests'];
 
     /**
      * @return string[]

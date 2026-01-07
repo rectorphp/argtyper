@@ -6,19 +6,19 @@
         "bin/argtyper"
     ],
     "require": {
-        "php": "^8.2",
-        "illuminate/container": "^12.39",
-        "nette/utils": "^4.0",
+        "php": "^8.3",
+        "illuminate/container": "12.39.*",
+        "nette/utils": "^4.1",
         "phpstan/phpstan": "^2.1",
-        "rector/rector": "^2.2",
+        "rector/rector": "^2.3",
         "symfony/console": "^6.4",
-        "symfony/finder": "^7.3",
-        "symfony/process": "^7.3",
-        "webmozart/assert": "^1.12"
+        "symfony/finder": "^7.4",
+        "symfony/process": "^7.4",
+        "webmozart/assert": "^1.12|^2.0"
     },
     "require-dev": {
         "php-parallel-lint/php-parallel-lint": "^1.4",
-        "phpecs/phpecs": "^2.2",
+        "phpecs/phpecs": "^2.3",
         "phpstan/extension-installer": "^1.4",
         "phpunit/phpunit": "^11.5",
         "rector/jack": "^0.5.1",

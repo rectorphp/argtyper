@@ -104,6 +104,7 @@ final class CollectCallLikeArgTypesRuleTest extends RuleTestCase
     /**
      * @return string[]
      */
+    #[\Override]
     public static function getAdditionalConfigFiles(): array
     {
         return [__DIR__ . '/../../../config/phpstan-collecting-data.neon'];
