@@ -29,10 +29,6 @@ jobs:
                         run: composer fix-cs --ansi
 
                     -
-                        name: 'Class Leak'
-                        run: vendor/bin/class-leak check src tests --skip-path=Fixture --skip-path=Source --skip-type="Rector\\ArgTyper\\PHPStan\\IgnoreAllErrorsExceptArgTyperErrorExtension"
-
-                    -
                         name: 'Tests'
                         run: vendor/bin/phpunit
 

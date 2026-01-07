@@ -13,7 +13,7 @@ final class IgnoreAllErrorsExceptArgTyperErrorExtension implements IgnoreErrorEx
 {
     public function shouldIgnore(Error $error, Node $node, Scope $scope): bool
     {
-		// Ignore all errors since ArgTyper only collects types and doesn't throw errors
+        // Ignore all errors since ArgTyper only collects types and doesn't throw errors
         return true;
     }
 }
