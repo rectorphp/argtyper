@@ -10,6 +10,7 @@ use PHPStan\Type\StringType;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Rector\ArgTyper\Configuration\CallLikeTypesConfigurationProvider;
 use Rector\ArgTyper\Rector\ValueObject\ClassMethodType;
+use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture\AddNullableForDefaultNull;
 use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture\AddNullableScalarFromNullDefault;
 use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture\KeepDateTimeInterface;
 use Rector\ArgTyper\Tests\Rector\Rector\ClassMethod\AddClassMethodParamTypeRector\Fixture\KeepNullableDateTimeInterface;
@@ -35,6 +36,7 @@ final class AddClassMethodParamTypeRectorTest extends AbstractRectorTestCase
             new ClassMethodType(KeepNullableDateTimeInterface::class, 'record', 0, 'object:' . \DateTime::class),
             new ClassMethodType(KeepDateTimeInterface::class, 'record', 0, 'object:' . \DateTime::class),
             new ClassMethodType(SkipIntToFloatOverride::class, 'passInteger', 0, IntegerType::class),
+            new ClassMethodType(AddNullableForDefaultNull::class, 'run', 0, StringType::class),
             new ClassMethodType(KeepNullableScalarParam::class, 'translate', 0, StringType::class),
             new ClassMethodType(AddNullableScalarFromNullDefault::class, 'translate', 0, StringType::class),
         ];

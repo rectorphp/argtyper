@@ -28,6 +28,11 @@ final class AddFunctionParamTypeRectorTest extends AbstractRectorTestCase
                 0,
                 StringType::class
             ),
+            new FuncCallType(
+                'Rector\ArgTyper\Tests\Rector\Rector\Function_\AddFunctionParamTypeRector\Fixture\defaultNullFunction',
+                0,
+                StringType::class
+            ),
         ]);
 
         $this->doTestFile($filePath);
