@@ -91,11 +91,16 @@ final class AddClassMethodParamTypeRector extends AbstractRector
                     continue;
                 }
 
+<<<<<<< HEAD
                 // keep nullability if the param is already nullable or implicitly nullable via a null default,
                 // otherwise the "?" would be dropped and the param would become implicitly nullable (deprecated)
                 $isNullable = $classMethodType->isNullable()
                     || $param->type instanceof NullableType
                     || $this->hasNullDefault($param);
+=======
+                // a null default value implies the type must stay nullable
+                $isNullable = $classMethodType->isNullable() || $this->hasDefaultNull($param);
+>>>>>>> ab2bbf24 (fix: keep nullability for params with default null value (fixes #9))
                 $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
 
                 if ($this->shouldSkipOverride($param, $classMethodType)) {
@@ -177,5 +182,14 @@ final class AddClassMethodParamTypeRector extends AbstractRector
 
         // skip already set object type
         return $classMethodType->isObjectType() && $rawType instanceof Name;
+    }
+
+    private function hasDefaultNull(Param $param): bool
+    {
+        if (! $param->default instanceof ConstFetch) {
+            return false;
+        }
+
+        return $param->default->name->toLowerString() === 'null';
     }
 }

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\Rector\Rector\Function_;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
+use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Function_;
 use PHPStan\Type\NeverType;
 use PHPStan\Type\NullType;
@@ -64,7 +66,8 @@ final class AddFunctionParamTypeRector extends AbstractRector
                 continue;
             }
 
-            $isNullable = $paramFunctionType->isNullable();
+            // a null default value implies the type must stay nullable
+            $isNullable = $paramFunctionType->isNullable() || $this->hasDefaultNull($param);
             $typeNode = TypeResolver::resolveTypeNode($paramFunctionType->getType());
 
             if ($paramFunctionType->isObjectType() && ($param->type instanceof Name || ($param->type instanceof NullableType && $param->type->type instanceof Name))) {
@@ -86,5 +89,14 @@ final class AddFunctionParamTypeRector extends AbstractRector
         }
 
         return $node;
+    }
+
+    private function hasDefaultNull(Param $param): bool
+    {
+        if (! $param->default instanceof ConstFetch) {
+            return false;
+        }
+
+        return $param->default->name->toLowerString() === 'null';
     }
 }
