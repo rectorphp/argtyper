@@ -91,20 +91,11 @@ final class AddClassMethodParamTypeRector extends AbstractRector
                     continue;
                 }
 
-<<<<<<< HEAD
-                // keep nullability if the param is already nullable or implicitly nullable via a null default,
-                // otherwise the "?" would be dropped and the param would become implicitly nullable (deprecated)
+                // a null default value implies the type must stay nullable
                 $isNullable = $classMethodType->isNullable()
                     || $param->type instanceof NullableType
                     || $this->hasNullDefault($param);
-<<<<<<< HEAD
-=======
-                // a null default value implies the type must stay nullable
-                $isNullable = $classMethodType->isNullable() || $this->hasDefaultNull($param);
->>>>>>> ab2bbf24 (fix: keep nullability for params with default null value (fixes #9))
-=======
 
->>>>>>> f31ba540 (fix: remove unused duplicate method and fix indentation, bump run-on-project to PHP 8.3)
                 $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
 
                 if ($this->shouldSkipOverride($param, $classMethodType)) {

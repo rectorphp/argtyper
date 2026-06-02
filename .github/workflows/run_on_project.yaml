@@ -24,11 +24,7 @@ jobs:
 
             -   run: composer require rector/argtyper --ansi
 
-<<<<<<< HEAD
-            # clone laravel project with dependencies
-=======
             # clone symfony/console project with dependencies
->>>>>>> ffae5424 (ci: align run-on-project with main (symfony/console) and bump to PHP 8.4)
             -   run: git clone https://github.com/symfony/console.git --depth=1
             -   run: composer install --working-dir console --ansi
 
