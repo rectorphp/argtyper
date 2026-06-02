@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rector\ArgTyper\Rector\Rector\ClassMethod;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
@@ -90,10 +91,19 @@ final class AddClassMethodParamTypeRector extends AbstractRector
                     continue;
                 }
 
-                $isNullable = $classMethodType->isNullable();
+                // keep nullability if the param is already nullable or implicitly nullable via a null default,
+                // otherwise the "?" would be dropped and the param would become implicitly nullable (deprecated)
+                $isNullable = $classMethodType->isNullable()
+                    || $param->type instanceof NullableType
+                    || $this->hasNullDefault($param);
                 $typeNode = TypeResolver::resolveTypeNode($classMethodType->getType());
 
                 if ($this->shouldSkipOverride($param, $classMethodType)) {
+                    continue;
+                }
+
+                // already has the exact scalar type and nullability, nothing to change
+                if ($typeNode instanceof Identifier && $this->hasSameScalarType($param, $typeNode, $isNullable)) {
                     continue;
                 }
 
@@ -131,6 +141,29 @@ final class AddClassMethodParamTypeRector extends AbstractRector
         }
 
         return $classMethod->isMagic();
+    }
+
+    private function hasSameScalarType(Param $param, Identifier $identifier, bool $isNullable): bool
+    {
+        if (($param->type instanceof NullableType) !== $isNullable) {
+            return false;
+        }
+
+        $rawType = $param->type instanceof NullableType ? $param->type->type : $param->type;
+        if (! $rawType instanceof Identifier) {
+            return false;
+        }
+
+        return $rawType->toString() === $identifier->toString();
+    }
+
+    private function hasNullDefault(Param $param): bool
+    {
+        if (! $param->default instanceof ConstFetch) {
+            return false;
+        }
+
+        return $param->default->name->toLowerString() === 'null';
     }
 
     private function shouldSkipOverride(Param $param, ClassMethodType $classMethodType): bool
