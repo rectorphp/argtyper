@@ -1,41 +1,29 @@
 # Fill Parameter Types based on Passed Values
 
-There are often more known types in your project than meets the eye.  
-This tool detects the **real** types passed into method and function calls using PHPStan.
+There are often more known types in your project than meets the eye.
+This tool detects the types of **literal values** passed into method, constructor and function calls, then adds them as parameter type declarations.
 
 <br>
 
 ```php
-$this->hotelOverview->makeRoomAvailable(324);
-```
-
-<br>
-
-Later in the code...
-
-```php
-public function roomDetail(int $roomNumber)
+final class HotelOverview
 {
-    $this->hotelOverview->makeRoomAvailable($roomNumber);
+    public function makeRoomAvailable($roomNumber)
+    {
+    }
+
+    public function bookLobby()
+    {
+        $this->makeRoomAvailable(324);
+    }
 }
 ```
 
-<br>
-
-Later in tests...
-
-```php
-public function test(int $roomNumber): void
-{
-    $this->hotelOverview->makeRoomAvailable($roomNumber);
-}
-```
-
-✅ Three times an `int` value is passed into `makeRoomAvailable()`.
+✅ An `int` value is passed into `makeRoomAvailable()`.
 
 <br>
 
-Then [Rector](https://getrector.com) runs and fills in the missing type declarations:
+The tool fills in the missing type declaration:
 
 ```diff
  final class HotelOverview
@@ -51,14 +39,14 @@ Then [Rector](https://getrector.com) runs and fills in the missing type declarat
 
 <br>
 
-That’s it.
+That's it.
 
 <br>
 
 ## Install
 
 ```bash
-composer require rector/argtyper --dev
+go install github.com/rectorphp/argtyper@latest
 ```
 
 <br>
@@ -68,52 +56,46 @@ composer require rector/argtyper --dev
 Run it in your project directory:
 
 ```bash
-vendor/bin/argtyper add-types .
+argtyper add-types .
 ```
-
-<br>
 
 Or on another project:
 
 ```bash
-vendor/bin/argtyper add-types project
+argtyper add-types /path/to/project
 ```
 
-To see more details during the process, add the `--debug` option.
+It scans the `src`, `lib`, `app`, `test` and `tests` directories.
 
 <br>
 
 ## How It Works
 
-At first, a set of custom PHPStan rules scans your code and records the argument types passed to method calls, static calls, `new` expressions, and function calls. It stores this data in temporary `*.json` files in the following format:
+It is built on [php-parser-in-go](https://github.com/rectorphp/php-parser-in-go).
 
-```json
-[
-    {
-        "class": "HotelOverview",
-        "method": "makeRoomAvailable",
-        "position": 0,
-        "type": "PHPStan\\Type\\IntegerType"
-    }
-]
-```
-
-<br>
-
-Then, custom Rector rules go through the codebase and fill in the known parameter types based on the collected data — but only where they’re missing.
+1. It walks every call site and records the type of each **literal** argument - `int`, `float`, `string`, `bool`, `array`, `null` and `new X()` (as `object`).
+2. It groups the recorded types per parameter position.
+3. It adds the type to each definition that is still missing one.
 
 With a few exceptions:
 
-* If multiple types are found → it’s skipped.
-* If union or intersection types are found → it’s skipped as ambiguous.
-* If a `float` parameter type is declared but only `int` arguments are passed (e.g. `30.0`) → it’s skipped to avoid losing decimal precision.
+* If multiple different types are found for one parameter -> it is skipped as ambiguous.
+* If a single type plus `null` is found -> a nullable type is added.
+* Parameters that already have a type are left untouched.
+* Magic methods (except `__construct`) are skipped.
+* Methods that may override a parent or interface are skipped, unless they are private or a constructor.
 
 <br>
 
-## Verify the Results
+## Scope
 
-It’s not 100 % perfect, but in our tests it fills in about **95 %** of the data correctly and saves a huge amount of manual work.  
-You can fix the remaining cases manually based on PHPStan or test feedback.
+The tool relies only on the parsed syntax tree, not on full type inference, so it works with values it can resolve statically:
+
+* **Literal arguments** - `f(324)`, `f("x")`, `f([1, 2])`. Variables and expressions are skipped.
+* **Statically resolvable call targets** - `new X()`, `X::method()`, `self::method()`, `$this->method()` and plain `function()` calls. Calls on other variables (`$service->method()`) are skipped, because the class cannot be known without type inference.
+* **Short class names** - classes are matched by their short name, not the fully qualified name.
+
+This catches the easy, unambiguous cases and leaves the rest for you to fill manually based on PHPStan or test feedback.
 
 <br>
 
