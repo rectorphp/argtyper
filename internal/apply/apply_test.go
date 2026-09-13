@@ -91,6 +91,27 @@ func TestApply(t *testing.T) {
 			want:   "<?php\nclass A extends Base {\n    private function set(int $v) {}\n    public function go() { $this->set(1); }\n}",
 		},
 		{
+			name:   "keeps comma spacing when typing a later parameter",
+			target: "<?php\nfinal class A {\n    public function set($name, $count) {}\n    public function go() { $this->set(\"x\", 1); }\n}",
+			want:   "<?php\nfinal class A {\n    public function set(string $name, int $count) {}\n    public function go() { $this->set(\"x\", 1); }\n}",
+		},
+		{
+			name:   "types promoted constructor parameter with modifier",
+			target: "<?php\nfinal class A {\n    public function __construct(private $guest) {}\n}",
+			callers: []string{
+				"<?php\nnew A(true);",
+			},
+			want: "<?php\nfinal class A {\n    public function __construct(private bool $guest) {}\n}",
+		},
+		{
+			name:   "keeps indentation on multiline parameters",
+			target: "<?php\nfunction make(\n    $a,\n    $b\n) {}",
+			callers: []string{
+				"<?php\nmake(1, \"x\");",
+			},
+			want: "<?php\nfunction make(\n    int $a,\n    string $b\n) {}",
+		},
+		{
 			name:   "adds array type",
 			target: "<?php\nfunction take($items) {}",
 			callers: []string{
