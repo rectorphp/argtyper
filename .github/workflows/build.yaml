@@ -16,10 +16,14 @@ jobs:
                 with:
                     go-version: 'stable'
 
-            -   run: gofmt -l . | tee /tmp/gofmt.out && test ! -s /tmp/gofmt.out
+            -   run: test -z "$(gofmt -l .)" || { gofmt -d .; exit 1; }
+                name: gofmt
 
             -   run: go vet ./...
 
             -   run: go build ./...
 
-            -   run: go test ./...
+            -   run: go test -race ./...
+
+            -   run: go mod tidy && git diff --exit-code go.mod go.sum
+                name: go mod tidy is up to date
