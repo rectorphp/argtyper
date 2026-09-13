@@ -8,6 +8,7 @@ import (
 	"github.com/rectorphp/argtyper/internal/aggregate"
 	"github.com/rectorphp/argtyper/internal/phpast"
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
+	"github.com/rectorphp/php-parser-in-go/pkg/token"
 )
 
 // Source adds parameter types to a single PHP source file. It returns the new
@@ -95,12 +96,46 @@ func (a *applier) setType(param *ast.Parameter, resolved aggregate.Resolved) {
 	nullable := resolved.Nullable || hasNullDefault(param)
 	typeText := typeText(resolved.Type)
 
+	// Take the whitespace that sat before the variable (indentation, or the
+	// space after a comma or modifier) and put it in front of the new type, so
+	// the type slots into the variable's old position. A single space then
+	// separates the type from the variable.
+	leading := takeVarLeading(param)
+	identifier := &ast.Identifier{IdentifierTkn: &token.Token{Value: []byte(typeText)}}
+
 	if nullable {
-		param.Type = &ast.Nullable{Expr: &ast.Identifier{Value: []byte(typeText + " ")}}
+		param.Type = &ast.Nullable{
+			QuestionTkn: &token.Token{Value: []byte("?"), FreeFloating: leading},
+			Expr:        identifier,
+		}
 	} else {
-		param.Type = &ast.Identifier{Value: []byte(typeText + " ")}
+		identifier.IdentifierTkn.FreeFloating = leading
+		param.Type = identifier
 	}
 	a.added++
+}
+
+// takeVarLeading returns the leading whitespace tokens of the parameter's
+// variable and replaces them with a single space.
+func takeVarLeading(param *ast.Parameter) []*token.Token {
+	variable, ok := param.Var.(*ast.ExprVariable)
+	if !ok {
+		return nil
+	}
+
+	leadingToken := variable.DollarTkn
+	if leadingToken == nil {
+		if name, ok := variable.Name.(*ast.Identifier); ok {
+			leadingToken = name.IdentifierTkn
+		}
+	}
+	if leadingToken == nil {
+		return nil
+	}
+
+	leading := leadingToken.FreeFloating
+	leadingToken.FreeFloating = []*token.Token{{Value: []byte(" ")}}
+	return leading
 }
 
 // typeText turns a resolved type into the text written into source. The trailing
