@@ -1,29 +1,54 @@
-# Fill Parameter Types based on Passed Values
+# ArgTyper
 
-There are often more known types in your project than meets the eye.
-This tool detects the types of **literal values** passed into method, constructor and function calls, then adds them as parameter type declarations.
+Add missing PHP parameter types based on the values you already pass in.
+
+Your code often carries more type information than the signatures show. Every
+time you call a method with a literal value, that value has a type. ArgTyper
+reads those calls and writes the type back onto the parameter.
+
+It is a single Go binary built on
+[php-parser-in-go](https://github.com/rectorphp/php-parser-in-go) - no PHP,
+Composer or PHPStan needed to run it.
 
 <br>
 
+## Example
+
+Say you have a class with an untyped parameter, and a caller that passes an
+`int` into it:
+
 ```php
+// src/HotelOverview.php
 final class HotelOverview
 {
     public function makeRoomAvailable($roomNumber)
     {
     }
 
-    public function bookLobby()
+    public function openLobby()
     {
         $this->makeRoomAvailable(324);
     }
 }
 ```
 
-✅ An `int` value is passed into `makeRoomAvailable()`.
+Run the tool:
 
-<br>
+```bash
+argtyper add-types .
+```
 
-The tool fills in the missing type declaration:
+```
+Code dirs found in ".": [src]
+
+1. Collecting argument types...
+   Found 1 arg types
+
+2. Adding types to parameters...
+   Finished! Added 1 new types
+```
+
+`324` is an `int`, so an `int` type is added to `$roomNumber`:
 
 ```diff
  final class HotelOverview
@@ -35,11 +60,44 @@ The tool fills in the missing type declaration:
  }
 ```
 
-✅ An `int` parameter type is added to the `makeRoomAvailable()` method.
+That's it.
 
 <br>
 
-That's it.
+## More of what it does
+
+**Functions and constructors**, not just methods:
+
+```diff
+-function greet($name)
++function greet(string $name)
+ {
+ }
+
+ greet("Tomas");
+```
+
+**Nullable** when a value and `null` are both passed:
+
+```php
+$this->setLocale("en");
+$this->setLocale(null);
+```
+
+```diff
+-public function setLocale($locale)
++public function setLocale(?string $locale)
+ {
+ }
+```
+
+**Skips the ambiguous cases** - if two different types reach the same
+parameter, it leaves the parameter alone rather than guessing:
+
+```php
+$this->handle(1);      // int
+$this->handle("text"); // string  -> parameter is left untyped
+```
 
 <br>
 
@@ -49,53 +107,56 @@ That's it.
 go install github.com/rectorphp/argtyper@latest
 ```
 
-<br>
-
 ## Usage
 
-Run it in your project directory:
-
 ```bash
-argtyper add-types .
+argtyper add-types [project-path]
 ```
 
-Or on another project:
-
-```bash
-argtyper add-types /path/to/project
-```
-
-It scans the `src`, `lib`, `app`, `test` and `tests` directories.
+`project-path` defaults to the current directory. The tool scans the `src`,
+`lib`, `app`, `test` and `tests` directories.
 
 <br>
 
-## How It Works
+## How it works
 
-It is built on [php-parser-in-go](https://github.com/rectorphp/php-parser-in-go).
+1. **Collect** - it walks every call site and records the type of each *literal*
+   argument: `int`, `float`, `string`, `bool`, `array`, `null`, and `new X()`
+   as an object.
+2. **Resolve** - it groups the recorded types per parameter position and keeps
+   only the unambiguous ones: a single type, or a single type plus `null`
+   (which becomes nullable).
+3. **Apply** - it adds each resolved type to the definitions that are still
+   missing one, and reprints the file. Unchanged code keeps its exact
+   formatting.
 
-1. It walks every call site and records the type of each **literal** argument - `int`, `float`, `string`, `bool`, `array`, `null` and `new X()` (as `object`).
-2. It groups the recorded types per parameter position.
-3. It adds the type to each definition that is still missing one.
+Rules it follows:
 
-With a few exceptions:
-
-* If multiple different types are found for one parameter -> it is skipped as ambiguous.
-* If a single type plus `null` is found -> a nullable type is added.
 * Parameters that already have a type are left untouched.
-* Magic methods (except `__construct`) are skipped.
-* Methods that may override a parent or interface are skipped, unless they are private or a constructor.
+* Multiple different types for one parameter are skipped as ambiguous.
+* Magic methods are skipped, except `__construct`.
+* Methods that might override a parent or interface are skipped, unless they
+  are private or a constructor.
 
 <br>
 
 ## Scope
 
-The tool relies only on the parsed syntax tree, not on full type inference, so it works with values it can resolve statically:
+ArgTyper reads the syntax tree only - it does not run full type inference. That
+keeps it fast and dependency-free, and limits it to what can be resolved
+statically:
 
-* **Literal arguments** - `f(324)`, `f("x")`, `f([1, 2])`. Variables and expressions are skipped.
-* **Statically resolvable call targets** - `new X()`, `X::method()`, `self::method()`, `$this->method()` and plain `function()` calls. Calls on other variables (`$service->method()`) are skipped, because the class cannot be known without type inference.
-* **Short class names** - classes are matched by their short name, not the fully qualified name.
+* **Literal arguments** - `f(324)`, `f("x")`, `f([1, 2])`. Variables and
+  expressions are skipped, because their type is unknown without inference.
+* **Statically resolvable targets** - `new X()`, `X::method()`, `self::method()`,
+  `$this->method()` and plain `function()` calls. A call on another variable,
+  such as `$service->method(...)`, is skipped, because the class behind
+  `$service` cannot be known from syntax alone.
+* **Short class names** - classes are matched by their short name, not the fully
+  qualified name.
 
-This catches the easy, unambiguous cases and leaves the rest for you to fill manually based on PHPStan or test feedback.
+It fills in the easy, safe cases and leaves the rest for you to complete based
+on PHPStan or test feedback.
 
 <br>
 
