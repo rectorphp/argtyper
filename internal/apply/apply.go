@@ -22,7 +22,7 @@ func Source(src []byte, types aggregate.Types, table *symbols.Table) (string, in
 		return string(src), 0, false
 	}
 
-	applier := &applier{types: types, symbols: table}
+	applier := &applier{types: types, symbols: table, names: phpast.ResolveNames(root)}
 	applier.walk(root, nil)
 
 	if applier.added == 0 {
@@ -35,6 +35,7 @@ func Source(src []byte, types aggregate.Types, table *symbols.Table) (string, in
 type applier struct {
 	types   aggregate.Types
 	symbols *symbols.Table
+	names   map[ast.Vertex]string
 	added   int
 }
 
@@ -68,7 +69,7 @@ func (a *applier) applyFunction(function *ast.StmtFunction) {
 			a.setType(param, resolved)
 			continue
 		}
-		if resolved, ok := a.defaultType(param, ""); ok {
+		if resolved, ok := a.defaultType(param, "", ""); ok {
 			a.setType(param, resolved)
 		}
 	}
@@ -84,8 +85,10 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 	}
 
 	className := ""
+	classFQCN := ""
 	if class != nil {
 		className = phpast.ShortName(class.Name)
+		classFQCN = a.names[class]
 	}
 
 	for position, paramNode := range method.Params {
@@ -97,7 +100,7 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 			a.setType(param, resolved)
 			continue
 		}
-		if resolved, ok := a.defaultType(param, className); ok {
+		if resolved, ok := a.defaultType(param, className, classFQCN); ok {
 			a.setType(param, resolved)
 		}
 	}
@@ -105,8 +108,9 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 
 // defaultType infers a parameter type from its literal default value, so
 // `$page = 1` becomes `int $page = 1` even with no call site. A `null` default
-// carries no type of its own; enclosing resolves `self::`/`static::` constants.
-func (a *applier) defaultType(param *ast.Parameter, enclosing string) (aggregate.Resolved, bool) {
+// carries no type of its own; enclosing (short name) resolves `self::` constants
+// and enclosingFQCN qualifies an object default such as an enum case.
+func (a *applier) defaultType(param *ast.Parameter, enclosing, enclosingFQCN string) (aggregate.Resolved, bool) {
 	if param.DefaultValue == nil {
 		return aggregate.Resolved{}, false
 	}
@@ -114,7 +118,28 @@ func (a *applier) defaultType(param *ast.Parameter, enclosing string) (aggregate
 	if typeName == "" || typeName == "null" {
 		return aggregate.Resolved{}, false
 	}
+	if strings.HasPrefix(typeName, "object:") {
+		if fqcn := a.objectFQCN(param.DefaultValue, enclosingFQCN); fqcn != "" {
+			typeName = "object:" + fqcn
+		}
+	}
 	return aggregate.Resolved{Type: typeName}, true
+}
+
+// objectFQCN qualifies the class of a `new X()` or `X::CASE` default value,
+// mapping self/static to the enclosing class. Empty when it cannot be resolved.
+func (a *applier) objectFQCN(expr ast.Vertex, enclosingFQCN string) string {
+	classNode := phpast.ObjectClassNode(expr)
+	if classNode == nil {
+		return ""
+	}
+	switch strings.ToLower(phpast.ShortName(classNode)) {
+	case "self", "static":
+		return enclosingFQCN
+	case "parent":
+		return ""
+	}
+	return a.names[classNode]
 }
 
 func (a *applier) setType(param *ast.Parameter, resolved aggregate.Resolved) {

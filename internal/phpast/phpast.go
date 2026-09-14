@@ -11,7 +11,9 @@ import (
 	"github.com/rectorphp/php-parser-in-go/pkg/conf"
 	"github.com/rectorphp/php-parser-in-go/pkg/parser"
 	"github.com/rectorphp/php-parser-in-go/pkg/version"
+	"github.com/rectorphp/php-parser-in-go/pkg/visitor/nsresolver"
 	"github.com/rectorphp/php-parser-in-go/pkg/visitor/printer"
+	"github.com/rectorphp/php-parser-in-go/pkg/visitor/traverser"
 )
 
 var phpVersion, _ = version.New("8.3")
@@ -89,6 +91,28 @@ func ShortName(node ast.Vertex) string {
 	default:
 		return ""
 	}
+}
+
+// ResolveNames returns the fully qualified name (without a leading backslash)
+// of every class-name node in the file, resolved from its namespace and `use`
+// statements by the parser's namespace resolver. Class/enum/trait declarations
+// are keyed by their statement node.
+func ResolveNames(root ast.Vertex) map[ast.Vertex]string {
+	resolver := nsresolver.NewNamespaceResolver()
+	traverser.NewTraverser(resolver).Traverse(root)
+	return resolver.ResolvedNames
+}
+
+// ObjectClassNode returns the class-name node of a value that produces an
+// object - `new X()` or a `X::CASE` enum case - or nil for anything else.
+func ObjectClassNode(expr ast.Vertex) ast.Vertex {
+	switch typed := expr.(type) {
+	case *ast.ExprNew:
+		return typed.Class
+	case *ast.ExprClassConstFetch:
+		return typed.Class
+	}
+	return nil
 }
 
 // IsThisVariable reports whether a node is the `$this` variable.
