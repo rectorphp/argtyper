@@ -1,6 +1,7 @@
 package aggregate_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/rectorphp/argtyper/internal/aggregate"
@@ -11,7 +12,7 @@ func TestResolveMethod(t *testing.T) {
 	tests := []struct {
 		name         string
 		records      []collect.Record
-		wantType     string
+		wantType     string // members joined by "|"
 		wantNullable bool
 		wantFound    bool
 	}{
@@ -32,12 +33,24 @@ func TestResolveMethod(t *testing.T) {
 			wantFound:    true,
 		},
 		{
-			name: "two real types is ambiguous",
+			name: "two real types become a union",
 			records: []collect.Record{
 				{Class: "A", Name: "m", Type: "int"},
 				{Class: "A", Name: "m", Type: "string"},
 			},
-			wantFound: false,
+			wantType:  "int|string",
+			wantFound: true,
+		},
+		{
+			name: "union with null",
+			records: []collect.Record{
+				{Class: "A", Name: "m", Type: "int"},
+				{Class: "A", Name: "m", Type: "string"},
+				{Class: "A", Name: "m", Type: "null"},
+			},
+			wantType:     "int|string",
+			wantNullable: true,
+			wantFound:    true,
 		},
 		{
 			name:      "only null resolves to nothing",
@@ -52,7 +65,7 @@ func TestResolveMethod(t *testing.T) {
 			if found != test.wantFound {
 				t.Fatalf("found=%v want %v", found, test.wantFound)
 			}
-			if found && (resolved.Type != test.wantType || resolved.Nullable != test.wantNullable) {
+			if found && (strings.Join(resolved.Types, "|") != test.wantType || resolved.Nullable != test.wantNullable) {
 				t.Errorf("got %+v want type=%s nullable=%v", resolved, test.wantType, test.wantNullable)
 			}
 		})
@@ -67,11 +80,11 @@ func TestResolveFunctionAndPositionIsolation(t *testing.T) {
 	types := aggregate.Resolve(records)
 
 	first, ok := types.Function("f", 0)
-	if !ok || first.Type != "int" {
+	if !ok || strings.Join(first.Types, "|") != "int" {
 		t.Errorf("position 0: got %+v ok=%v", first, ok)
 	}
 	second, ok := types.Function("f", 1)
-	if !ok || second.Type != "string" {
+	if !ok || strings.Join(second.Types, "|") != "string" {
 		t.Errorf("position 1: got %+v ok=%v", second, ok)
 	}
 }

@@ -126,7 +126,7 @@ func (a *applier) defaultType(param *ast.Parameter, enclosing, enclosingFQCN str
 			typeName = "object:" + fqcn
 		}
 	}
-	return aggregate.Resolved{Type: typeName}, true
+	return aggregate.Resolved{Types: []string{typeName}}, true
 }
 
 // objectFQCN qualifies the class of a `new X()` or `X::CASE` default value,
@@ -147,24 +147,34 @@ func (a *applier) objectFQCN(expr ast.Vertex, enclosingFQCN string) string {
 
 func (a *applier) setType(param *ast.Parameter, resolved aggregate.Resolved) {
 	nullable := resolved.Nullable || hasNullDefault(param)
-	typeText := typeText(resolved.Type)
+
+	members := make([]string, len(resolved.Types))
+	for i, member := range resolved.Types {
+		members[i] = typeText(member)
+	}
 
 	// Take the whitespace that sat before the variable (indentation, or the
 	// space after a comma or modifier) and put it in front of the new type, so
 	// the type slots into the variable's old position. A single space then
 	// separates the type from the variable.
 	leading := takeVarLeading(param)
-	identifier := &ast.Identifier{IdentifierTkn: &token.Token{Value: []byte(typeText)}}
 
-	if nullable {
+	// A single nullable type is written as `?Type`; a union carries null as a
+	// `null` member instead, since `?` cannot combine with a union.
+	if len(members) == 1 && nullable {
 		param.Type = &ast.Nullable{
 			QuestionTkn: &token.Token{Value: []byte("?"), FreeFloating: leading},
-			Expr:        identifier,
+			Expr:        &ast.Identifier{IdentifierTkn: &token.Token{Value: []byte(members[0])}},
 		}
-	} else {
-		identifier.IdentifierTkn.FreeFloating = leading
-		param.Type = identifier
+		a.added++
+		return
 	}
+
+	text := strings.Join(members, "|")
+	if nullable {
+		text += "|null"
+	}
+	param.Type = &ast.Identifier{IdentifierTkn: &token.Token{Value: []byte(text), FreeFloating: leading}}
 	a.added++
 }
 

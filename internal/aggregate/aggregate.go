@@ -9,9 +9,10 @@ import (
 	"github.com/rectorphp/argtyper/internal/collect"
 )
 
-// Resolved is the final type decision for one parameter position.
+// Resolved is the final type decision for one parameter position. Two or more
+// types observed for the same parameter become a union.
 type Resolved struct {
-	Type     string // source type keyword or "object:Short", never "null"
+	Types    []string // one or more source type keywords or "object:Fqcn", never "null"
 	Nullable bool
 }
 
@@ -33,8 +34,8 @@ func (t Types) Function(name string, position int) (Resolved, bool) {
 	return resolved, ok
 }
 
-// Resolve groups records per parameter and keeps only unambiguous ones:
-// a single type, or a single type plus null (nullable).
+// Resolve groups records per parameter into a resolved type: the observed types
+// as a union, with null captured as nullability rather than a member.
 func Resolve(records []collect.Record) Types {
 	methodTypes := map[string]map[string]struct{}{}
 	functionTypes := map[string]map[string]struct{}{}
@@ -65,15 +66,12 @@ func resolveGroups(groups map[string]map[string]struct{}) map[string]Resolved {
 		}
 		sort.Strings(types)
 
-		switch {
-		case len(types) == 1:
-			if types[0] == "null" {
-				continue
-			}
-			resolved[key] = Resolved{Type: types[0]}
-		case len(types) == 2 && contains(types, "null"):
-			resolved[key] = Resolved{Type: without(types, "null"), Nullable: true}
+		nullable := contains(types, "null")
+		members := without(types, "null")
+		if len(members) == 0 {
+			continue
 		}
+		resolved[key] = Resolved{Types: members, Nullable: nullable}
 	}
 
 	return resolved
@@ -103,11 +101,12 @@ func contains(values []string, needle string) bool {
 	return false
 }
 
-func without(values []string, needle string) string {
+func without(values []string, needle string) []string {
+	kept := make([]string, 0, len(values))
 	for _, value := range values {
 		if value != needle {
-			return value
+			kept = append(kept, value)
 		}
 	}
-	return ""
+	return kept
 }

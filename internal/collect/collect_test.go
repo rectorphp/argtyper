@@ -99,6 +99,11 @@ func TestFromSource(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "does not type a reassigned parameter from its new value",
+			src:  "<?php\nclass A {\n  static function fmt($day): string { return \"\"; }\n  function go($d) { $d = new \\DateTime(self::fmt($d)); }\n}",
+			want: nil,
+		},
+		{
 			name: "skips parent static call",
 			src:  "<?php\nclass A {\n  function go() { parent::set(1); }\n}",
 			want: nil,
