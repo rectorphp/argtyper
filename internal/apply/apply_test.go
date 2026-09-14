@@ -79,9 +79,19 @@ func TestApply(t *testing.T) {
 			want:   "<?php\nfinal class A {\n    public function set(string $v) {}\n    public function go() { $this->set(1); }\n}",
 		},
 		{
-			name:   "skips ambiguous multiple types",
+			name:   "unions multiple observed types",
 			target: "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); }\n}",
-			want:   "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); }\n}",
+			want:   "<?php\nfinal class A {\n    public function set(int|string $v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); }\n}",
+		},
+		{
+			name:   "unions multiple types with null as a member",
+			target: "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); $this->set(null); }\n}",
+			want:   "<?php\nfinal class A {\n    public function set(int|string|null $v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); $this->set(null); }\n}",
+		},
+		{
+			name:   "unions object and scalar types",
+			target: "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(new Money()); $this->set(1); }\n}",
+			want:   "<?php\nfinal class A {\n    public function set(int|\\Money $v) {}\n    public function go() { $this->set(new Money()); $this->set(1); }\n}",
 		},
 		{
 			name:   "skips magic method",
