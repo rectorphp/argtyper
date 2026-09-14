@@ -58,9 +58,39 @@ func TestFromSource(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "skips method call on non-this variable",
-			src:  "<?php\nclass A {\n  function go() { $other->set(1); }\n}",
+			name: "skips method call on untyped variable",
+			src:  "<?php\nclass A {\n  function go($other) { $other->set(1); }\n}",
 			want: nil,
+		},
+		{
+			name: "typed parameter variable resolves target class",
+			src:  "<?php\nclass A {\n  function go(Repo $repo) { $repo->find(1); }\n}",
+			want: []collect.Record{{Class: "Repo", Name: "find", Position: 0, Type: "int"}},
+		},
+		{
+			name: "nullable typed parameter resolves target class",
+			src:  "<?php\nclass A {\n  function go(?Repo $repo) { $repo->find(1); }\n}",
+			want: []collect.Record{{Class: "Repo", Name: "find", Position: 0, Type: "int"}},
+		},
+		{
+			name: "scalar typed parameter is not a call target",
+			src:  "<?php\nclass A {\n  function go(string $name) { $name->set(1); }\n}",
+			want: nil,
+		},
+		{
+			name: "declared property resolves this-property call",
+			src:  "<?php\nclass A {\n  private Repo $repo;\n  function go() { $this->repo->find(1); }\n}",
+			want: []collect.Record{{Class: "Repo", Name: "find", Position: 0, Type: "int"}},
+		},
+		{
+			name: "promoted constructor property resolves this-property call",
+			src:  "<?php\nclass A {\n  function __construct(private Repo $repo) {}\n  function go() { $this->repo->find(1); }\n}",
+			want: []collect.Record{{Class: "Repo", Name: "find", Position: 0, Type: "int"}},
+		},
+		{
+			name: "nullsafe property call resolves target class",
+			src:  "<?php\nclass A {\n  private Repo $repo;\n  function go() { $this->repo?->find(1); }\n}",
+			want: []collect.Record{{Class: "Repo", Name: "find", Position: 0, Type: "int"}},
 		},
 		{
 			name: "skips named argument",
