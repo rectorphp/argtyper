@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/rectorphp/argtyper/internal/aggregate"
+	"github.com/rectorphp/argtyper/internal/inherit"
 	"github.com/rectorphp/argtyper/internal/phpast"
 	"github.com/rectorphp/argtyper/internal/symbols"
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
@@ -15,14 +16,15 @@ import (
 // Source adds parameter types to a single PHP source file. It returns the new
 // source, the number of types added, and whether the file changed. On a parse
 // error the original source is returned unchanged. The symbols table resolves
-// constant and enum-case default values.
-func Source(src []byte, types aggregate.Types, table *symbols.Table) (string, int, bool) {
+// constant and enum-case default values; the inheritance table decides whether
+// typing a method would change an inherited signature.
+func Source(src []byte, types aggregate.Types, table *symbols.Table, inheritance *inherit.Table) (string, int, bool) {
 	root, err := phpast.Parse(src)
 	if err != nil || root == nil {
 		return string(src), 0, false
 	}
 
-	applier := &applier{types: types, symbols: table, names: phpast.ResolveNames(root)}
+	applier := &applier{types: types, symbols: table, inheritance: inheritance, names: phpast.ResolveNames(root)}
 	applier.walk(root, nil)
 
 	if applier.added == 0 {
@@ -33,10 +35,11 @@ func Source(src []byte, types aggregate.Types, table *symbols.Table) (string, in
 }
 
 type applier struct {
-	types   aggregate.Types
-	symbols *symbols.Table
-	names   map[ast.Vertex]string
-	added   int
+	types       aggregate.Types
+	symbols     *symbols.Table
+	inheritance *inherit.Table
+	names       map[ast.Vertex]string
+	added       int
 }
 
 func (a *applier) walk(node ast.Vertex, class *ast.StmtClass) {
@@ -80,7 +83,7 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 	if isMagicExceptConstructor(name) {
 		return
 	}
-	if !overridable(method, class) {
+	if !a.methodTypeable(method, class) {
 		return
 	}
 
@@ -203,10 +206,14 @@ func typeable(param *ast.Parameter) bool {
 	return param.Type == nil && param.VariadicTkn == nil
 }
 
-// overridable reports whether typing this method is safe without a reflection
-// based parent lookup: constructors and private methods never override, and a
-// class with no parent or interface cannot override either.
-func overridable(method *ast.StmtClassMethod, class *ast.StmtClass) bool {
+// methodTypeable reports whether typing this method is safe: it must not change
+// the signature of a method inherited from an ancestor. Constructors and private
+// methods never override, and a class with no parent or interface has nothing to
+// override. Otherwise the inheritance table is consulted, and the method is only
+// typed when the whole ancestor chain is resolved and none of it declares the
+// method - an unresolved chain (an ancestor in /vendor the scan never saw) is
+// treated as unsafe.
+func (a *applier) methodTypeable(method *ast.StmtClassMethod, class *ast.StmtClass) bool {
 	if phpast.ShortName(method.Name) == "__construct" {
 		return true
 	}
@@ -220,7 +227,17 @@ func overridable(method *ast.StmtClassMethod, class *ast.StmtClass) bool {
 	if class == nil {
 		return true
 	}
-	return class.Extends == nil && len(class.Implements) == 0
+	if class.Extends == nil && len(class.Implements) == 0 {
+		return true
+	}
+
+	classFQCN := a.names[class]
+	if classFQCN == "" {
+		// cannot identify the class, so fall back to the conservative rule
+		return false
+	}
+	overrides, resolved := a.inheritance.Overrides(classFQCN, phpast.ShortName(method.Name))
+	return resolved && !overrides
 }
 
 func isMagicExceptConstructor(name string) bool {

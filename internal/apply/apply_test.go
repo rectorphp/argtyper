@@ -6,21 +6,24 @@ import (
 	"github.com/rectorphp/argtyper/internal/aggregate"
 	"github.com/rectorphp/argtyper/internal/apply"
 	"github.com/rectorphp/argtyper/internal/collect"
+	"github.com/rectorphp/argtyper/internal/inherit"
 	"github.com/rectorphp/argtyper/internal/symbols"
 )
 
 // run collects from every source, resolves types, then applies to target.
 func run(target string, sources ...string) (string, int) {
 	table := symbols.New()
+	inheritance := inherit.New()
 	for _, source := range sources {
 		table.CollectSource([]byte(source))
+		inheritance.CollectSource([]byte(source))
 	}
 	var records []collect.Record
 	for _, source := range sources {
 		records = append(records, collect.FromSource([]byte(source), table)...)
 	}
 	types := aggregate.Resolve(records)
-	output, count, _ := apply.Source([]byte(target), types, table)
+	output, count, _ := apply.Source([]byte(target), types, table, inheritance)
 	return output, count
 }
 
@@ -201,6 +204,27 @@ func TestApply(t *testing.T) {
 			want: "<?php\nnamespace App;\n\nfunction handle(\\App\\Entity\\Lead $item) {}",
 		},
 		{
+			name:   "types method whose local parent does not declare it",
+			target: "<?php\nclass A extends Base {\n    public function set($v) {}\n    public function go() { $this->set(1); }\n}",
+			callers: []string{
+				"<?php\nclass Base {\n    public function other() {}\n}",
+			},
+			want: "<?php\nclass A extends Base {\n    public function set(int $v) {}\n    public function go() { $this->set(1); }\n}",
+		},
+		{
+			name:   "skips method its local parent declares",
+			target: "<?php\nclass A extends Base {\n    public function set($v) {}\n    public function go() { $this->set(1); }\n}",
+			callers: []string{
+				"<?php\nclass Base {\n    public function set($v) {}\n}",
+			},
+			want: "<?php\nclass A extends Base {\n    public function set($v) {}\n    public function go() { $this->set(1); }\n}",
+		},
+		{
+			name:   "skips method when parent is unknown (vendor)",
+			target: "<?php\nclass A extends \\Vendor\\Base {\n    public function set($v) {}\n    public function go() { $this->set(1); }\n}",
+			want:   "<?php\nclass A extends \\Vendor\\Base {\n    public function set($v) {}\n    public function go() { $this->set(1); }\n}",
+		},
+		{
 			name:   "qualifies arrow function typed parameter argument from use import",
 			target: "<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nfinal class Repo {\n    public function save($entity) {}\n    public function go() { $run = fn (Lead $lead) => $this->save($lead); }\n}",
 			want:   "<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nfinal class Repo {\n    public function save(\\App\\Entity\\Lead $entity) {}\n    public function go() { $run = fn (Lead $lead) => $this->save($lead); }\n}",
@@ -224,7 +248,7 @@ func TestApply(t *testing.T) {
 
 func TestNoTypesReturnsUnchanged(t *testing.T) {
 	src := "<?php\nfunction greet($who) {}"
-	output, count, changed := apply.Source([]byte(src), aggregate.Resolve(nil), symbols.New())
+	output, count, changed := apply.Source([]byte(src), aggregate.Resolve(nil), symbols.New(), inherit.New())
 	if changed || count != 0 || output != src {
 		t.Errorf("expected unchanged, got changed=%v count=%d", changed, count)
 	}

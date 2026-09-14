@@ -11,6 +11,7 @@ import (
 	"github.com/rectorphp/argtyper/internal/collect"
 	"github.com/rectorphp/argtyper/internal/diff"
 	"github.com/rectorphp/argtyper/internal/finder"
+	"github.com/rectorphp/argtyper/internal/inherit"
 	"github.com/rectorphp/argtyper/internal/symbols"
 )
 
@@ -65,6 +66,21 @@ func run(args []string) error {
 		table.CollectSource(src)
 	}
 
+	// build the inheritance table from the project and its vendor directory, so
+	// a method that overrides an ancestor (including one in vendor) is left alone
+	inheritance := inherit.New()
+	vendorFiles, err := finder.VendorPHPFiles(projectPath)
+	if err != nil {
+		return err
+	}
+	for _, file := range append(append([]string{}, files...), vendorFiles...) {
+		src, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		inheritance.CollectSource(src)
+	}
+
 	// 1. collect literal argument types across the whole project
 	fmt.Println("1. Collecting argument types...")
 	var records []collect.Record
@@ -92,7 +108,7 @@ func run(args []string) error {
 			return err
 		}
 
-		output, count, changed := apply.Source(src, types, table)
+		output, count, changed := apply.Source(src, types, table, inheritance)
 		if !changed {
 			continue
 		}

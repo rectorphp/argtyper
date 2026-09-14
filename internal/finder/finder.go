@@ -30,6 +30,32 @@ func CodeDirectories(projectPath string) []string {
 	return found
 }
 
+// VendorPHPFiles returns every .php file under the project's vendor directory,
+// or nothing when there is no vendor directory. These are read only to learn the
+// signatures of parent classes, never modified.
+func VendorPHPFiles(projectPath string) ([]string, error) {
+	root := filepath.Join(projectPath, "vendor")
+	info, err := os.Stat(root)
+	if err != nil || !info.IsDir() {
+		return nil, nil
+	}
+
+	var files []string
+	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !entry.IsDir() && strings.HasSuffix(path, ".php") {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
 // PHPFiles returns every .php file under the project's code directories.
 func PHPFiles(projectPath string) ([]string, error) {
 	var files []string
