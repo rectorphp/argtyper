@@ -11,6 +11,7 @@ import (
 	"github.com/rectorphp/argtyper/internal/collect"
 	"github.com/rectorphp/argtyper/internal/diff"
 	"github.com/rectorphp/argtyper/internal/finder"
+	"github.com/rectorphp/argtyper/internal/symbols"
 )
 
 const usage = `Usage: argtyper add-types [project-path] [--dry]
@@ -53,6 +54,17 @@ func run(args []string) error {
 
 	fmt.Printf("Code dirs found in %q: %v\n\n", projectPath, finder.CodeDirectories(projectPath))
 
+	// gather project symbols (enums, constants) so argument values that
+	// reference them resolve to a type just like literals do
+	table := symbols.New()
+	for _, file := range files {
+		src, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		table.CollectSource(src)
+	}
+
 	// 1. collect literal argument types across the whole project
 	fmt.Println("1. Collecting argument types...")
 	var records []collect.Record
@@ -61,7 +73,7 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
-		records = append(records, collect.FromSource(src)...)
+		records = append(records, collect.FromSource(src, table)...)
 	}
 	fmt.Printf("   Found %d arg types\n\n", len(records))
 
@@ -80,7 +92,7 @@ func run(args []string) error {
 			return err
 		}
 
-		output, count, changed := apply.Source(src, types)
+		output, count, changed := apply.Source(src, types, table)
 		if !changed {
 			continue
 		}

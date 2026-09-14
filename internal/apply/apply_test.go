@@ -6,16 +6,21 @@ import (
 	"github.com/rectorphp/argtyper/internal/aggregate"
 	"github.com/rectorphp/argtyper/internal/apply"
 	"github.com/rectorphp/argtyper/internal/collect"
+	"github.com/rectorphp/argtyper/internal/symbols"
 )
 
 // run collects from every source, resolves types, then applies to target.
 func run(target string, sources ...string) (string, int) {
+	table := symbols.New()
+	for _, source := range sources {
+		table.CollectSource([]byte(source))
+	}
 	var records []collect.Record
 	for _, source := range sources {
-		records = append(records, collect.FromSource([]byte(source))...)
+		records = append(records, collect.FromSource([]byte(source), table)...)
 	}
 	types := aggregate.Resolve(records)
-	output, count, _ := apply.Source([]byte(target), types)
+	output, count, _ := apply.Source([]byte(target), types, table)
 	return output, count
 }
 
@@ -119,6 +124,74 @@ func TestApply(t *testing.T) {
 			},
 			want: "<?php\nfunction take(array $items) {}",
 		},
+		{
+			name:   "types from literal default without callers",
+			target: "<?php\nfunction paginate($page = 1) {}",
+			want:   "<?php\nfunction paginate(int $page = 1) {}",
+		},
+		{
+			name:   "types from array default without callers",
+			target: "<?php\nfunction take($items = []) {}",
+			want:   "<?php\nfunction take(array $items = []) {}",
+		},
+		{
+			name:   "types closure argument",
+			target: "<?php\nfunction run($cb) {}",
+			callers: []string{
+				"<?php\nrun(function () {});",
+			},
+			want: "<?php\nfunction run(\\Closure $cb) {}",
+		},
+		{
+			name:   "types arrow function argument",
+			target: "<?php\nfunction run($cb) {}",
+			callers: []string{
+				"<?php\nrun(fn () => 1);",
+			},
+			want: "<?php\nfunction run(\\Closure $cb) {}",
+		},
+		{
+			name:   "types from builtin return value",
+			target: "<?php\nfunction save($length) {}",
+			callers: []string{
+				"<?php\nsave(strlen($x));",
+			},
+			want: "<?php\nfunction save(int $length) {}",
+		},
+		{
+			name:   "types class constant reference as string",
+			target: "<?php\nfunction register($name) {}",
+			callers: []string{
+				"<?php\nregister(Foo::class);",
+			},
+			want: "<?php\nfunction register(string $name) {}",
+		},
+		{
+			name:   "types global constant argument",
+			target: "<?php\nfunction limit($max) {}",
+			callers: []string{
+				"<?php\nconst MAX = 10;\nlimit(MAX);",
+			},
+			want: "<?php\nfunction limit(int $max) {}",
+		},
+		{
+			name:   "types enum case argument",
+			target: "<?php\nfunction handle($status) {}",
+			callers: []string{
+				"<?php\nenum Status {\n    case Active;\n}\nhandle(Status::Active);",
+			},
+			want: "<?php\nfunction handle(\\Status $status) {}",
+		},
+		{
+			name:   "types from typed parameter passed as argument",
+			target: "<?php\nfinal class Repo {\n    public function save($entity) {}\n    public function go(User $user) { $this->save($user); }\n}",
+			want:   "<?php\nfinal class Repo {\n    public function save(\\User $entity) {}\n    public function go(User $user) { $this->save($user); }\n}",
+		},
+		{
+			name:   "types from local new assigned argument",
+			target: "<?php\nfinal class Repo {\n    public function save($entity) {}\n    public function go() { $item = new Item(); $this->save($item); }\n}",
+			want:   "<?php\nfinal class Repo {\n    public function save(\\Item $entity) {}\n    public function go() { $item = new Item(); $this->save($item); }\n}",
+		},
 	}
 
 	for _, test := range tests {
@@ -133,7 +206,7 @@ func TestApply(t *testing.T) {
 
 func TestNoTypesReturnsUnchanged(t *testing.T) {
 	src := "<?php\nfunction greet($who) {}"
-	output, count, changed := apply.Source([]byte(src), aggregate.Resolve(nil))
+	output, count, changed := apply.Source([]byte(src), aggregate.Resolve(nil), symbols.New())
 	if changed || count != 0 || output != src {
 		t.Errorf("expected unchanged, got changed=%v count=%d", changed, count)
 	}
