@@ -9,13 +9,16 @@ import (
 	"github.com/rectorphp/argtyper/internal/aggregate"
 	"github.com/rectorphp/argtyper/internal/apply"
 	"github.com/rectorphp/argtyper/internal/collect"
+	"github.com/rectorphp/argtyper/internal/diff"
 	"github.com/rectorphp/argtyper/internal/finder"
 )
 
-const usage = `Usage: argtyper add-types [project-path]
+const usage = `Usage: argtyper add-types [project-path] [--dry]
 
 Find literal values passed into local method/function calls and add them as
-parameter type declarations. Defaults to the current directory.`
+parameter type declarations. Defaults to the current directory.
+
+  --dry   Print the diff of the types that would be added, without writing.`
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -33,9 +36,14 @@ func run(args []string) error {
 		return fmt.Errorf("unknown command %q", args[0])
 	}
 
+	dry := false
 	projectPath := "."
-	if len(args) > 1 {
-		projectPath = args[1]
+	for _, arg := range args[1:] {
+		if arg == "--dry" {
+			dry = true
+			continue
+		}
+		projectPath = arg
 	}
 
 	files, err := finder.PHPFiles(projectPath)
@@ -60,7 +68,11 @@ func run(args []string) error {
 	types := aggregate.Resolve(records)
 
 	// 2. add the resolved types to parameter declarations
-	fmt.Println("2. Adding types to parameters...")
+	if dry {
+		fmt.Println("2. Types that would be added (dry run)...")
+	} else {
+		fmt.Println("2. Adding types to parameters...")
+	}
 	added := 0
 	for _, file := range files {
 		src, err := os.ReadFile(file)
@@ -73,6 +85,14 @@ func run(args []string) error {
 			continue
 		}
 
+		if dry {
+			if patch, ok := diff.Lines(file, string(src), output); ok {
+				fmt.Print(patch)
+			}
+			added += count
+			continue
+		}
+
 		if err := os.WriteFile(file, []byte(output), 0o644); err != nil {
 			return err
 		}
@@ -81,6 +101,11 @@ func run(args []string) error {
 
 	if added == 0 {
 		fmt.Println("   No new types added. Is your code that good?")
+		return nil
+	}
+
+	if dry {
+		fmt.Printf("\n   Dry run: %d types would be added\n", added)
 		return nil
 	}
 
