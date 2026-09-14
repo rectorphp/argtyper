@@ -13,6 +13,7 @@ func TestPHPFiles(t *testing.T) {
 	write(t, root, "src/A.php")
 	write(t, root, "src/nested/B.php")
 	write(t, root, "tests/C.php")
+	write(t, root, "plugins/AcmeBundle/E.php")
 	write(t, root, "src/notes.txt")
 	write(t, root, "vendor/D.php") // vendor is not a code directory
 
@@ -22,6 +23,7 @@ func TestPHPFiles(t *testing.T) {
 	}
 
 	want := []string{
+		filepath.Join(root, "plugins/AcmeBundle/E.php"),
 		filepath.Join(root, "src/A.php"),
 		filepath.Join(root, "src/nested/B.php"),
 		filepath.Join(root, "tests/C.php"),

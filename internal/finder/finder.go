@@ -11,7 +11,10 @@ import (
 )
 
 // codeDirectories are the top-level directory names scanned for PHP files.
-var codeDirectories = []string{"src", "lib", "app", "test", "tests"}
+// plugins is included so a project's app and plugin call sites are collected in
+// one pass, which is what lets a null argument passed from a plugin make an app
+// method's parameter nullable.
+var codeDirectories = []string{"app", "lib", "plugins", "src", "test", "tests"}
 
 // skipDirectories hold third-party code that should never be typed.
 var skipDirectories = map[string]bool{"vendor": true, "node_modules": true}
