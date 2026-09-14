@@ -75,6 +75,10 @@ func (c *collector) walk(node ast.Vertex, sc scope) {
 	case *ast.ExprClosure:
 		sc.params = c.paramClasses(typed.Params, sc.classFQCN)
 		sc.locals = c.localClasses(typed.Stmts)
+	case *ast.ExprArrowFunction:
+		// arrow functions capture outer variables, so keep the inherited params
+		// and locals and overlay the arrow's own typed parameters.
+		sc.params = merge(sc.params, c.paramClasses(typed.Params, sc.classFQCN))
 	}
 
 	c.visit(node, sc)
@@ -289,6 +293,21 @@ func (c *collector) classFromType(typeNode ast.Vertex, enclosing string) string 
 		return fqcn
 	}
 	return name
+}
+
+// merge overlays the over map onto a copy of base, with over winning on clashes.
+func merge(base, over map[string]string) map[string]string {
+	if len(over) == 0 {
+		return base
+	}
+	merged := make(map[string]string, len(base)+len(over))
+	for name, class := range base {
+		merged[name] = class
+	}
+	for name, class := range over {
+		merged[name] = class
+	}
+	return merged
 }
 
 // shortName returns the last segment of a fully qualified name, the form used

@@ -201,6 +201,11 @@ func TestApply(t *testing.T) {
 			want: "<?php\nnamespace App;\n\nfunction handle(\\App\\Entity\\Lead $item) {}",
 		},
 		{
+			name:   "qualifies arrow function typed parameter argument from use import",
+			target: "<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nfinal class Repo {\n    public function save($entity) {}\n    public function go() { $run = fn (Lead $lead) => $this->save($lead); }\n}",
+			want:   "<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nfinal class Repo {\n    public function save(\\App\\Entity\\Lead $entity) {}\n    public function go() { $run = fn (Lead $lead) => $this->save($lead); }\n}",
+		},
+		{
 			name:   "qualifies typed parameter argument from use import",
 			target: "<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nfinal class Repo {\n    public function save($entity) {}\n    public function go(Lead $lead) { $this->save($lead); }\n}",
 			want:   "<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nfinal class Repo {\n    public function save(\\App\\Entity\\Lead $entity) {}\n    public function go(Lead $lead) { $this->save($lead); }\n}",
