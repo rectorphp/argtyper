@@ -192,6 +192,19 @@ func TestApply(t *testing.T) {
 			target: "<?php\nfinal class Repo {\n    public function save($entity) {}\n    public function go() { $item = new Item(); $this->save($item); }\n}",
 			want:   "<?php\nfinal class Repo {\n    public function save(\\Item $entity) {}\n    public function go() { $item = new Item(); $this->save($item); }\n}",
 		},
+		{
+			name:   "qualifies new argument from use import",
+			target: "<?php\nnamespace App;\n\nfunction handle($item) {}",
+			callers: []string{
+				"<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nhandle(new Lead());",
+			},
+			want: "<?php\nnamespace App;\n\nfunction handle(\\App\\Entity\\Lead $item) {}",
+		},
+		{
+			name:   "qualifies typed parameter argument from use import",
+			target: "<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nfinal class Repo {\n    public function save($entity) {}\n    public function go(Lead $lead) { $this->save($lead); }\n}",
+			want:   "<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nfinal class Repo {\n    public function save(\\App\\Entity\\Lead $entity) {}\n    public function go(Lead $lead) { $this->save($lead); }\n}",
+		},
 	}
 
 	for _, test := range tests {
