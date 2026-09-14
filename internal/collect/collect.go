@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/rectorphp/argtyper/internal/phpast"
+	"github.com/rectorphp/argtyper/internal/symbols"
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
 )
 
@@ -18,30 +19,34 @@ type Record struct {
 	Type       string // "int", "float", "string", "bool", "array", "null" or "object:Short"
 }
 
-// FromSource collects records from a single PHP source file. Parse errors
-// return no records so one broken file never blocks the rest.
-func FromSource(src []byte) []Record {
+// FromSource collects records from a single PHP source file. The symbols table
+// resolves constant and enum-case argument values. Parse errors return no
+// records so one broken file never blocks the rest.
+func FromSource(src []byte, table *symbols.Table) []Record {
 	root, err := phpast.Parse(src)
 	if err != nil || root == nil {
 		return nil
 	}
 
-	collector := &collector{}
+	collector := &collector{symbols: table}
 	collector.walk(root, scope{})
 	return collector.records
 }
 
 type collector struct {
 	records []Record
+	symbols *symbols.Table
 }
 
 // scope carries the type information available at a call site: the enclosing
-// class name, its property types and the current function's parameter types,
-// so calls on `$this->prop` and typed `$param` variables resolve to a class.
+// class name, its property types, the current function's parameter types and
+// local variables assigned a `new X()`, so `$this->prop` and typed `$param` or
+// `$local` variables resolve to a class.
 type scope struct {
 	class      string
 	properties map[string]string // property name -> short class name
 	params     map[string]string // parameter variable name -> short class name
+	locals     map[string]string // local variable name -> short class name
 }
 
 // walk recurses the AST, tracking the enclosing class (so `$this->` and
@@ -60,10 +65,13 @@ func (c *collector) walk(node ast.Vertex, sc scope) {
 		sc = scope{class: phpast.ShortName(typed.Name), properties: classProperties(typed)}
 	case *ast.StmtFunction:
 		sc.params = paramClasses(typed.Params, sc.class)
+		sc.locals = localClasses(typed.Stmts)
 	case *ast.StmtClassMethod:
 		sc.params = paramClasses(typed.Params, sc.class)
+		sc.locals = localClasses(phpast.Children(typed.Stmt))
 	case *ast.ExprClosure:
 		sc.params = paramClasses(typed.Params, sc.class)
+		sc.locals = localClasses(typed.Stmts)
 	}
 
 	c.visit(node, sc)
@@ -81,14 +89,14 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 		if name == "" {
 			return
 		}
-		c.record(typed.Args, Record{IsFunction: true, Name: name})
+		c.record(typed.Args, Record{IsFunction: true, Name: name}, sc)
 
 	case *ast.ExprNew:
 		name := phpast.ShortName(typed.Class)
 		if name == "" {
 			return
 		}
-		c.record(typed.Args, Record{Class: name, Name: "__construct"})
+		c.record(typed.Args, Record{Class: name, Name: "__construct"}, sc)
 
 	case *ast.ExprStaticCall:
 		method, ok := typed.Call.(*ast.Identifier)
@@ -99,7 +107,7 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 		if target == "" {
 			return
 		}
-		c.record(typed.Args, Record{Class: target, Name: string(method.Value)})
+		c.record(typed.Args, Record{Class: target, Name: string(method.Value)}, sc)
 
 	case *ast.ExprMethodCall:
 		target := callTarget(typed.Var, sc)
@@ -110,7 +118,7 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 		if !ok {
 			return
 		}
-		c.record(typed.Args, Record{Class: target, Name: string(method.Value)})
+		c.record(typed.Args, Record{Class: target, Name: string(method.Value)}, sc)
 
 	case *ast.ExprNullsafeMethodCall:
 		target := callTarget(typed.Var, sc)
@@ -121,7 +129,7 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 		if !ok {
 			return
 		}
-		c.record(typed.Args, Record{Class: target, Name: string(method.Value)})
+		c.record(typed.Args, Record{Class: target, Name: string(method.Value)}, sc)
 	}
 }
 
@@ -135,7 +143,10 @@ func callTarget(varNode ast.Vertex, sc scope) string {
 		if name == "this" {
 			return sc.class
 		}
-		return sc.params[name]
+		if class := sc.params[name]; class != "" {
+			return class
+		}
+		return sc.locals[name]
 	case *ast.ExprPropertyFetch:
 		if phpast.IsThisVariable(typed.Var) {
 			return sc.properties[phpast.ShortName(typed.Prop)]
@@ -276,7 +287,7 @@ func classNameNode(class ast.Vertex) ast.Vertex {
 	return nil
 }
 
-func (c *collector) record(args []ast.Vertex, base Record) {
+func (c *collector) record(args []ast.Vertex, base Record, sc scope) {
 	for position, argNode := range args {
 		arg, ok := argNode.(*ast.Argument)
 		if !ok {
@@ -287,7 +298,7 @@ func (c *collector) record(args []ast.Vertex, base Record) {
 			continue
 		}
 
-		typeName := literalType(arg.Expr)
+		typeName := c.argType(arg.Expr, sc)
 		if typeName == "" {
 			continue
 		}
@@ -299,48 +310,65 @@ func (c *collector) record(args []ast.Vertex, base Record) {
 	}
 }
 
-// literalType returns the type of a literal argument expression, or "" when
-// the value is not a literal we can infer without a type engine.
-func literalType(expr ast.Vertex) string {
-	switch typed := expr.(type) {
-	case *ast.ScalarLnumber:
-		return "int"
-	case *ast.ScalarDnumber:
-		return "float"
-	case *ast.ScalarString, *ast.ScalarEncapsed, *ast.ScalarHeredoc:
-		return "string"
-	case *ast.ExprArray:
-		return "array"
-	case *ast.ExprUnaryMinus:
-		return numericType(typed.Expr)
-	case *ast.ExprUnaryPlus:
-		return numericType(typed.Expr)
-	case *ast.ExprConstFetch:
-		switch strings.ToLower(phpast.ShortName(typed.Const)) {
-		case "true", "false":
-			return "bool"
-		case "null":
-			return "null"
-		}
-		return ""
-	case *ast.ExprNew:
-		name := phpast.ShortName(typed.Class)
-		if name == "" {
-			return ""
-		}
-		return "object:" + name
-	default:
-		return ""
+// argType returns the type of an argument value: a typed variable or property
+// resolves to its class, otherwise the symbols table handles literals,
+// constants and enum cases.
+func (c *collector) argType(expr ast.Vertex, sc scope) string {
+	if class := argClass(expr, sc); class != "" {
+		return "object:" + class
 	}
+	return c.symbols.TypeOfExpr(expr, sc.class)
 }
 
-func numericType(expr ast.Vertex) string {
-	switch expr.(type) {
-	case *ast.ScalarLnumber:
-		return "int"
-	case *ast.ScalarDnumber:
-		return "float"
-	default:
-		return ""
+// argClass resolves the class of a variable or `$this->prop` argument: `$this`,
+// a typed parameter, a `new X()` local, or a typed property. Empty otherwise.
+func argClass(expr ast.Vertex, sc scope) string {
+	switch typed := expr.(type) {
+	case *ast.ExprVariable:
+		name := phpast.VariableName(expr)
+		if name == "this" {
+			return sc.class
+		}
+		if class := sc.params[name]; class != "" {
+			return class
+		}
+		return sc.locals[name]
+	case *ast.ExprPropertyFetch:
+		if phpast.IsThisVariable(typed.Var) {
+			return sc.properties[phpast.ShortName(typed.Prop)]
+		}
+	case *ast.ExprNullsafePropertyFetch:
+		if phpast.IsThisVariable(typed.Var) {
+			return sc.properties[phpast.ShortName(typed.Prop)]
+		}
+	}
+	return ""
+}
+
+// localClasses maps local variables assigned a `new X()` to their short class
+// name, so those variables resolve as arguments and call targets.
+func localClasses(stmts []ast.Vertex) map[string]string {
+	locals := map[string]string{}
+	for _, stmt := range stmts {
+		collectLocals(stmt, locals)
+	}
+	return locals
+}
+
+func collectLocals(node ast.Vertex, locals map[string]string) {
+	if node == nil {
+		return
+	}
+	if assign, ok := node.(*ast.ExprAssign); ok {
+		if name := phpast.VariableName(assign.Var); name != "" {
+			if newExpr, ok := assign.Expr.(*ast.ExprNew); ok {
+				if class := phpast.ShortName(newExpr.Class); class != "" {
+					locals[name] = class
+				}
+			}
+		}
+	}
+	for _, child := range phpast.Children(node) {
+		collectLocals(child, locals)
 	}
 }

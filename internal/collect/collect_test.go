@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/rectorphp/argtyper/internal/collect"
+	"github.com/rectorphp/argtyper/internal/symbols"
 )
 
 func TestFromSource(t *testing.T) {
@@ -106,7 +107,7 @@ func TestFromSource(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := collect.FromSource([]byte(test.src))
+			got := collect.FromSource([]byte(test.src), symbols.New())
 			if !equal(got, test.want) {
 				t.Errorf("\n got: %+v\nwant: %+v", got, test.want)
 			}

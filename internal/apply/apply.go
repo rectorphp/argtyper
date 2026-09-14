@@ -7,20 +7,22 @@ import (
 
 	"github.com/rectorphp/argtyper/internal/aggregate"
 	"github.com/rectorphp/argtyper/internal/phpast"
+	"github.com/rectorphp/argtyper/internal/symbols"
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
 	"github.com/rectorphp/php-parser-in-go/pkg/token"
 )
 
 // Source adds parameter types to a single PHP source file. It returns the new
 // source, the number of types added, and whether the file changed. On a parse
-// error the original source is returned unchanged.
-func Source(src []byte, types aggregate.Types) (string, int, bool) {
+// error the original source is returned unchanged. The symbols table resolves
+// constant and enum-case default values.
+func Source(src []byte, types aggregate.Types, table *symbols.Table) (string, int, bool) {
 	root, err := phpast.Parse(src)
 	if err != nil || root == nil {
 		return string(src), 0, false
 	}
 
-	applier := &applier{types: types}
+	applier := &applier{types: types, symbols: table}
 	applier.walk(root, nil)
 
 	if applier.added == 0 {
@@ -31,8 +33,9 @@ func Source(src []byte, types aggregate.Types) (string, int, bool) {
 }
 
 type applier struct {
-	types aggregate.Types
-	added int
+	types   aggregate.Types
+	symbols *symbols.Table
+	added   int
 }
 
 func (a *applier) walk(node ast.Vertex, class *ast.StmtClass) {
@@ -63,6 +66,10 @@ func (a *applier) applyFunction(function *ast.StmtFunction) {
 		}
 		if resolved, ok := a.types.Function(name, position); ok {
 			a.setType(param, resolved)
+			continue
+		}
+		if resolved, ok := a.defaultType(param, ""); ok {
+			a.setType(param, resolved)
 		}
 	}
 }
@@ -88,8 +95,26 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 		}
 		if resolved, ok := a.types.Method(className, name, position); ok {
 			a.setType(param, resolved)
+			continue
+		}
+		if resolved, ok := a.defaultType(param, className); ok {
+			a.setType(param, resolved)
 		}
 	}
+}
+
+// defaultType infers a parameter type from its literal default value, so
+// `$page = 1` becomes `int $page = 1` even with no call site. A `null` default
+// carries no type of its own; enclosing resolves `self::`/`static::` constants.
+func (a *applier) defaultType(param *ast.Parameter, enclosing string) (aggregate.Resolved, bool) {
+	if param.DefaultValue == nil {
+		return aggregate.Resolved{}, false
+	}
+	typeName := a.symbols.TypeOfExpr(param.DefaultValue, enclosing)
+	if typeName == "" || typeName == "null" {
+		return aggregate.Resolved{}, false
+	}
+	return aggregate.Resolved{Type: typeName}, true
 }
 
 func (a *applier) setType(param *ast.Parameter, resolved aggregate.Resolved) {
