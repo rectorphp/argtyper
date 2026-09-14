@@ -204,6 +204,16 @@ func TestApply(t *testing.T) {
 			want: "<?php\nnamespace App;\n\nfunction handle(\\App\\Entity\\Lead $item) {}",
 		},
 		{
+			name:   "skips parameter documented with an at-param tag",
+			target: "<?php\nfinal class A {\n    /**\n     * @param mixed $lead\n     */\n    public function handle($lead) {}\n    public function go() { $this->handle(1); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @param mixed $lead\n     */\n    public function handle($lead) {}\n    public function go() { $this->handle(1); }\n}",
+		},
+		{
+			name:   "types undocumented parameter beside a documented one",
+			target: "<?php\nfinal class A {\n    /**\n     * @param mixed $lead\n     */\n    public function handle($lead, $count) {}\n    public function go() { $this->handle(1, 2); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @param mixed $lead\n     */\n    public function handle($lead, int $count) {}\n    public function go() { $this->handle(1, 2); }\n}",
+		},
+		{
 			name:   "types method whose local parent does not declare it",
 			target: "<?php\nclass A extends Base {\n    public function set($v) {}\n    public function go() { $this->set(1); }\n}",
 			callers: []string{

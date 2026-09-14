@@ -63,9 +63,10 @@ func (a *applier) walk(node ast.Vertex, class *ast.StmtClass) {
 
 func (a *applier) applyFunction(function *ast.StmtFunction) {
 	name := phpast.ShortName(function.Name)
+	documented := phpast.DocParamNames(function)
 	for position, paramNode := range function.Params {
 		param, ok := paramNode.(*ast.Parameter)
-		if !ok || !typeable(param) {
+		if !ok || !typeable(param) || documented[phpast.VariableName(param.Var)] {
 			continue
 		}
 		if resolved, ok := a.types.Function(name, position); ok {
@@ -94,9 +95,10 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 		classFQCN = a.names[class]
 	}
 
+	documented := phpast.DocParamNames(method)
 	for position, paramNode := range method.Params {
 		param, ok := paramNode.(*ast.Parameter)
-		if !ok || !typeable(param) {
+		if !ok || !typeable(param) || documented[phpast.VariableName(param.Var)] {
 			continue
 		}
 		if resolved, ok := a.types.Method(className, name, position); ok {

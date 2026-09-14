@@ -5,16 +5,20 @@ package phpast
 import (
 	"bytes"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
 	"github.com/rectorphp/php-parser-in-go/pkg/conf"
 	"github.com/rectorphp/php-parser-in-go/pkg/parser"
+	"github.com/rectorphp/php-parser-in-go/pkg/token"
 	"github.com/rectorphp/php-parser-in-go/pkg/version"
 	"github.com/rectorphp/php-parser-in-go/pkg/visitor/nsresolver"
 	"github.com/rectorphp/php-parser-in-go/pkg/visitor/printer"
 	"github.com/rectorphp/php-parser-in-go/pkg/visitor/traverser"
 )
+
+var docParamPattern = regexp.MustCompile(`@param\b[^\n$]*\$(\w+)`)
 
 var phpVersion, _ = version.New("8.3")
 
@@ -111,6 +115,51 @@ func ObjectClassNode(expr ast.Vertex) ast.Vertex {
 		return typed.Class
 	case *ast.ExprClassConstFetch:
 		return typed.Class
+	}
+	return nil
+}
+
+// DocParamNames returns the parameter names (without `$`) that a function or
+// method's doc comment declares with an `@param` tag. Those parameters carry a
+// documented type the tool cannot see, so they are left untouched rather than
+// narrowed from observed call sites.
+func DocParamNames(node ast.Vertex) map[string]bool {
+	names := map[string]bool{}
+	for _, match := range docParamPattern.FindAllStringSubmatch(docComment(node), -1) {
+		names[match[1]] = true
+	}
+	return names
+}
+
+// docComment returns the doc comment attached before a function or method.
+func docComment(node ast.Vertex) string {
+	var first *token.Token
+	switch typed := node.(type) {
+	case *ast.StmtClassMethod:
+		if len(typed.Modifiers) > 0 {
+			first = identifierToken(typed.Modifiers[0])
+		}
+		if first == nil {
+			first = typed.FunctionTkn
+		}
+	case *ast.StmtFunction:
+		first = typed.FunctionTkn
+	}
+	if first == nil {
+		return ""
+	}
+
+	for _, free := range first.FreeFloating {
+		if free.ID == token.T_DOC_COMMENT {
+			return string(free.Value)
+		}
+	}
+	return ""
+}
+
+func identifierToken(node ast.Vertex) *token.Token {
+	if identifier, ok := node.(*ast.Identifier); ok {
+		return identifier.IdentifierTkn
 	}
 	return nil
 }
