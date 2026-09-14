@@ -68,13 +68,13 @@ func (c *collector) walk(node ast.Vertex, sc scope) {
 		sc = c.classScope(typed, typed.Name)
 	case *ast.StmtFunction:
 		sc.params = c.paramClasses(typed.Params, sc.classFQCN)
-		sc.locals = c.localClasses(typed.Stmts)
+		sc.locals = c.localClasses(typed.Stmts, typed.Params)
 	case *ast.StmtClassMethod:
 		sc.params = c.paramClasses(typed.Params, sc.classFQCN)
-		sc.locals = c.localClasses(phpast.Children(typed.Stmt))
+		sc.locals = c.localClasses(phpast.Children(typed.Stmt), typed.Params)
 	case *ast.ExprClosure:
 		sc.params = c.paramClasses(typed.Params, sc.classFQCN)
-		sc.locals = c.localClasses(typed.Stmts)
+		sc.locals = c.localClasses(typed.Stmts, typed.Params)
 	case *ast.ExprArrowFunction:
 		// arrow functions capture outer variables, so keep the inherited params
 		// and locals and overlay the arrow's own typed parameters.
@@ -404,20 +404,23 @@ func argClass(expr ast.Vertex, sc scope) string {
 
 // localClasses maps local variables assigned a `new X()` to their fully
 // qualified name, so those variables resolve as arguments and call targets.
-func (c *collector) localClasses(stmts []ast.Vertex) map[string]string {
+// Parameters are excluded: a reassignment like `$param = new X()` must not
+// retype the parameter's earlier uses, since the tracking is not flow sensitive.
+func (c *collector) localClasses(stmts, params []ast.Vertex) map[string]string {
+	excluded := paramNames(params)
 	locals := map[string]string{}
 	for _, stmt := range stmts {
-		c.collectLocals(stmt, locals)
+		c.collectLocals(stmt, locals, excluded)
 	}
 	return locals
 }
 
-func (c *collector) collectLocals(node ast.Vertex, locals map[string]string) {
+func (c *collector) collectLocals(node ast.Vertex, locals map[string]string, excluded map[string]bool) {
 	if node == nil {
 		return
 	}
 	if assign, ok := node.(*ast.ExprAssign); ok {
-		if name := phpast.VariableName(assign.Var); name != "" {
+		if name := phpast.VariableName(assign.Var); name != "" && !excluded[name] {
 			if newExpr, ok := assign.Expr.(*ast.ExprNew); ok {
 				if fqcn := c.names[newExpr.Class]; fqcn != "" {
 					locals[name] = fqcn
@@ -428,6 +431,19 @@ func (c *collector) collectLocals(node ast.Vertex, locals map[string]string) {
 		}
 	}
 	for _, child := range phpast.Children(node) {
-		c.collectLocals(child, locals)
+		c.collectLocals(child, locals, excluded)
 	}
+}
+
+// paramNames returns the set of a function's parameter variable names.
+func paramNames(params []ast.Vertex) map[string]bool {
+	names := map[string]bool{}
+	for _, paramNode := range params {
+		if param, ok := paramNode.(*ast.Parameter); ok {
+			if name := phpast.VariableName(param.Var); name != "" {
+				names[name] = true
+			}
+		}
+	}
+	return names
 }
