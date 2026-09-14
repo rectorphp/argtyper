@@ -13,6 +13,9 @@ import (
 // codeDirectories are the top-level directory names scanned for PHP files.
 var codeDirectories = []string{"src", "lib", "app", "test", "tests"}
 
+// skipDirectories hold third-party code that should never be typed.
+var skipDirectories = map[string]bool{"vendor": true, "node_modules": true}
+
 // CodeDirectories returns the code directories that exist in the project,
 // relative to it, sorted by name.
 func CodeDirectories(projectPath string) []string {
@@ -36,6 +39,9 @@ func PHPFiles(projectPath string) ([]string, error) {
 		err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 			if err != nil {
 				return err
+			}
+			if entry.IsDir() && skipDirectories[entry.Name()] {
+				return fs.SkipDir
 			}
 			if !entry.IsDir() && strings.HasSuffix(path, ".php") {
 				files = append(files, path)

@@ -36,6 +36,23 @@ func TestPHPFiles(t *testing.T) {
 	}
 }
 
+func TestPHPFilesSkipsVendorAndNodeModules(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "src/A.php")
+	write(t, root, "src/vendor/B.php")
+	write(t, root, "src/node_modules/C.php")
+
+	files, err := finder.PHPFiles(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []string{filepath.Join(root, "src/A.php")}
+	if len(files) != len(want) || files[0] != want[0] {
+		t.Fatalf("got %v, want %v", files, want)
+	}
+}
+
 func write(t *testing.T, root, rel string) {
 	t.Helper()
 	path := filepath.Join(root, rel)
