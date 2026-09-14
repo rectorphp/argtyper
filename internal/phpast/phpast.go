@@ -93,13 +93,19 @@ func ShortName(node ast.Vertex) string {
 
 // IsThisVariable reports whether a node is the `$this` variable.
 func IsThisVariable(node ast.Vertex) bool {
+	return VariableName(node) == "this"
+}
+
+// VariableName returns the name of an $variable node without the leading `$`,
+// or empty string when the node is not a plain variable.
+func VariableName(node ast.Vertex) string {
 	variable, ok := node.(*ast.ExprVariable)
 	if !ok {
-		return false
+		return ""
 	}
 	identifier, ok := variable.Name.(*ast.Identifier)
 	if !ok {
-		return false
+		return ""
 	}
-	return strings.TrimPrefix(string(identifier.Value), "$") == "this"
+	return strings.TrimPrefix(string(identifier.Value), "$")
 }
