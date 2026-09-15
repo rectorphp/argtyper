@@ -25,7 +25,11 @@ func Of(expr ast.Vertex) string {
 	case *ast.ExprArray:
 		return "array"
 	case *ast.ExprClosure, *ast.ExprArrowFunction:
-		return "object:Closure"
+		// a closure argument means the parameter takes a callable, which can be
+		// many things (a closure, a "func" string, a [$obj, method] array, a
+		// first-class callable). "callable" is a poison type: it is never
+		// written, and it stops the parameter from being typed at all.
+		return "callable"
 	case *ast.ExprUnaryMinus:
 		return numericType(typed.Expr)
 	case *ast.ExprUnaryPlus:
