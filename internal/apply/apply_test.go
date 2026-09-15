@@ -163,20 +163,28 @@ func TestApply(t *testing.T) {
 			want:   "<?php\nfunction take(array $items = []) {}",
 		},
 		{
-			name:   "types closure argument",
+			name:   "leaves a closure argument untyped",
 			target: "<?php\nfunction run($cb) {}",
 			callers: []string{
 				"<?php\nrun(function () {});",
 			},
-			want: "<?php\nfunction run(\\Closure $cb) {}",
+			want: "<?php\nfunction run($cb) {}",
 		},
 		{
-			name:   "types arrow function argument",
+			name:   "leaves an arrow function argument untyped",
 			target: "<?php\nfunction run($cb) {}",
 			callers: []string{
 				"<?php\nrun(fn () => 1);",
 			},
-			want: "<?php\nfunction run(\\Closure $cb) {}",
+			want: "<?php\nfunction run($cb) {}",
+		},
+		{
+			name:   "a closure poisons the parameter even with another type",
+			target: "<?php\nfunction run($cb) {}",
+			callers: []string{
+				"<?php\nrun(function () {});\nrun(1);",
+			},
+			want: "<?php\nfunction run($cb) {}",
 		},
 		{
 			name:   "types from builtin return value",

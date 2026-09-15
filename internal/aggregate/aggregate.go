@@ -66,6 +66,12 @@ func resolveGroups(groups map[string]map[string]struct{}) map[string]Resolved {
 		}
 		sort.Strings(types)
 
+		// a callable argument (a closure) leaves the parameter untyped, since a
+		// callable can take many shapes that must not be narrowed
+		if contains(types, "callable") {
+			continue
+		}
+
 		nullable := contains(types, "null")
 		members := without(types, "null")
 		if len(members) == 0 {
