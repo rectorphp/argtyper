@@ -79,6 +79,21 @@ func TestApply(t *testing.T) {
 			want:   "<?php\nfinal class A {\n    public function set(string $v) {}\n    public function go() { $this->set(1); }\n}",
 		},
 		{
+			name:   "removes a redundant param doc and its empty comment",
+			target: "<?php\nfinal class A {\n    /**\n     * @param string $v\n     */\n    public function set($v) {}\n    public function go() { $this->set(\"x\"); }\n}",
+			want:   "<?php\nfinal class A {\n    public function set(string $v) {}\n    public function go() { $this->set(\"x\"); }\n}",
+		},
+		{
+			name:   "keeps other doc tags when removing a redundant param",
+			target: "<?php\nfinal class A {\n    /**\n     * @param int $id\n     *\n     * @throws \\Exception\n     */\n    public function set($id) {}\n    public function go() { $this->set(1); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @throws \\Exception\n     */\n    public function set(int $id) {}\n    public function go() { $this->set(1); }\n}",
+		},
+		{
+			name:   "keeps a param doc that has a description",
+			target: "<?php\nfinal class A {\n    /**\n     * @param string $v the value\n     */\n    public function set($v) {}\n    public function go() { $this->set(\"x\"); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @param string $v the value\n     */\n    public function set(string $v) {}\n    public function go() { $this->set(\"x\"); }\n}",
+		},
+		{
 			name:   "unions multiple observed types",
 			target: "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); }\n}",
 			want:   "<?php\nfinal class A {\n    public function set(int|string $v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); }\n}",

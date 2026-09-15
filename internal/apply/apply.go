@@ -63,19 +63,21 @@ func (a *applier) walk(node ast.Vertex, class *ast.StmtClass) {
 
 func (a *applier) applyFunction(function *ast.StmtFunction) {
 	name := phpast.ShortName(function.Name)
+	added := map[string]string{}
 	for position, paramNode := range function.Params {
 		param, ok := paramNode.(*ast.Parameter)
 		if !ok || !typeable(param) {
 			continue
 		}
 		if resolved, ok := a.types.Function(name, position); ok {
-			a.setType(param, resolved)
+			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
 			continue
 		}
 		if resolved, ok := a.defaultType(param, "", ""); ok {
-			a.setType(param, resolved)
+			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
 		}
 	}
+	phpast.StripRedundantDocParams(function, added)
 }
 
 func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass) {
@@ -94,19 +96,21 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 		classFQCN = a.names[class]
 	}
 
+	added := map[string]string{}
 	for position, paramNode := range method.Params {
 		param, ok := paramNode.(*ast.Parameter)
 		if !ok || !typeable(param) {
 			continue
 		}
 		if resolved, ok := a.types.Method(className, name, position); ok {
-			a.setType(param, resolved)
+			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
 			continue
 		}
 		if resolved, ok := a.defaultType(param, className, classFQCN); ok {
-			a.setType(param, resolved)
+			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
 		}
 	}
+	phpast.StripRedundantDocParams(method, added)
 }
 
 // defaultType infers a parameter type from its literal default value, so
@@ -145,7 +149,9 @@ func (a *applier) objectFQCN(expr ast.Vertex, enclosingFQCN string) string {
 	return a.names[classNode]
 }
 
-func (a *applier) setType(param *ast.Parameter, resolved aggregate.Resolved) {
+// setType writes the resolved type onto the parameter and returns the type text
+// written, so the caller can drop a now-redundant @param doc line.
+func (a *applier) setType(param *ast.Parameter, resolved aggregate.Resolved) string {
 	nullable := resolved.Nullable || hasNullDefault(param)
 
 	members := make([]string, len(resolved.Types))
@@ -167,7 +173,7 @@ func (a *applier) setType(param *ast.Parameter, resolved aggregate.Resolved) {
 			Expr:        &ast.Identifier{IdentifierTkn: &token.Token{Value: []byte(members[0])}},
 		}
 		a.added++
-		return
+		return "?" + members[0]
 	}
 
 	text := strings.Join(members, "|")
@@ -176,6 +182,7 @@ func (a *applier) setType(param *ast.Parameter, resolved aggregate.Resolved) {
 	}
 	param.Type = &ast.Identifier{IdentifierTkn: &token.Token{Value: []byte(text), FreeFloating: leading}}
 	a.added++
+	return text
 }
 
 // takeVarLeading returns the leading whitespace tokens of the parameter's

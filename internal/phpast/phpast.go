@@ -5,16 +5,22 @@ package phpast
 import (
 	"bytes"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
 	"github.com/rectorphp/php-parser-in-go/pkg/conf"
 	"github.com/rectorphp/php-parser-in-go/pkg/parser"
+	"github.com/rectorphp/php-parser-in-go/pkg/token"
 	"github.com/rectorphp/php-parser-in-go/pkg/version"
 	"github.com/rectorphp/php-parser-in-go/pkg/visitor/nsresolver"
 	"github.com/rectorphp/php-parser-in-go/pkg/visitor/printer"
 	"github.com/rectorphp/php-parser-in-go/pkg/visitor/traverser"
 )
+
+// docParamLine matches a plain `@param <type> $name` line with no trailing
+// description, so only a fully redundant tag is removed.
+var docParamLine = regexp.MustCompile(`^\s*\*?\s*@param\s+(\S+)\s+\$(\w+)\s*$`)
 
 var phpVersion, _ = version.New("8.3")
 
@@ -111,6 +117,128 @@ func ObjectClassNode(expr ast.Vertex) ast.Vertex {
 		return typed.Class
 	case *ast.ExprClassConstFetch:
 		return typed.Class
+	}
+	return nil
+}
+
+// StripRedundantDocParams removes `@param` lines from a function or method's doc
+// comment when the type they declare equals the type just added for that
+// parameter (added maps parameter name to the written type text). When nothing
+// meaningful remains, the whole doc comment is removed.
+func StripRedundantDocParams(node ast.Vertex, added map[string]string) {
+	if len(added) == 0 {
+		return
+	}
+	leading := leadingToken(node)
+	if leading == nil {
+		return
+	}
+
+	index := -1
+	for i, free := range leading.FreeFloating {
+		if free.ID == token.T_DOC_COMMENT {
+			index = i
+			break
+		}
+	}
+	if index < 0 {
+		return
+	}
+
+	stripped, changed, empty := stripDocParamLines(string(leading.FreeFloating[index].Value), added)
+	if !changed {
+		return
+	}
+	if !empty {
+		leading.FreeFloating[index].Value = []byte(stripped)
+		return
+	}
+
+	// The doc comment is now empty, so drop it along with the blank line it
+	// leaves behind (the whitespace token in front of it).
+	drop := map[int]bool{index: true}
+	if index > 0 && leading.FreeFloating[index-1].ID == token.T_WHITESPACE {
+		drop[index-1] = true
+	}
+	kept := leading.FreeFloating[:0:0]
+	for i, free := range leading.FreeFloating {
+		if !drop[i] {
+			kept = append(kept, free)
+		}
+	}
+	leading.FreeFloating = kept
+}
+
+// stripDocParamLines removes redundant @param lines, reporting whether anything
+// changed and whether the doc comment has no content left.
+func stripDocParamLines(doc string, added map[string]string) (result string, changed, empty bool) {
+	lines := strings.Split(doc, "\n")
+	kept := make([]string, 0, len(lines))
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+		if match := docParamLine.FindStringSubmatch(line); match != nil {
+			if native, ok := added[match[2]]; ok && normalizeDocType(match[1]) == normalizeDocType(native) {
+				changed = true
+				// also drop a blank comment line that followed the tag
+				if i+1 < len(lines) && isBlankCommentLine(lines[i+1]) {
+					i++
+				}
+				continue
+			}
+		}
+		kept = append(kept, line)
+	}
+	if !changed {
+		return doc, false, false
+	}
+	return strings.Join(kept, "\n"), true, docIsEmpty(kept)
+}
+
+// isBlankCommentLine reports whether a doc line carries only the `*` marker.
+func isBlankCommentLine(line string) bool {
+	text := strings.TrimSpace(line)
+	return text == "" || text == "*"
+}
+
+// docIsEmpty reports whether the remaining lines carry no content beyond the
+// comment markers.
+func docIsEmpty(lines []string) bool {
+	for _, line := range lines {
+		text := strings.TrimSpace(line)
+		text = strings.TrimPrefix(text, "/**")
+		text = strings.TrimSuffix(text, "*/")
+		text = strings.TrimPrefix(text, "*")
+		if strings.TrimSpace(text) != "" {
+			return false
+		}
+	}
+	return true
+}
+
+func normalizeDocType(name string) string {
+	return strings.TrimPrefix(name, "\\")
+}
+
+// leadingToken returns the first token of a function or method, which carries
+// the doc comment in its leading free-floating tokens.
+func leadingToken(node ast.Vertex) *token.Token {
+	switch typed := node.(type) {
+	case *ast.StmtClassMethod:
+		if len(typed.Modifiers) > 0 {
+			if first := identifierToken(typed.Modifiers[0]); first != nil {
+				return first
+			}
+		}
+		return typed.FunctionTkn
+	case *ast.StmtFunction:
+		return typed.FunctionTkn
+	}
+	return nil
+}
+
+func identifierToken(node ast.Vertex) *token.Token {
+	if identifier, ok := node.(*ast.Identifier); ok {
+		return identifier.IdentifierTkn
 	}
 	return nil
 }
