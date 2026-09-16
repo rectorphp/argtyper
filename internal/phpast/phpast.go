@@ -177,7 +177,7 @@ func stripDocParamLines(doc string, added map[string]string) (result string, cha
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
 		if match := docParamLine.FindStringSubmatch(line); match != nil {
-			if native, ok := added[match[2]]; ok && normalizeDocType(match[1]) == normalizeDocType(native) {
+			if native, ok := added[match[2]]; ok && docTypeRedundant(match[1], native) {
 				changed = true
 				// also drop a blank comment line that followed the tag
 				if i+1 < len(lines) && isBlankCommentLine(lines[i+1]) {
@@ -219,6 +219,16 @@ func docIsEmpty(lines []string) bool {
 // union member order and of whether a class is written as a short name or a
 // fully qualified one: each member is cut to its last name part and the members
 // are sorted.
+// docTypeRedundant reports whether a `@param` type adds nothing over the type
+// just written on the parameter: either it equals the added type, or it is
+// `mixed`, which carries no information once a real type is present.
+func docTypeRedundant(docType, native string) bool {
+	if strings.EqualFold(docType, "mixed") {
+		return true
+	}
+	return normalizeDocType(docType) == normalizeDocType(native)
+}
+
 func normalizeDocType(name string) string {
 	parts := strings.Split(name, "|")
 	for i, part := range parts {

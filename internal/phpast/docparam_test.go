@@ -39,10 +39,16 @@ func TestStripRedundantDocParams(t *testing.T) {
 			want:  "<?php\nclass A {\n    public function m($e) {}\n}",
 		},
 		{
-			name:  "keeps a tag whose type differs from the added type",
+			name:  "drops a mixed tag once any type is added",
 			src:   "<?php\nclass A {\n    /**\n     * @param mixed $v\n     */\n    public function m($v) {}\n}",
 			added: map[string]string{"v": "\\DateTime"},
-			want:  "<?php\nclass A {\n    /**\n     * @param mixed $v\n     */\n    public function m($v) {}\n}",
+			want:  "<?php\nclass A {\n    public function m($v) {}\n}",
+		},
+		{
+			name:  "keeps a tag whose type differs from the added type",
+			src:   "<?php\nclass A {\n    /**\n     * @param int $v\n     */\n    public function m($v) {}\n}",
+			added: map[string]string{"v": "\\DateTime"},
+			want:  "<?php\nclass A {\n    /**\n     * @param int $v\n     */\n    public function m($v) {}\n}",
 		},
 	}
 
