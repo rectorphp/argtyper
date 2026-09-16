@@ -14,10 +14,7 @@ jobs:
 
             -   uses: actions/setup-go@v5
                 with:
-                    go-version: 'stable'
-
-            -   run: test -z "$(gofmt -l .)" || { gofmt -d .; exit 1; }
-                name: gofmt
+                    go-version: '1.26.6'
 
             -   run: go vet ./...
 
@@ -27,3 +24,66 @@ jobs:
 
             -   run: go mod tidy && git diff --exit-code go.mod go.sum
                 name: go mod tidy is up to date
+
+    format:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v4
+
+            -   uses: actions/setup-go@v5
+                with:
+                    go-version: '1.26.6'
+
+            -   name: Check gofmt -s
+                run: |
+                    unformatted=$(gofmt -l -s .)
+                    if [ -n "$unformatted" ]; then
+                        echo "These files need 'gofmt -s -w':"
+                        echo "$unformatted"
+                        exit 1
+                    fi
+
+            -   name: Check go fix ./...
+                if: ${{ !cancelled() }}
+                run: |
+                    changed=$(go fix -diff ./... 2>/dev/null | sed -n "s#^--- $PWD/\(.*\) (old)#\1#p")
+                    if [ -n "$changed" ]; then
+                        echo "These files need 'go fix ./...':"
+                        echo "$changed"
+                        exit 1
+                    fi
+
+    analysis:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v4
+
+            -   uses: actions/setup-go@v5
+                with:
+                    go-version: '1.26.6'
+
+            -   name: gopls modernize
+                run: go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest ./...
+
+            -   uses: golangci/golangci-lint-action@v8
+                if: ${{ !cancelled() }}
+                with:
+                    version: v2.12.2
+
+    security:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v4
+
+            -   uses: actions/setup-go@v5
+                with:
+                    go-version: '1.26.6'
+
+            -   uses: actions/cache@v4
+                with:
+                    path: ~/go/bin/govulncheck
+                    key: govulncheck-v1.6.0
+            -   name: install govulncheck
+                run: test -x ~/go/bin/govulncheck || go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+            -   name: govulncheck
+                run: govulncheck ./...

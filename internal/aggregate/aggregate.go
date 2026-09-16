@@ -3,6 +3,7 @@
 package aggregate
 
 import (
+	"slices"
 	"sort"
 	"strconv"
 
@@ -99,12 +100,7 @@ func functionKey(name string, position int) string {
 }
 
 func contains(values []string, needle string) bool {
-	for _, value := range values {
-		if value == needle {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(values, needle)
 }
 
 func without(values []string, needle string) []string {

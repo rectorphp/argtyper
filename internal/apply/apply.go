@@ -211,8 +211,8 @@ func takeVarLeading(param *ast.Parameter) []*token.Token {
 // typeText turns a resolved type into the text written into source. The trailing
 // space that separates the type from the variable is added by the caller.
 func typeText(resolved string) string {
-	if strings.HasPrefix(resolved, "object:") {
-		return "\\" + strings.TrimPrefix(resolved, "object:")
+	if after, ok := strings.CutPrefix(resolved, "object:"); ok {
+		return "\\" + after
 	}
 	return resolved
 }

@@ -3,6 +3,7 @@
 package collect
 
 import (
+	"maps"
 	"strings"
 
 	"github.com/rectorphp/argtyper/internal/phpast"
@@ -216,9 +217,7 @@ func (c *collector) classProperties(class ast.Vertex, enclosing string) map[stri
 			if phpast.ShortName(typed.Name) != "__construct" {
 				continue
 			}
-			for name, className := range c.promotedProperties(typed.Params, enclosing) {
-				properties[name] = className
-			}
+			maps.Copy(properties, c.promotedProperties(typed.Params, enclosing))
 		}
 	}
 
@@ -301,12 +300,8 @@ func merge(base, over map[string]string) map[string]string {
 		return base
 	}
 	merged := make(map[string]string, len(base)+len(over))
-	for name, class := range base {
-		merged[name] = class
-	}
-	for name, class := range over {
-		merged[name] = class
-	}
+	maps.Copy(merged, base)
+	maps.Copy(merged, over)
 	return merged
 }
 

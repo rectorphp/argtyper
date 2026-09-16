@@ -24,7 +24,7 @@ var docParamLine = regexp.MustCompile(`^\s*\*?\s*@param\s+(\S+)\s+\$(\w+)\s*$`)
 
 var phpVersion, _ = version.New("8.3")
 
-var vertexType = reflect.TypeOf((*ast.Vertex)(nil)).Elem()
+var vertexType = reflect.TypeFor[ast.Vertex]()
 
 // Parse turns PHP source into an AST root.
 func Parse(src []byte) (ast.Vertex, error) {
@@ -45,8 +45,7 @@ func Children(node ast.Vertex) []ast.Vertex {
 	value := reflect.ValueOf(node).Elem()
 
 	var children []ast.Vertex
-	for i := 0; i < value.NumField(); i++ {
-		field := value.Field(i)
+	for _, field := range value.Fields() {
 
 		switch field.Kind() {
 		case reflect.Interface:
