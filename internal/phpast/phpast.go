@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
@@ -214,8 +215,20 @@ func docIsEmpty(lines []string) bool {
 	return true
 }
 
+// normalizeDocType reduces a type to a form that compares equal regardless of
+// union member order and of whether a class is written as a short name or a
+// fully qualified one: each member is cut to its last name part and the members
+// are sorted.
 func normalizeDocType(name string) string {
-	return strings.TrimPrefix(name, "\\")
+	parts := strings.Split(name, "|")
+	for i, part := range parts {
+		if index := strings.LastIndex(part, "\\"); index >= 0 {
+			part = part[index+1:]
+		}
+		parts[i] = part
+	}
+	slices.Sort(parts)
+	return strings.Join(parts, "|")
 }
 
 // leadingToken returns the first token of a function or method, which carries
