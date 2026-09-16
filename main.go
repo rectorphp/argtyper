@@ -58,12 +58,11 @@ func run(args []string) error {
 	// gather project symbols (enums, constants) so argument values that
 	// reference them resolve to a type just like literals do
 	table := symbols.New()
-	for _, file := range files {
-		src, err := os.ReadFile(file)
-		if err != nil {
-			return err
-		}
+	if err := progressEach("scanning", files, func(_ string, src []byte) error {
 		table.CollectSource(src)
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	// build the inheritance table from the project and its vendor directory, so
@@ -73,23 +72,22 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	for _, file := range append(append([]string{}, files...), vendorFiles...) {
-		src, err := os.ReadFile(file)
-		if err != nil {
-			return err
-		}
+	allFiles := append(append([]string{}, files...), vendorFiles...)
+	if err := progressEach("parsing", allFiles, func(_ string, src []byte) error {
 		inheritance.CollectSource(src)
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	// 1. collect literal argument types across the whole project
 	fmt.Println("1. Collecting argument types...")
 	var records []collect.Record
-	for _, file := range files {
-		src, err := os.ReadFile(file)
-		if err != nil {
-			return err
-		}
+	if err := progressEach("collecting", files, func(_ string, src []byte) error {
 		records = append(records, collect.FromSource(src, table)...)
+		return nil
+	}); err != nil {
+		return err
 	}
 	fmt.Printf("   Found %d arg types\n\n", len(records))
 
@@ -102,15 +100,10 @@ func run(args []string) error {
 		fmt.Println("2. Adding types to parameters...")
 	}
 	added := 0
-	for _, file := range files {
-		src, err := os.ReadFile(file)
-		if err != nil {
-			return err
-		}
-
+	if err := progressEach("applying", files, func(file string, src []byte) error {
 		output, count, changed := apply.Source(src, types, table, inheritance)
 		if !changed {
-			continue
+			return nil
 		}
 
 		if dry {
@@ -118,13 +111,16 @@ func run(args []string) error {
 				fmt.Print(patch)
 			}
 			added += count
-			continue
+			return nil
 		}
 
 		if err := os.WriteFile(file, []byte(output), 0o644); err != nil {
 			return err
 		}
 		added += count
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	if added == 0 {
