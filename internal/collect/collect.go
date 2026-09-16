@@ -325,16 +325,26 @@ func (c *collector) record(args []ast.Vertex, base Record, sc scope) {
 			continue
 		}
 
-		typeName := c.argType(arg.Expr, sc)
-		if typeName == "" {
-			continue
+		for _, typeName := range c.argTypes(arg.Expr, sc) {
+			record := base
+			record.Position = position
+			record.Type = typeName
+			c.records = append(c.records, record)
 		}
-
-		record := base
-		record.Position = position
-		record.Type = typeName
-		c.records = append(c.records, record)
 	}
+}
+
+// argTypes returns the type(s) an argument contributes. A coalesce expression
+// (`$x ?? null`) contributes the types of both sides, so `... ?? null` makes the
+// parameter nullable; every other expression contributes at most one type.
+func (c *collector) argTypes(expr ast.Vertex, sc scope) []string {
+	if coalesce, ok := expr.(*ast.ExprBinaryCoalesce); ok {
+		return append(c.argTypes(coalesce.Left, sc), c.argTypes(coalesce.Right, sc)...)
+	}
+	if typeName := c.argType(expr, sc); typeName != "" {
+		return []string{typeName}
+	}
+	return nil
 }
 
 // argType returns the type of an argument value as a fully qualified object
@@ -344,6 +354,13 @@ func (c *collector) record(args []ast.Vertex, base Record, sc scope) {
 func (c *collector) argType(expr ast.Vertex, sc scope) string {
 	if class := argClass(expr, sc); class != "" {
 		return "object:" + class
+	}
+
+	switch expr.(type) {
+	case *ast.ExprMethodCall, *ast.ExprNullsafeMethodCall:
+		if class := c.newChainClass(expr); class != "" {
+			return "object:" + class
+		}
 	}
 
 	typeName := c.symbols.TypeOfExpr(expr, sc.class)
@@ -370,6 +387,32 @@ func (c *collector) objectFQCN(expr ast.Vertex, sc scope) string {
 		return ""
 	}
 	return c.names[classNode]
+}
+
+// newChainClass returns the fully qualified class of the object a method chain
+// is rooted at, when that root is a `new X()`. Fluent methods are assumed to
+// return their receiver, so `new X()->modify(...)` has type X. Empty when the
+// chain is not rooted at a new, or the class is self/static/parent.
+func (c *collector) newChainClass(expr ast.Vertex) string {
+	for {
+		switch typed := expr.(type) {
+		case *ast.ExprMethodCall:
+			expr = typed.Var
+		case *ast.ExprNullsafeMethodCall:
+			expr = typed.Var
+		case *ast.ExprNew:
+			switch strings.ToLower(phpast.ShortName(typed.Class)) {
+			case "", "self", "static", "parent":
+				return ""
+			}
+			if fqcn := c.names[typed.Class]; fqcn != "" {
+				return fqcn
+			}
+			return phpast.ShortName(typed.Class)
+		default:
+			return ""
+		}
+	}
 }
 
 // argClass resolves the fully qualified class of a variable or `$this->prop`

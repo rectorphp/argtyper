@@ -104,6 +104,29 @@ func TestFromSource(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "method chain rooted at new resolves to receiver class",
+			src:  "<?php\nclass A {\n  function go() { $this->set(new \\DateTime()->modify('+2 hours')); }\n}",
+			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: "object:DateTime"}},
+		},
+		{
+			name: "nullsafe method chain rooted at new resolves to receiver class",
+			src:  "<?php\nclass A {\n  function go() { $this->set(new \\DateTime()?->modify('+2 hours')); }\n}",
+			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: "object:DateTime"}},
+		},
+		{
+			name: "coalesce contributes both sides",
+			src:  "<?php\nclass A {\n  function go($e) { $this->set('x' ?? null); }\n}",
+			want: []collect.Record{
+				{Class: "A", Name: "set", Position: 0, Type: "string"},
+				{Class: "A", Name: "set", Position: 0, Type: "null"},
+			},
+		},
+		{
+			name: "coalesce with unresolvable left contributes null only",
+			src:  "<?php\nclass A {\n  function go($e) { $this->set($e['k'] ?? null); }\n}",
+			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: "null"}},
+		},
+		{
 			name: "skips parent static call",
 			src:  "<?php\nclass A {\n  function go() { parent::set(1); }\n}",
 			want: nil,
