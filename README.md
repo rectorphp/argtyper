@@ -107,6 +107,14 @@ $this->handle("text"); // string  -> parameter is left untyped
 go install github.com/rectorphp/argtyper@latest
 ```
 
+Or build from source:
+
+```bash
+git clone https://github.com/rectorphp/argtyper
+cd argtyper
+make build   # produces ./argtyper
+```
+
 ## Usage
 
 ```bash
@@ -115,6 +123,15 @@ argtyper add-types [project-path]
 
 `project-path` defaults to the current directory. The tool scans the `src`,
 `lib`, `app`, `test` and `tests` directories.
+
+Preview the changes without writing them with `--dry`:
+
+```bash
+argtyper add-types . --dry
+```
+
+It prints the diff of the types that would be added and leaves every file
+untouched.
 
 <br>
 
