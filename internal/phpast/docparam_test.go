@@ -27,6 +27,18 @@ func TestStripRedundantDocParams(t *testing.T) {
 			want:  "<?php\nclass A {\n    public function m($d) {}\n}",
 		},
 		{
+			name:  "matches a union regardless of member order",
+			src:   "<?php\nclass A {\n    /**\n     * @param string|array $c\n     */\n    public function m($c) {}\n}",
+			added: map[string]string{"c": "array|string"},
+			want:  "<?php\nclass A {\n    public function m($c) {}\n}",
+		},
+		{
+			name:  "matches an imported short name against a fully qualified union member",
+			src:   "<?php\nclass A {\n    /**\n     * @param CompositeExpression|string $e\n     */\n    public function m($e) {}\n}",
+			added: map[string]string{"e": "\\Doctrine\\DBAL\\Query\\Expression\\CompositeExpression|string"},
+			want:  "<?php\nclass A {\n    public function m($e) {}\n}",
+		},
+		{
 			name:  "keeps a tag whose type differs from the added type",
 			src:   "<?php\nclass A {\n    /**\n     * @param mixed $v\n     */\n    public function m($v) {}\n}",
 			added: map[string]string{"v": "\\DateTime"},
