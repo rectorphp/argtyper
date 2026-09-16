@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/rectorphp/argtyper/internal/aggregate"
 	"github.com/rectorphp/argtyper/internal/apply"
@@ -99,40 +100,41 @@ func run(args []string) error {
 	} else {
 		fmt.Println("2. Adding types to parameters...")
 	}
-	added := 0
+	var addedTypes []string
 	if err := progressEach("applying", files, func(file string, src []byte) error {
-		output, count, changed := apply.Source(src, types, table, inheritance)
+		output, added, changed := apply.Source(src, types, table, inheritance)
 		if !changed {
 			return nil
 		}
+		addedTypes = append(addedTypes, added...)
 
 		if dry {
 			if patch, ok := diff.Lines(file, string(src), output); ok {
-				fmt.Print(patch)
+				fmt.Print(colorizePatch(patch))
 			}
-			added += count
 			return nil
 		}
 
 		if err := os.WriteFile(file, []byte(output), 0o644); err != nil {
 			return err
 		}
-		added += count
 		return nil
 	}); err != nil {
 		return err
 	}
 
-	if added == 0 {
+	if len(addedTypes) == 0 {
 		fmt.Println("   No new types added. Is your code that good?")
 		return nil
 	}
 
+	printOverview(addedTypes)
+
 	if dry {
-		fmt.Printf("\n   Dry run: %d types would be added\n", added)
+		fmt.Printf("\n   Dry run: %s types would be added\n", paint(ansiBold, strconv.Itoa(len(addedTypes))))
 		return nil
 	}
 
-	fmt.Printf("   Finished! Added %d new types\n", added)
+	fmt.Printf("\n   %s\n", paint(ansiBold+ansiGreen, fmt.Sprintf("Finished! Added %d new types", len(addedTypes))))
 	return nil
 }

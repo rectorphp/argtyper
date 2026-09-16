@@ -23,8 +23,8 @@ func run(target string, sources ...string) (string, int) {
 		records = append(records, collect.FromSource([]byte(source), table)...)
 	}
 	types := aggregate.Resolve(records)
-	output, count, _ := apply.Source([]byte(target), types, table, inheritance)
-	return output, count
+	output, added, _ := apply.Source([]byte(target), types, table, inheritance)
+	return output, len(added)
 }
 
 func TestApply(t *testing.T) {
@@ -281,8 +281,8 @@ func TestApply(t *testing.T) {
 
 func TestNoTypesReturnsUnchanged(t *testing.T) {
 	src := "<?php\nfunction greet($who) {}"
-	output, count, changed := apply.Source([]byte(src), aggregate.Resolve(nil), symbols.New(), inherit.New())
-	if changed || count != 0 || output != src {
-		t.Errorf("expected unchanged, got changed=%v count=%d", changed, count)
+	output, added, changed := apply.Source([]byte(src), aggregate.Resolve(nil), symbols.New(), inherit.New())
+	if changed || len(added) != 0 || output != src {
+		t.Errorf("expected unchanged, got changed=%v count=%d", changed, len(added))
 	}
 }

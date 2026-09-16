@@ -14,21 +14,22 @@ import (
 )
 
 // Source adds parameter types to a single PHP source file. It returns the new
-// source, the number of types added, and whether the file changed. On a parse
-// error the original source is returned unchanged. The symbols table resolves
-// constant and enum-case default values; the inheritance table decides whether
-// typing a method would change an inherited signature.
-func Source(src []byte, types aggregate.Types, table *symbols.Table, inheritance *inherit.Table) (string, int, bool) {
+// source, the type declarations added (their written text, e.g. "int" or
+// "?string" or "\Foo"), and whether the file changed. On a parse error the
+// original source is returned unchanged. The symbols table resolves constant
+// and enum-case default values; the inheritance table decides whether typing a
+// method would change an inherited signature.
+func Source(src []byte, types aggregate.Types, table *symbols.Table, inheritance *inherit.Table) (string, []string, bool) {
 	root, err := phpast.Parse(src)
 	if err != nil || root == nil {
-		return string(src), 0, false
+		return string(src), nil, false
 	}
 
 	applier := &applier{types: types, symbols: table, inheritance: inheritance, names: phpast.ResolveNames(root)}
 	applier.walk(root, nil)
 
-	if applier.added == 0 {
-		return string(src), 0, false
+	if len(applier.added) == 0 {
+		return string(src), nil, false
 	}
 
 	return phpast.Print(root), applier.added, true
@@ -39,7 +40,7 @@ type applier struct {
 	symbols     *symbols.Table
 	inheritance *inherit.Table
 	names       map[ast.Vertex]string
-	added       int
+	added       []string
 }
 
 func (a *applier) walk(node ast.Vertex, class *ast.StmtClass) {
@@ -172,8 +173,9 @@ func (a *applier) setType(param *ast.Parameter, resolved aggregate.Resolved) str
 			QuestionTkn: &token.Token{Value: []byte("?"), FreeFloating: leading},
 			Expr:        &ast.Identifier{IdentifierTkn: &token.Token{Value: []byte(members[0])}},
 		}
-		a.added++
-		return "?" + members[0]
+		nullableText := "?" + members[0]
+		a.added = append(a.added, nullableText)
+		return nullableText
 	}
 
 	text := strings.Join(members, "|")
@@ -181,7 +183,7 @@ func (a *applier) setType(param *ast.Parameter, resolved aggregate.Resolved) str
 		text += "|null"
 	}
 	param.Type = &ast.Identifier{IdentifierTkn: &token.Token{Value: []byte(text), FreeFloating: leading}}
-	a.added++
+	a.added = append(a.added, text)
 	return text
 }
 
