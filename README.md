@@ -91,13 +91,52 @@ $this->setLocale(null);
  }
 ```
 
-**Skips the ambiguous cases** - if two different types reach the same
-parameter, it leaves the parameter alone rather than guessing:
+**Union types** when two or more different types reach the same parameter -
+instead of guessing or giving up, it writes them all:
 
 ```php
 $this->handle(1);      // int
-$this->handle("text"); // string  -> parameter is left untyped
+$this->handle("text"); // string
 ```
+
+```diff
+-public function handle($value)
++public function handle(int|string $value)
+ {
+ }
+```
+
+There is no cap on the number of union members, and they are sorted
+alphabetically. A nullable union is written with a trailing `|null` (since `?`
+only works for a single type). The one type it will not accept is `callable`
+(a closure or arrow function) - that poisons the parameter and it is left
+untyped.
+
+**Default values** are typed too, even without a call site:
+
+```diff
+-public function paginate($page = 1)
++public function paginate(int $page = 1)
+ {
+ }
+```
+
+**More argument sources** than plain literals:
+
+* `Foo::class` and enum cases (`Status::Active`) - resolved to `string` / the enum.
+* project constants, class constants and `define()` values.
+* a handful of built-in functions with a known return type, e.g. `strlen()`
+  (`int`), `sprintf()` (`string`), `round()` (`float`).
+* `new X()`, method chains on new objects (`(new X())->modify()` -> `X`), and
+  `$expr ?? null` (contributes both sides, so it becomes nullable).
+
+**Docblock cleanup** - once a real type is added, a now-redundant `@param` line
+is removed, including `@param mixed`. Matching ignores union member order and
+FQN vs short name, so `@param Foo|Bar` and `@param \App\Bar|\App\Foo` both drop.
+
+**Colored, informative output** - a live progress bar per phase, colored `--dry`
+diffs, and a summary of the added types grouped by category (scalar, object,
+array, union). Colors respect `NO_COLOR` and disable on non-TTY output.
 
 <br>
 
@@ -137,20 +176,21 @@ untouched.
 
 ## How it works
 
-1. **Collect** - it walks every call site and records the type of each *literal*
-   argument: `int`, `float`, `string`, `bool`, `array`, `null`, and `new X()`
-   as an object.
-2. **Resolve** - it groups the recorded types per parameter position and keeps
-   only the unambiguous ones: a single type, or a single type plus `null`
-   (which becomes nullable).
+1. **Collect** - it walks every call site and records the type of each argument
+   it can resolve: `int`, `float`, `string`, `bool`, `array`, `null`, `new X()`
+   objects, `Foo::class`, enum cases, constants, and a few built-in function
+   returns.
+2. **Resolve** - it groups the recorded types per parameter position. A single
+   type is used directly; two or more distinct types become a union; `null`
+   becomes the nullable flag rather than a union member.
 3. **Apply** - it adds each resolved type to the definitions that are still
-   missing one, and reprints the file. Unchanged code keeps its exact
-   formatting.
+   missing one, removes any now-redundant `@param` docblock, and reprints the
+   file. Unchanged code keeps its exact formatting.
 
 Rules it follows:
 
-* Parameters that already have a type are left untouched.
-* Multiple different types for one parameter are skipped as ambiguous.
+* Parameters that already have a type, and variadics, are left untouched.
+* A `callable` argument poisons the parameter - it is left untyped.
 * Magic methods are skipped, except `__construct`.
 * Methods that might override a parent or interface are skipped, unless they
   are private or a constructor.
@@ -163,12 +203,15 @@ ArgTyper reads the syntax tree only - it does not run full type inference. That
 keeps it fast and dependency-free, and limits it to what can be resolved
 statically:
 
-* **Literal arguments** - `f(324)`, `f("x")`, `f([1, 2])`. Variables and
-  expressions are skipped, because their type is unknown without inference.
+* **Resolvable arguments** - literals (`f(324)`, `f("x")`, `f([1, 2])`), plus
+  the extra sources above (`Foo::class`, enum cases, constants, `new X()`,
+  known built-in returns). Free variables and arbitrary expressions are still
+  skipped, because their type is unknown without inference.
 * **Statically resolvable targets** - `new X()`, `X::method()`, `self::method()`,
-  `$this->method()` and plain `function()` calls. A call on another variable,
-  such as `$service->method(...)`, is skipped, because the class behind
-  `$service` cannot be known from syntax alone.
+  `static::method()`, `$this->method()` and plain `function()` calls. A call on
+  another variable, such as `$service->method(...)`, is resolved only when the
+  class behind `$service` is known from syntax - a typed parameter, a typed
+  property, or a local assigned `new X()`. `parent::` is not resolved.
 * **Short class names** - classes are matched by their short name, not the fully
   qualified name.
 
