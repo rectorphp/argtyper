@@ -19,15 +19,15 @@ import (
 // "?string" or "\Foo"), and whether the file changed. On a parse error the
 // original source is returned unchanged. The symbols table resolves constant
 // and enum-case default values; the inheritance table decides whether typing a
-// method would change an inherited signature. With literalsOnly, only string
-// parameters that get a `'a'|'b'` literal doc type are changed.
-func Source(src []byte, types aggregate.Types, table *symbols.Table, inheritance *inherit.Table, literalsOnly bool) (string, []string, bool) {
+// method would change an inherited signature. The options limit which types
+// are added.
+func Source(src []byte, types aggregate.Types, table *symbols.Table, inheritance *inherit.Table, options Options) (string, []string, bool) {
 	root, err := phpast.Parse(src)
 	if err != nil || root == nil {
 		return string(src), nil, false
 	}
 
-	applier := &applier{types: types, symbols: table, inheritance: inheritance, names: phpast.ResolveNames(root), literalsOnly: literalsOnly}
+	applier := &applier{types: types, symbols: table, inheritance: inheritance, names: phpast.ResolveNames(root), options: options}
 	applier.walk(root, nil)
 
 	if len(applier.added) == 0 {
@@ -37,13 +37,41 @@ func Source(src []byte, types aggregate.Types, table *symbols.Table, inheritance
 	return phpast.Print(root), applier.added, true
 }
 
+// Options limit the added types to some kinds. With none set, every type is
+// added; with one or more set, only the chosen kinds are.
+type Options struct {
+	Literals bool // string types that get a `'a'|'b'` literal doc type
+	Objects  bool // object types, including unions made only of objects
+}
+
+// allows reports whether a resolved type passes the options; docType is its
+// literal doc type, if any.
+func (o Options) allows(resolved aggregate.Resolved, docType string) bool {
+	if !o.Literals && !o.Objects {
+		return true
+	}
+	if o.Literals && docType != "" {
+		return true
+	}
+	return o.Objects && onlyObjects(resolved)
+}
+
+func onlyObjects(resolved aggregate.Resolved) bool {
+	for _, member := range resolved.Types {
+		if !strings.HasPrefix(member, "object:") {
+			return false
+		}
+	}
+	return len(resolved.Types) > 0
+}
+
 type applier struct {
-	types        aggregate.Types
-	symbols      *symbols.Table
-	inheritance  *inherit.Table
-	names        map[ast.Vertex]string
-	added        []string
-	literalsOnly bool
+	types       aggregate.Types
+	symbols     *symbols.Table
+	inheritance *inherit.Table
+	names       map[ast.Vertex]string
+	added       []string
+	options     Options
 }
 
 func (a *applier) walk(node ast.Vertex, class *ast.StmtClass) {
@@ -77,7 +105,7 @@ func (a *applier) applyFunction(function *ast.StmtFunction) {
 		}
 		if resolved, ok := a.types.Function(name, position); ok {
 			docType := literalDocType(param, resolved)
-			if a.literalsOnly && docType == "" {
+			if !a.options.allows(resolved, docType) {
 				continue
 			}
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
@@ -87,10 +115,7 @@ func (a *applier) applyFunction(function *ast.StmtFunction) {
 			}
 			continue
 		}
-		if a.literalsOnly {
-			continue
-		}
-		if resolved, ok := a.defaultType(param, "", ""); ok {
+		if resolved, ok := a.defaultType(param, "", ""); ok && a.options.allows(resolved, "") {
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
 		}
 	}
@@ -124,7 +149,7 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 		}
 		if resolved, ok := a.types.Method(className, name, position); ok {
 			docType := literalDocType(param, resolved)
-			if a.literalsOnly && docType == "" {
+			if !a.options.allows(resolved, docType) {
 				continue
 			}
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
@@ -134,10 +159,7 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 			}
 			continue
 		}
-		if a.literalsOnly {
-			continue
-		}
-		if resolved, ok := a.defaultType(param, className, classFQCN); ok {
+		if resolved, ok := a.defaultType(param, className, classFQCN); ok && a.options.allows(resolved, "") {
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
 		}
 	}

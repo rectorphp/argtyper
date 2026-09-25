@@ -23,7 +23,7 @@ func run(target string, sources ...string) (string, int) {
 		records = append(records, collect.FromSource([]byte(source), table)...)
 	}
 	types := aggregate.Resolve(records)
-	output, added, _ := apply.Source([]byte(target), types, table, inheritance, false)
+	output, added, _ := apply.Source([]byte(target), types, table, inheritance, apply.Options{})
 	return output, len(added)
 }
 
@@ -354,7 +354,7 @@ func TestApply(t *testing.T) {
 
 func TestNoTypesReturnsUnchanged(t *testing.T) {
 	src := "<?php\nfunction greet($who) {}"
-	output, added, changed := apply.Source([]byte(src), aggregate.Resolve(nil), symbols.New(), inherit.New(), false)
+	output, added, changed := apply.Source([]byte(src), aggregate.Resolve(nil), symbols.New(), inherit.New(), apply.Options{})
 	if changed || len(added) != 0 || output != src {
 		t.Errorf("expected unchanged, got changed=%v count=%d", changed, len(added))
 	}
@@ -365,10 +365,37 @@ func TestLiteralsOnly(t *testing.T) {
 	table := symbols.New()
 	types := aggregate.Resolve(collect.FromSource([]byte(src), table))
 
-	output, added, _ := apply.Source([]byte(src), types, table, inherit.New(), true)
+	output, added, _ := apply.Source([]byte(src), types, table, inherit.New(), apply.Options{Literals: true})
 
 	want := "<?php\n/**\n * @param 'a'|'b' $v\n */\nfunction pick(string $v, $count, $page = 1) {}\npick('a', 1);\npick('b', 2);"
 	if output != want || len(added) != 1 {
+		t.Errorf("\n got: %q (%d added)\nwant: %q", output, len(added), want)
+	}
+}
+
+func TestObjectsOnly(t *testing.T) {
+	src := "<?php\nfunction save($user, $item, $count, $mixed, $status = Status::Active) {}\nenum Status {\n    case Active;\n}\nsave(new User(), new Item(), 1, new Money());\nsave(null, new Order(), 2, 5);"
+	table := symbols.New()
+	table.CollectSource([]byte(src))
+	types := aggregate.Resolve(collect.FromSource([]byte(src), table))
+
+	output, added, _ := apply.Source([]byte(src), types, table, inherit.New(), apply.Options{Objects: true})
+
+	want := "<?php\nfunction save(?\\User $user, \\Item|\\Order $item, $count, $mixed, \\Status $status = Status::Active) {}\nenum Status {\n    case Active;\n}\nsave(new User(), new Item(), 1, new Money());\nsave(null, new Order(), 2, 5);"
+	if output != want || len(added) != 3 {
+		t.Errorf("\n got: %q (%d added)\nwant: %q", output, len(added), want)
+	}
+}
+
+func TestLiteralsAndObjects(t *testing.T) {
+	src := "<?php\nfunction save($user, $mode, $count) {}\nsave(new User(), 'a', 1);\nsave(new User(), 'b', 2);"
+	table := symbols.New()
+	types := aggregate.Resolve(collect.FromSource([]byte(src), table))
+
+	output, added, _ := apply.Source([]byte(src), types, table, inherit.New(), apply.Options{Literals: true, Objects: true})
+
+	want := "<?php\n/**\n * @param 'a'|'b' $mode\n */\nfunction save(\\User $user, string $mode, $count) {}\nsave(new User(), 'a', 1);\nsave(new User(), 'b', 2);"
+	if output != want || len(added) != 2 {
 		t.Errorf("\n got: %q (%d added)\nwant: %q", output, len(added), want)
 	}
 }

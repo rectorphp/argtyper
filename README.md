@@ -201,6 +201,15 @@ Only add the string literal docblocks, and no other types, with `--literals`:
 argtyper add-types . --literals
 ```
 
+Only add object types with `--objects` - a single class, a nullable one, or a
+union made only of classes (`\Foo|\Bar`). A union with a scalar, like
+`int|\Money`, is skipped. Both options can be combined:
+
+```bash
+argtyper add-types . --objects
+argtyper add-types . --literals --objects
+```
+
 <br>
 
 ## How it works
