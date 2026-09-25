@@ -341,11 +341,11 @@ func appendDocTags(doc string, tags []string, indent string) string {
 // indentation returns the whitespace after the last line break in the leading
 // tokens of a function or method, which is its indentation.
 func indentation(tokens []*token.Token) string {
-	for i := len(tokens) - 1; i >= 0; i-- {
-		if tokens[i].ID != token.T_WHITESPACE {
+	for _, free := range slices.Backward(tokens) {
+		if free.ID != token.T_WHITESPACE {
 			continue
 		}
-		value := string(tokens[i].Value)
+		value := string(free.Value)
 		if index := strings.LastIndex(value, "\n"); index >= 0 {
 			return value[index+1:]
 		}
