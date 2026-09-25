@@ -43,10 +43,13 @@ a parent or interface (including vendor), unless private or a constructor.
 ## Commands
 
 ```bash
-argtyper add-types [project-path] [--dry]
+argtyper add-types [project-path] [--dry] [--literals] [--objects]
 ```
 
 `project-path` defaults to `.`. `--dry` prints the diff without writing.
+`--literals` only adds string types with a `@param 'a'|'b'` literal docblock.
+`--objects` only adds object types, including unions made only of objects.
+Both can be combined.
 
 Dev tasks via `Makefile`:
 

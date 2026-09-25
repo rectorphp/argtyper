@@ -17,7 +17,7 @@ type Record struct {
 	Class      string // short class name for method/constructor calls
 	Name       string // method or function name
 	Position   int    // zero-based positional argument index
-	Type       string // "int", "float", "string", "bool", "array", "null" or "object:Fqcn"
+	Type       string // "int", "float", "string", "bool", "array", "null" or "object:Fqcn"; empty when unresolved
 	IsLiteral  bool   // true when the argument is a plain string literal, see phpast.StringLiteral
 	Literal    string // the string literal value, when IsLiteral
 }
@@ -343,15 +343,14 @@ func (c *collector) record(args []ast.Vertex, base Record, sc scope) {
 
 // argTypes returns the type(s) an argument contributes. A coalesce expression
 // (`$x ?? null`) contributes the types of both sides, so `... ?? null` makes the
-// parameter nullable; every other expression contributes at most one type.
+// parameter nullable; every other expression contributes one type. A value that
+// cannot be resolved contributes an empty type, so the aggregate knows not every
+// argument was seen.
 func (c *collector) argTypes(expr ast.Vertex, sc scope) []string {
 	if coalesce, ok := expr.(*ast.ExprBinaryCoalesce); ok {
 		return append(c.argTypes(coalesce.Left, sc), c.argTypes(coalesce.Right, sc)...)
 	}
-	if typeName := c.argType(expr, sc); typeName != "" {
-		return []string{typeName}
-	}
-	return nil
+	return []string{c.argType(expr, sc)}
 }
 
 // argType returns the type of an argument value as a fully qualified object

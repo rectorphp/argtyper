@@ -153,8 +153,9 @@ $this->compareScore(8, 'neq');
  }
 ```
 
-Any non-literal string (a constant, `sprintf()`, interpolation) skips the
-docblock, as does an existing `@param` for that parameter.
+Any non-literal string (a constant, `sprintf()`, interpolation) or a value it
+cannot resolve (a variable) skips the docblock, as does an existing `@param`
+for that parameter.
 
 **Colored, informative output** - a live progress bar per phase, colored `--dry`
 diffs, and a summary of the added types grouped by category (scalar, object,
@@ -193,6 +194,21 @@ argtyper add-types . --dry
 
 It prints the diff of the types that would be added and leaves every file
 untouched.
+
+Only add the string literal docblocks, and no other types, with `--literals`:
+
+```bash
+argtyper add-types . --literals
+```
+
+Only add object types with `--objects` - a single class, a nullable one, or a
+union made only of classes (`\Foo|\Bar`). A union with a scalar, like
+`int|\Money`, is skipped. Both options can be combined:
+
+```bash
+argtyper add-types . --objects
+argtyper add-types . --literals --objects
+```
 
 <br>
 
