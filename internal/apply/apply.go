@@ -3,6 +3,7 @@
 package apply
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/rectorphp/argtyper/internal/aggregate"
@@ -65,6 +66,8 @@ func (a *applier) walk(node ast.Vertex, class *ast.StmtClass) {
 func (a *applier) applyFunction(function *ast.StmtFunction) {
 	name := phpast.ShortName(function.Name)
 	added := map[string]string{}
+	docs := map[string]string{}
+	var order []string
 	for position, paramNode := range function.Params {
 		param, ok := paramNode.(*ast.Parameter)
 		if !ok || !typeable(param) {
@@ -72,6 +75,10 @@ func (a *applier) applyFunction(function *ast.StmtFunction) {
 		}
 		if resolved, ok := a.types.Function(name, position); ok {
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
+			if docType := literalDocType(param, resolved); docType != "" {
+				docs[phpast.VariableName(param.Var)] = docType
+				order = append(order, phpast.VariableName(param.Var))
+			}
 			continue
 		}
 		if resolved, ok := a.defaultType(param, "", ""); ok {
@@ -79,6 +86,7 @@ func (a *applier) applyFunction(function *ast.StmtFunction) {
 		}
 	}
 	phpast.StripRedundantDocParams(function, added)
+	phpast.AddDocParams(function, docs, order)
 }
 
 func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass) {
@@ -98,6 +106,8 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 	}
 
 	added := map[string]string{}
+	docs := map[string]string{}
+	var order []string
 	for position, paramNode := range method.Params {
 		param, ok := paramNode.(*ast.Parameter)
 		if !ok || !typeable(param) {
@@ -105,6 +115,10 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 		}
 		if resolved, ok := a.types.Method(className, name, position); ok {
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
+			if docType := literalDocType(param, resolved); docType != "" {
+				docs[phpast.VariableName(param.Var)] = docType
+				order = append(order, phpast.VariableName(param.Var))
+			}
 			continue
 		}
 		if resolved, ok := a.defaultType(param, className, classFQCN); ok {
@@ -112,6 +126,7 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 		}
 	}
 	phpast.StripRedundantDocParams(method, added)
+	phpast.AddDocParams(method, docs, order)
 }
 
 // defaultType infers a parameter type from its literal default value, so
@@ -132,6 +147,31 @@ func (a *applier) defaultType(param *ast.Parameter, enclosing, enclosingFQCN str
 		}
 	}
 	return aggregate.Resolved{Types: []string{typeName}}, true
+}
+
+// literalDocType returns a `'a'|'b'` doc type for a parameter that only ever
+// receives a few string literals. Empty when there are none, or when a default
+// value falls outside them.
+func literalDocType(param *ast.Parameter, resolved aggregate.Resolved) string {
+	if len(resolved.Literals) == 0 {
+		return ""
+	}
+	if param.DefaultValue != nil && !hasNullDefault(param) {
+		value, ok := phpast.StringLiteral(param.DefaultValue)
+		if !ok || !slices.Contains(resolved.Literals, value) {
+			return ""
+		}
+	}
+
+	members := make([]string, len(resolved.Literals))
+	for i, literal := range resolved.Literals {
+		members[i] = "'" + literal + "'"
+	}
+	docType := strings.Join(members, "|")
+	if resolved.Nullable || hasNullDefault(param) {
+		docType += "|null"
+	}
+	return docType
 }
 
 // objectFQCN qualifies the class of a `new X()` or `X::CASE` default value,

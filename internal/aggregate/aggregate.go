@@ -15,6 +15,19 @@ import (
 type Resolved struct {
 	Types    []string // one or more source type keywords or "object:Fqcn", never "null"
 	Nullable bool
+	Literals []string // sorted string literal values, set only for a plain string type, see literalValues
+}
+
+const (
+	minLiterals = 2
+	maxLiterals = 10
+)
+
+// group collects everything observed for one parameter position.
+type group struct {
+	types             map[string]struct{}
+	literals          map[string]struct{}
+	nonLiteralStrings bool
 }
 
 // Types holds resolved parameter types keyed for fast lookup during apply.
@@ -38,17 +51,17 @@ func (t Types) Function(name string, position int) (Resolved, bool) {
 // Resolve groups records per parameter into a resolved type: the observed types
 // as a union, with null captured as nullability rather than a member.
 func Resolve(records []collect.Record) Types {
-	methodTypes := map[string]map[string]struct{}{}
-	functionTypes := map[string]map[string]struct{}{}
+	methodTypes := map[string]*group{}
+	functionTypes := map[string]*group{}
 
 	for _, record := range records {
 		if record.IsFunction {
 			key := functionKey(record.Name, record.Position)
-			addType(functionTypes, key, record.Type)
+			addRecord(functionTypes, key, record)
 			continue
 		}
 		key := methodKey(record.Class, record.Name, record.Position)
-		addType(methodTypes, key, record.Type)
+		addRecord(methodTypes, key, record)
 	}
 
 	return Types{
@@ -57,12 +70,12 @@ func Resolve(records []collect.Record) Types {
 	}
 }
 
-func resolveGroups(groups map[string]map[string]struct{}) map[string]Resolved {
+func resolveGroups(groups map[string]*group) map[string]Resolved {
 	resolved := map[string]Resolved{}
 
-	for key, typeSet := range groups {
-		types := make([]string, 0, len(typeSet))
-		for typeName := range typeSet {
+	for key, group := range groups {
+		types := make([]string, 0, len(group.types))
+		for typeName := range group.types {
 			types = append(types, typeName)
 		}
 		sort.Strings(types)
@@ -78,17 +91,43 @@ func resolveGroups(groups map[string]map[string]struct{}) map[string]Resolved {
 		if len(members) == 0 {
 			continue
 		}
-		resolved[key] = Resolved{Types: members, Nullable: nullable}
+		resolved[key] = Resolved{Types: members, Nullable: nullable, Literals: literalValues(members, group)}
 	}
 
 	return resolved
 }
 
-func addType(groups map[string]map[string]struct{}, key, typeName string) {
-	if groups[key] == nil {
-		groups[key] = map[string]struct{}{}
+// literalValues returns the string literals passed into a plain string
+// parameter, when every string argument was a literal and there are a few
+// distinct ones - an enum-like set worth a `'a'|'b'` doc type.
+func literalValues(members []string, group *group) []string {
+	if len(members) != 1 || members[0] != "string" || group.nonLiteralStrings {
+		return nil
 	}
-	groups[key][typeName] = struct{}{}
+	if len(group.literals) < minLiterals || len(group.literals) > maxLiterals {
+		return nil
+	}
+	literals := make([]string, 0, len(group.literals))
+	for literal := range group.literals {
+		literals = append(literals, literal)
+	}
+	sort.Strings(literals)
+	return literals
+}
+
+func addRecord(groups map[string]*group, key string, record collect.Record) {
+	if groups[key] == nil {
+		groups[key] = &group{types: map[string]struct{}{}, literals: map[string]struct{}{}}
+	}
+	groups[key].types[record.Type] = struct{}{}
+	if record.Type != "string" {
+		return
+	}
+	if record.IsLiteral {
+		groups[key].literals[record.Literal] = struct{}{}
+		return
+	}
+	groups[key].nonLiteralStrings = true
 }
 
 func methodKey(class, method string, position int) string {

@@ -21,7 +21,7 @@ func TestFromSource(t *testing.T) {
 		{
 			name: "function call string",
 			src:  "<?php\ngreet(\"hi\");",
-			want: []collect.Record{{IsFunction: true, Name: "greet", Position: 0, Type: "string"}},
+			want: []collect.Record{{IsFunction: true, Name: "greet", Position: 0, Type: "string", IsLiteral: true, Literal: "hi"}},
 		},
 		{
 			name: "new constructor",
@@ -125,6 +125,24 @@ func TestFromSource(t *testing.T) {
 			name: "coalesce with unresolvable left contributes null only",
 			src:  "<?php\nclass A {\n  function go($e) { $this->set($e['k'] ?? null); }\n}",
 			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: "null"}},
+		},
+		{
+			name: "single quoted string literal keeps its value",
+			src:  "<?php\nf('eq');",
+			want: []collect.Record{{IsFunction: true, Name: "f", Position: 0, Type: "string", IsLiteral: true, Literal: "eq"}},
+		},
+		{
+			name: "string with escapes or interpolation is not a literal",
+			src:  "<?php\nf('it\\'s'); f(\"a $b\");",
+			want: []collect.Record{
+				{IsFunction: true, Name: "f", Position: 0, Type: "string"},
+				{IsFunction: true, Name: "f", Position: 0, Type: "string"},
+			},
+		},
+		{
+			name: "class constant string is not a literal",
+			src:  "<?php\nf(Foo::class);",
+			want: []collect.Record{{IsFunction: true, Name: "f", Position: 0, Type: "string"}},
 		},
 		{
 			name: "skips parent static call",

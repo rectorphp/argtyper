@@ -18,6 +18,8 @@ type Record struct {
 	Name       string // method or function name
 	Position   int    // zero-based positional argument index
 	Type       string // "int", "float", "string", "bool", "array", "null" or "object:Fqcn"
+	IsLiteral  bool   // true when the argument is a plain string literal, see phpast.StringLiteral
+	Literal    string // the string literal value, when IsLiteral
 }
 
 // FromSource collects records from a single PHP source file. The symbols table
@@ -325,10 +327,15 @@ func (c *collector) record(args []ast.Vertex, base Record, sc scope) {
 			continue
 		}
 
+		literal, isLiteral := phpast.StringLiteral(arg.Expr)
 		for _, typeName := range c.argTypes(arg.Expr, sc) {
 			record := base
 			record.Position = position
 			record.Type = typeName
+			if isLiteral && typeName == "string" {
+				record.IsLiteral = true
+				record.Literal = literal
+			}
 			c.records = append(c.records, record)
 		}
 	}
