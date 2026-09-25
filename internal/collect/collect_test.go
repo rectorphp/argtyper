@@ -54,9 +54,9 @@ func TestFromSource(t *testing.T) {
 			want: []collect.Record{{IsFunction: true, Name: "f", Position: 0, Type: "object:Foo"}},
 		},
 		{
-			name: "skips variable argument",
+			name: "variable argument is recorded as unresolved",
 			src:  "<?php\nf($x);",
-			want: nil,
+			want: []collect.Record{{IsFunction: true, Name: "f", Position: 0}},
 		},
 		{
 			name: "skips method call on untyped variable",
@@ -101,7 +101,10 @@ func TestFromSource(t *testing.T) {
 		{
 			name: "does not type a reassigned parameter from its new value",
 			src:  "<?php\nclass A {\n  static function fmt($day): string { return \"\"; }\n  function go($d) { $d = new \\DateTime(self::fmt($d)); }\n}",
-			want: nil,
+			want: []collect.Record{
+				{Class: "DateTime", Name: "__construct", Position: 0},
+				{Class: "A", Name: "fmt", Position: 0},
+			},
 		},
 		{
 			name: "method chain rooted at new resolves to receiver class",
@@ -122,9 +125,12 @@ func TestFromSource(t *testing.T) {
 			},
 		},
 		{
-			name: "coalesce with unresolvable left contributes null only",
+			name: "coalesce with unresolvable left contributes unresolved and null",
 			src:  "<?php\nclass A {\n  function go($e) { $this->set($e['k'] ?? null); }\n}",
-			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: "null"}},
+			want: []collect.Record{
+				{Class: "A", Name: "set", Position: 0},
+				{Class: "A", Name: "set", Position: 0, Type: "null"},
+			},
 		},
 		{
 			name: "single quoted string literal keeps its value",

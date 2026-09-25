@@ -23,7 +23,7 @@ func run(target string, sources ...string) (string, int) {
 		records = append(records, collect.FromSource([]byte(source), table)...)
 	}
 	types := aggregate.Resolve(records)
-	output, added, _ := apply.Source([]byte(target), types, table, inheritance)
+	output, added, _ := apply.Source([]byte(target), types, table, inheritance, false)
 	return output, len(added)
 }
 
@@ -325,6 +325,14 @@ func TestApply(t *testing.T) {
 			want: "<?php\nfunction pick(string $v) {}",
 		},
 		{
+			name:   "skips string literals doc when an unresolved value is passed",
+			target: "<?php\nfunction pick($v) {}",
+			callers: []string{
+				"<?php\npick('a');\npick('b');\npick($value);",
+			},
+			want: "<?php\nfunction pick(string $v) {}",
+		},
+		{
 			name:   "skips string literals doc on an already typed parameter",
 			target: "<?php\nfunction pick(string $v) {}",
 			callers: []string{
@@ -346,8 +354,21 @@ func TestApply(t *testing.T) {
 
 func TestNoTypesReturnsUnchanged(t *testing.T) {
 	src := "<?php\nfunction greet($who) {}"
-	output, added, changed := apply.Source([]byte(src), aggregate.Resolve(nil), symbols.New(), inherit.New())
+	output, added, changed := apply.Source([]byte(src), aggregate.Resolve(nil), symbols.New(), inherit.New(), false)
 	if changed || len(added) != 0 || output != src {
 		t.Errorf("expected unchanged, got changed=%v count=%d", changed, len(added))
+	}
+}
+
+func TestLiteralsOnly(t *testing.T) {
+	src := "<?php\nfunction pick($v, $count, $page = 1) {}\npick('a', 1);\npick('b', 2);"
+	table := symbols.New()
+	types := aggregate.Resolve(collect.FromSource([]byte(src), table))
+
+	output, added, _ := apply.Source([]byte(src), types, table, inherit.New(), true)
+
+	want := "<?php\n/**\n * @param 'a'|'b' $v\n */\nfunction pick(string $v, $count, $page = 1) {}\npick('a', 1);\npick('b', 2);"
+	if output != want || len(added) != 1 {
+		t.Errorf("\n got: %q (%d added)\nwant: %q", output, len(added), want)
 	}
 }

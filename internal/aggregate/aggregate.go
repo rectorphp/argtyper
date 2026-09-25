@@ -25,9 +25,11 @@ const (
 
 // group collects everything observed for one parameter position.
 type group struct {
-	types             map[string]struct{}
-	literals          map[string]struct{}
-	nonLiteralStrings bool
+	types    map[string]struct{}
+	literals map[string]struct{}
+	// set when a string other than a plain literal, or an unresolved value, was
+	// passed - the literals then no longer cover every argument
+	nonLiterals bool
 }
 
 // Types holds resolved parameter types keyed for fast lookup during apply.
@@ -98,10 +100,10 @@ func resolveGroups(groups map[string]*group) map[string]Resolved {
 }
 
 // literalValues returns the string literals passed into a plain string
-// parameter, when every string argument was a literal and there are a few
+// parameter, when every argument was a string literal or null and there are a few
 // distinct ones - an enum-like set worth a `'a'|'b'` doc type.
 func literalValues(members []string, group *group) []string {
-	if len(members) != 1 || members[0] != "string" || group.nonLiteralStrings {
+	if len(members) != 1 || members[0] != "string" || group.nonLiterals {
 		return nil
 	}
 	if len(group.literals) < minLiterals || len(group.literals) > maxLiterals {
@@ -119,15 +121,18 @@ func addRecord(groups map[string]*group, key string, record collect.Record) {
 	if groups[key] == nil {
 		groups[key] = &group{types: map[string]struct{}{}, literals: map[string]struct{}{}}
 	}
-	groups[key].types[record.Type] = struct{}{}
-	if record.Type != "string" {
-		return
-	}
-	if record.IsLiteral {
+	switch {
+	case record.Type == "":
+		groups[key].nonLiterals = true
+	case record.IsLiteral:
+		groups[key].types[record.Type] = struct{}{}
 		groups[key].literals[record.Literal] = struct{}{}
-		return
+	default:
+		groups[key].types[record.Type] = struct{}{}
+		if record.Type == "string" {
+			groups[key].nonLiterals = true
+		}
 	}
-	groups[key].nonLiteralStrings = true
 }
 
 func methodKey(class, method string, position int) string {

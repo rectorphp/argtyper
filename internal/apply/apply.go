@@ -19,14 +19,15 @@ import (
 // "?string" or "\Foo"), and whether the file changed. On a parse error the
 // original source is returned unchanged. The symbols table resolves constant
 // and enum-case default values; the inheritance table decides whether typing a
-// method would change an inherited signature.
-func Source(src []byte, types aggregate.Types, table *symbols.Table, inheritance *inherit.Table) (string, []string, bool) {
+// method would change an inherited signature. With literalsOnly, only string
+// parameters that get a `'a'|'b'` literal doc type are changed.
+func Source(src []byte, types aggregate.Types, table *symbols.Table, inheritance *inherit.Table, literalsOnly bool) (string, []string, bool) {
 	root, err := phpast.Parse(src)
 	if err != nil || root == nil {
 		return string(src), nil, false
 	}
 
-	applier := &applier{types: types, symbols: table, inheritance: inheritance, names: phpast.ResolveNames(root)}
+	applier := &applier{types: types, symbols: table, inheritance: inheritance, names: phpast.ResolveNames(root), literalsOnly: literalsOnly}
 	applier.walk(root, nil)
 
 	if len(applier.added) == 0 {
@@ -37,11 +38,12 @@ func Source(src []byte, types aggregate.Types, table *symbols.Table, inheritance
 }
 
 type applier struct {
-	types       aggregate.Types
-	symbols     *symbols.Table
-	inheritance *inherit.Table
-	names       map[ast.Vertex]string
-	added       []string
+	types        aggregate.Types
+	symbols      *symbols.Table
+	inheritance  *inherit.Table
+	names        map[ast.Vertex]string
+	added        []string
+	literalsOnly bool
 }
 
 func (a *applier) walk(node ast.Vertex, class *ast.StmtClass) {
@@ -74,11 +76,18 @@ func (a *applier) applyFunction(function *ast.StmtFunction) {
 			continue
 		}
 		if resolved, ok := a.types.Function(name, position); ok {
+			docType := literalDocType(param, resolved)
+			if a.literalsOnly && docType == "" {
+				continue
+			}
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
-			if docType := literalDocType(param, resolved); docType != "" {
+			if docType != "" {
 				docs[phpast.VariableName(param.Var)] = docType
 				order = append(order, phpast.VariableName(param.Var))
 			}
+			continue
+		}
+		if a.literalsOnly {
 			continue
 		}
 		if resolved, ok := a.defaultType(param, "", ""); ok {
@@ -114,11 +123,18 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 			continue
 		}
 		if resolved, ok := a.types.Method(className, name, position); ok {
+			docType := literalDocType(param, resolved)
+			if a.literalsOnly && docType == "" {
+				continue
+			}
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
-			if docType := literalDocType(param, resolved); docType != "" {
+			if docType != "" {
 				docs[phpast.VariableName(param.Var)] = docType
 				order = append(order, phpast.VariableName(param.Var))
 			}
+			continue
+		}
+		if a.literalsOnly {
 			continue
 		}
 		if resolved, ok := a.defaultType(param, className, classFQCN); ok {
