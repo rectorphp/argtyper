@@ -134,6 +134,28 @@ untyped.
 is removed, including `@param mixed`. Matching ignores union member order and
 FQN vs short name, so `@param Foo|Bar` and `@param \App\Bar|\App\Foo` both drop.
 
+**String literal docblocks** - when a parameter only ever receives a few plain
+string literals (2 to 10 distinct ones), it gets `string` plus a `@param` with
+the exact values:
+
+```php
+$this->compareScore(7, 'eq');
+$this->compareScore(8, 'neq');
+```
+
+```diff
++/**
++ * @param 'eq'|'neq' $operator
++ */
+-public function compareScore(int $score, $operator)
++public function compareScore(int $score, string $operator)
+ {
+ }
+```
+
+Any non-literal string (a constant, `sprintf()`, interpolation) skips the
+docblock, as does an existing `@param` for that parameter.
+
 **Colored, informative output** - a live progress bar per phase, colored `--dry`
 diffs, and a summary of the added types grouped by category (scalar, object,
 array, union). Colors respect `NO_COLOR` and disable on non-TTY output.

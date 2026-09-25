@@ -23,6 +23,10 @@ import (
 // description, so only a fully redundant tag is removed.
 var docParamLine = regexp.MustCompile(`^\s*\*?\s*@param\s+(\S+)\s+\$(\w+)\s*$`)
 
+// simpleLiteral limits string literals to values that can be written into a
+// doc comment as-is, with no quotes, escapes or whitespace to carry over.
+var simpleLiteral = regexp.MustCompile(`^[\w.:/-]*$`)
+
 var phpVersion, _ = version.New("8.3")
 
 var vertexType = reflect.TypeFor[ast.Vertex]()
@@ -239,6 +243,114 @@ func normalizeDocType(name string) string {
 	}
 	slices.Sort(parts)
 	return strings.Join(parts, "|")
+}
+
+// StringLiteral returns the value of a plain quoted string literal like 'eq' or
+// "eq". Strings with escapes, interpolation or other special characters are
+// rejected, so the value is safe to write into a doc comment.
+func StringLiteral(expr ast.Vertex) (string, bool) {
+	scalar, ok := expr.(*ast.ScalarString)
+	if !ok || scalar.MinusTkn != nil {
+		return "", false
+	}
+	raw := string(scalar.Value)
+	if len(raw) < 2 || (raw[0] != '\'' && raw[0] != '"') || raw[len(raw)-1] != raw[0] {
+		return "", false
+	}
+	value := raw[1 : len(raw)-1]
+	if !simpleLiteral.MatchString(value) {
+		return "", false
+	}
+	return value, true
+}
+
+// AddDocParams adds `@param <type> $<name>` lines to a function or method's doc
+// comment, creating the doc comment when there is none. Parameters that already
+// have a @param line are left alone. params maps parameter name to doc type and
+// order lists the names in parameter order.
+func AddDocParams(node ast.Vertex, params map[string]string, order []string) {
+	leading := leadingToken(node)
+	if leading == nil || len(params) == 0 {
+		return
+	}
+
+	index := -1
+	for i, free := range leading.FreeFloating {
+		if free.ID == token.T_DOC_COMMENT {
+			index = i
+			break
+		}
+	}
+
+	doc := ""
+	if index >= 0 {
+		doc = string(leading.FreeFloating[index].Value)
+	}
+
+	var tags []string
+	for _, name := range order {
+		docType, ok := params[name]
+		if !ok || hasDocParam(doc, name) {
+			continue
+		}
+		tags = append(tags, "@param "+docType+" $"+name)
+	}
+	if len(tags) == 0 {
+		return
+	}
+
+	indent := indentation(leading.FreeFloating)
+	if index >= 0 {
+		leading.FreeFloating[index].Value = []byte(appendDocTags(doc, tags, indent))
+		return
+	}
+
+	newDoc := appendDocTags("/**\n"+indent+" */", tags, indent)
+	leading.FreeFloating = append(leading.FreeFloating,
+		&token.Token{ID: token.T_DOC_COMMENT, Value: []byte(newDoc)},
+		&token.Token{ID: token.T_WHITESPACE, Value: []byte("\n" + indent)},
+	)
+}
+
+// hasDocParam reports whether a doc comment already has a @param line for the
+// named parameter, whatever its type or description.
+func hasDocParam(doc, name string) bool {
+	return regexp.MustCompile(`@param\b[^\n]*\$` + regexp.QuoteMeta(name) + `\b`).MatchString(doc)
+}
+
+// appendDocTags inserts tag lines right before the closing `*/`, turning a
+// single-line doc comment into a multi-line one first.
+func appendDocTags(doc string, tags []string, indent string) string {
+	if !strings.Contains(doc, "\n") {
+		content := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(doc, "/**"), "*/"))
+		doc = "/**\n"
+		if content != "" {
+			doc += indent + " * " + content + "\n"
+		}
+		doc += indent + " */"
+	}
+
+	closing := strings.LastIndex(doc, "\n")
+	var lines strings.Builder
+	for _, tag := range tags {
+		lines.WriteString("\n" + indent + " * " + tag)
+	}
+	return doc[:closing] + lines.String() + doc[closing:]
+}
+
+// indentation returns the whitespace after the last line break in the leading
+// tokens of a function or method, which is its indentation.
+func indentation(tokens []*token.Token) string {
+	for i := len(tokens) - 1; i >= 0; i-- {
+		if tokens[i].ID != token.T_WHITESPACE {
+			continue
+		}
+		value := string(tokens[i].Value)
+		if index := strings.LastIndex(value, "\n"); index >= 0 {
+			return value[index+1:]
+		}
+	}
+	return ""
 }
 
 // leadingToken returns the first token of a function or method, which carries

@@ -267,6 +267,71 @@ func TestApply(t *testing.T) {
 			target: "<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nfinal class Repo {\n    public function save($entity) {}\n    public function go(Lead $lead) { $this->save($lead); }\n}",
 			want:   "<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nfinal class Repo {\n    public function save(\\App\\Entity\\Lead $entity) {}\n    public function go(Lead $lead) { $this->save($lead); }\n}",
 		},
+		{
+			name:   "adds string literals doc when only literals are passed",
+			target: "<?php\nfinal class A {\n    public function compare(int $score, $operator) {}\n    public function go() { $this->compare(7, 'eq'); $this->compare(8, 'neq'); $this->compare(6, 'gt'); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @param 'eq'|'gt'|'neq' $operator\n     */\n    public function compare(int $score, string $operator) {}\n    public function go() { $this->compare(7, 'eq'); $this->compare(8, 'neq'); $this->compare(6, 'gt'); }\n}",
+		},
+		{
+			name:   "adds string literals doc to an existing doc comment",
+			target: "<?php\nfinal class A {\n    /**\n     * @throws \\Exception\n     */\n    public function set($v) {}\n    public function go() { $this->set('a'); $this->set('b'); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @throws \\Exception\n     * @param 'a'|'b' $v\n     */\n    public function set(string $v) {}\n    public function go() { $this->set('a'); $this->set('b'); }\n}",
+		},
+		{
+			name:   "expands a single-line doc comment for string literals",
+			target: "<?php\nfinal class A {\n    /** @return void */\n    public function set($v) {}\n    public function go() { $this->set('a'); $this->set('b'); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @return void\n     * @param 'a'|'b' $v\n     */\n    public function set(string $v) {}\n    public function go() { $this->set('a'); $this->set('b'); }\n}",
+		},
+		{
+			name:   "replaces a redundant string doc with string literals",
+			target: "<?php\nfinal class A {\n    /**\n     * @param string $v\n     */\n    public function set($v) {}\n    public function go() { $this->set('a'); $this->set('b'); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @param 'a'|'b' $v\n     */\n    public function set(string $v) {}\n    public function go() { $this->set('a'); $this->set('b'); }\n}",
+		},
+		{
+			name:   "keeps an existing param doc with description over string literals",
+			target: "<?php\nfinal class A {\n    /**\n     * @param string $v the value\n     */\n    public function set($v) {}\n    public function go() { $this->set('a'); $this->set('b'); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @param string $v the value\n     */\n    public function set(string $v) {}\n    public function go() { $this->set('a'); $this->set('b'); }\n}",
+		},
+		{
+			name:   "adds nullable string literals doc",
+			target: "<?php\nfunction pick($v) {}",
+			callers: []string{
+				"<?php\npick('a');\npick('b');\npick(null);",
+			},
+			want: "<?php\n/**\n * @param 'a'|'b'|null $v\n */\nfunction pick(?string $v) {}",
+		},
+		{
+			name:   "includes a string literal default that is passed too",
+			target: "<?php\nfunction pick($v = 'a') {}",
+			callers: []string{
+				"<?php\npick('a');\npick('b');",
+			},
+			want: "<?php\n/**\n * @param 'a'|'b' $v\n */\nfunction pick(string $v = 'a') {}",
+		},
+		{
+			name:   "skips string literals doc when the default is not among them",
+			target: "<?php\nfunction pick($v = 'c') {}",
+			callers: []string{
+				"<?php\npick('a');\npick('b');",
+			},
+			want: "<?php\nfunction pick(string $v = 'c') {}",
+		},
+		{
+			name:   "skips string literals doc when a non-literal string is passed",
+			target: "<?php\nfunction pick($v) {}",
+			callers: []string{
+				"<?php\npick('a');\npick('b');\npick(sprintf('%s', 'c'));",
+			},
+			want: "<?php\nfunction pick(string $v) {}",
+		},
+		{
+			name:   "skips string literals doc on an already typed parameter",
+			target: "<?php\nfunction pick(string $v) {}",
+			callers: []string{
+				"<?php\npick('a');\npick('b');",
+			},
+			want: "<?php\nfunction pick(string $v) {}",
+		},
 	}
 
 	for _, test := range tests {
