@@ -16,13 +16,16 @@ import (
 	"github.com/rectorphp/argtyper/internal/symbols"
 )
 
-const usage = `Usage: argtyper add-types [project-path] [--dry] [--literals]
+const usage = `Usage: argtyper add-types [project-path] [--dry] [--literals] [--objects]
 
 Find literal values passed into local method/function calls and add them as
 parameter type declarations. Defaults to the current directory.
 
   --dry        Print the diff of the types that would be added, without writing.
-  --literals   Only add string types with a @param 'a'|'b' literal docblock.`
+  --literals   Only add string types with a @param 'a'|'b' literal docblock.
+  --objects    Only add object types, including unions made only of objects.
+
+--literals and --objects can be combined.`
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -41,7 +44,7 @@ func run(args []string) error {
 	}
 
 	dry := false
-	literalsOnly := false
+	options := apply.Options{}
 	projectPath := "."
 	for _, arg := range args[1:] {
 		if arg == "--dry" {
@@ -49,7 +52,11 @@ func run(args []string) error {
 			continue
 		}
 		if arg == "--literals" {
-			literalsOnly = true
+			options.Literals = true
+			continue
+		}
+		if arg == "--objects" {
+			options.Objects = true
 			continue
 		}
 		projectPath = arg
@@ -114,7 +121,7 @@ func run(args []string) error {
 	}
 	var addedTypes []string
 	if err := progressEach("applying", files, func(file string, src []byte) error {
-		output, added, changed := apply.Source(src, types, table, inheritance, literalsOnly)
+		output, added, changed := apply.Source(src, types, table, inheritance, options)
 		if !changed {
 			return nil
 		}
