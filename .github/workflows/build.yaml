@@ -10,9 +10,9 @@ jobs:
     build:
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v7
 
-            -   uses: actions/setup-go@v5
+            -   uses: actions/setup-go@v7
                 with:
                     go-version: '1.27.4'
 
@@ -28,9 +28,9 @@ jobs:
     format:
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v7
 
-            -   uses: actions/setup-go@v5
+            -   uses: actions/setup-go@v7
                 with:
                     go-version: '1.27.4'
 
@@ -56,16 +56,16 @@ jobs:
     analysis:
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v7
 
-            -   uses: actions/setup-go@v5
+            -   uses: actions/setup-go@v7
                 with:
                     go-version: '1.27.4'
 
             -   name: gopls modernize
                 run: go run golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize@v0.52.0 ./...
 
-            -   uses: golangci/golangci-lint-action@v8
+            -   uses: golangci/golangci-lint-action@v9
                 if: ${{ !cancelled() }}
                 with:
                     version: v2.15.0
@@ -73,13 +73,13 @@ jobs:
     security:
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v7
 
-            -   uses: actions/setup-go@v5
+            -   uses: actions/setup-go@v7
                 with:
                     go-version: '1.27.4'
 
-            -   uses: actions/cache@v4
+            -   uses: actions/cache@v6
                 with:
                     path: ~/go/bin/govulncheck
                     key: govulncheck-v1.9.0-go1.27.4
