@@ -82,8 +82,8 @@ jobs:
             -   uses: actions/cache@v4
                 with:
                     path: ~/go/bin/govulncheck
-                    key: govulncheck-v1.6.0
+                    key: govulncheck-v1.9.0-go1.27.4
             -   name: install govulncheck
-                run: test -x ~/go/bin/govulncheck || go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+                run: test -x ~/go/bin/govulncheck || go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
             -   name: govulncheck
                 run: govulncheck ./...
