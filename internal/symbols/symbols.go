@@ -4,6 +4,7 @@
 package symbols
 
 import (
+	"maps"
 	"strings"
 
 	"github.com/rectorphp/argtyper/internal/phpast"
@@ -40,6 +41,13 @@ func (t *Table) CollectSource(src []byte) {
 // Collect records the enums and constants declared in one parsed file.
 func (t *Table) Collect(root ast.Vertex) {
 	t.walk(root, "", phpast.ResolveNames(root))
+}
+
+// Merge copies every symbol of other into t; a symbol already in t is replaced.
+func (t *Table) Merge(other *Table) {
+	maps.Copy(t.enums, other.enums)
+	maps.Copy(t.consts, other.consts)
+	maps.Copy(t.classConsts, other.classConsts)
 }
 
 func (t *Table) walk(node ast.Vertex, enclosing string, names map[ast.Vertex]string) {

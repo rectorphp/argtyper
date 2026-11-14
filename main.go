@@ -14,6 +14,7 @@ import (
 	"github.com/rectorphp/argtyper/internal/diff"
 	"github.com/rectorphp/argtyper/internal/finder"
 	"github.com/rectorphp/argtyper/internal/inherit"
+	"github.com/rectorphp/argtyper/internal/phpast"
 	"github.com/rectorphp/argtyper/internal/symbols"
 )
 
@@ -77,38 +78,59 @@ func run(args []string) error {
 	fmt.Printf("Code dirs found in %q: %v\n\n", projectPath, finder.CodeDirectories(projectPath))
 
 	// gather project symbols (enums, constants) so argument values that
-	// reference them resolve to a type just like literals do
-	table := symbols.New()
-	if err := progressEach("scanning", files, func(_ string, src []byte) error {
-		table.CollectSource(src)
-		return nil
-	}); err != nil {
+	// reference them resolve to a type just like literals do, and build the
+	// inheritance table from the project and its vendor directory, so a method
+	// that overrides an ancestor (including one in vendor) is left alone. Each
+	// project file is parsed once for both; per-file tables merge in file order.
+	type scanned struct {
+		symbols     *symbols.Table
+		inheritance *inherit.Table
+	}
+	scans, err := progressMap("scanning", files, func(_ string, src []byte) (scanned, error) {
+		result := scanned{symbols.New(), inherit.New()}
+		if root, err := phpast.Parse(src); err == nil && root != nil {
+			result.symbols.Collect(root)
+			result.inheritance.Collect(root)
+		}
+		return result, nil
+	})
+	if err != nil {
 		return err
 	}
-
-	// build the inheritance table from the project and its vendor directory, so
-	// a method that overrides an ancestor (including one in vendor) is left alone
+	table := symbols.New()
 	inheritance := inherit.New()
+	for _, scan := range scans {
+		table.Merge(scan.symbols)
+		inheritance.Merge(scan.inheritance)
+	}
+
 	vendorFiles, err := finder.VendorPHPFiles(projectPath)
 	if err != nil {
 		return err
 	}
-	allFiles := append(append([]string{}, files...), vendorFiles...)
-	if err := progressEach("parsing", allFiles, func(_ string, src []byte) error {
-		inheritance.CollectSource(src)
-		return nil
-	}); err != nil {
+	vendorInheritances, err := progressMap("parsing", vendorFiles, func(_ string, src []byte) (*inherit.Table, error) {
+		vendorInheritance := inherit.New()
+		vendorInheritance.CollectSource(src)
+		return vendorInheritance, nil
+	})
+	if err != nil {
 		return err
+	}
+	for _, vendorInheritance := range vendorInheritances {
+		inheritance.Merge(vendorInheritance)
 	}
 
 	// 1. collect literal argument types across the whole project
 	fmt.Println("1. Collecting argument types...")
-	var records []collect.Record
-	if err := progressEach("collecting", files, func(_ string, src []byte) error {
-		records = append(records, collect.FromSource(src, table)...)
-		return nil
-	}); err != nil {
+	fileRecords, err := progressMap("collecting", files, func(_ string, src []byte) ([]collect.Record, error) {
+		return collect.FromSource(src, table), nil
+	})
+	if err != nil {
 		return err
+	}
+	var records []collect.Record
+	for _, recordsOfFile := range fileRecords {
+		records = append(records, recordsOfFile...)
 	}
 	resolvedCount := 0
 	for _, record := range records {
@@ -126,27 +148,35 @@ func run(args []string) error {
 	} else {
 		fmt.Println("2. Adding types to parameters...")
 	}
-	var addedTypes []string
-	if err := progressEach("applying", files, func(file string, src []byte) error {
+	type applied struct {
+		added []string
+		patch string
+	}
+	applies, err := progressMap("applying", files, func(file string, src []byte) (applied, error) {
 		output, added, changed := apply.Source(src, types, table, inheritance, options)
 		if !changed {
-			return nil
+			return applied{}, nil
 		}
-		addedTypes = append(addedTypes, added...)
 
 		if dry {
+			result := applied{added: added}
 			if patch, ok := diff.Lines(file, string(src), output); ok {
-				fmt.Print(colorizePatch(patch))
+				result.patch = patch
 			}
-			return nil
+			return result, nil
 		}
 
-		if err := os.WriteFile(file, []byte(output), 0o644); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+		return applied{added: added}, os.WriteFile(file, []byte(output), 0o644)
+	})
+	if err != nil {
 		return err
+	}
+	var addedTypes []string
+	for _, result := range applies {
+		addedTypes = append(addedTypes, result.added...)
+		if result.patch != "" {
+			fmt.Print(colorizePatch(result.patch))
+		}
 	}
 
 	if len(addedTypes) == 0 {

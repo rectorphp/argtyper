@@ -40,3 +40,16 @@ func TestOverrides(t *testing.T) {
 		})
 	}
 }
+
+func TestMerge(t *testing.T) {
+	table := inherit.New()
+	table.CollectSource([]byte("<?php\nnamespace App;\n\nclass Child extends Base {\n    public function save($v) {}\n}"))
+
+	other := inherit.New()
+	other.CollectSource([]byte("<?php\nnamespace App;\n\nclass Base {\n    public function save($v) {}\n}"))
+	table.Merge(other)
+
+	if overrides, resolved := table.Overrides("App\\Child", "save"); !overrides || !resolved {
+		t.Errorf("Overrides(App\\Child, save) = (%v, %v), want (true, true)", overrides, resolved)
+	}
+}

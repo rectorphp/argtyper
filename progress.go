@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
 )
 
 // progressBarWidth is the number of cells in the rendered bar, matching the
@@ -49,25 +52,52 @@ func renderProgressBar(label string, done int, total int) string {
 	return fmt.Sprintf("\r%-*s %d/%d [%s] %3d%%", labelColumnWidth, label, done, total, bar, percent)
 }
 
-// progressEach reads each file and hands its source to fn, drawing a live
-// progress bar labeled label on stderr while it goes. The bar is skipped on a
-// non-terminal run so piped output stays clean.
-func progressEach(label string, files []string, fn func(file string, src []byte) error) error {
+// progressMap reads each file and hands its source to fn on a pool of
+// runtime.NumCPU() workers, drawing a live progress bar labeled label on
+// stderr while it goes. Results come back in file order, so the output stays
+// deterministic; on failure the error of the first failing file is returned.
+// The bar is skipped on a non-terminal run so piped output stays clean.
+func progressMap[T any](label string, files []string, fn func(file string, src []byte) (T, error)) ([]T, error) {
 	total := len(files)
-	for index, file := range files {
-		src, err := os.ReadFile(file)
-		if err != nil {
-			return err
-		}
-		if err := fn(file, src); err != nil {
-			return err
-		}
-		if stderrIsTerminal {
-			fmt.Fprint(os.Stderr, renderProgressBar(label, index+1, total))
-		}
+	results := make([]T, total)
+	errs := make([]error, total)
+
+	var next atomic.Int64
+	var mutex sync.Mutex
+	done := 0
+
+	var wait sync.WaitGroup
+	for range min(runtime.NumCPU(), total) {
+		wait.Go(func() {
+			for {
+				index := int(next.Add(1)) - 1
+				if index >= total {
+					return
+				}
+				src, err := os.ReadFile(files[index])
+				if err == nil {
+					results[index], err = fn(files[index], src)
+				}
+				errs[index] = err
+
+				if stderrIsTerminal {
+					mutex.Lock()
+					done++
+					fmt.Fprint(os.Stderr, renderProgressBar(label, done, total))
+					mutex.Unlock()
+				}
+			}
+		})
 	}
+	wait.Wait()
+
 	if total > 0 && stderrIsTerminal {
 		fmt.Fprintln(os.Stderr) // end the progress bar line
 	}
-	return nil
+	for _, err := range errs {
+		if err != nil {
+			return nil, err
+		}
+	}
+	return results, nil
 }
