@@ -333,6 +333,35 @@ func TestApply(t *testing.T) {
 			want: "<?php\nfunction pick(string $v) {}",
 		},
 		{
+			name:   "same-named class in another namespace does not share types",
+			target: "<?php\nnamespace App\\X;\nclass Foo { public function __construct($a) {} }\nnew Foo(1);",
+			callers: []string{
+				"<?php\nnamespace App\\Y;\nclass Foo { public function __construct($a) {} }\nnew Foo(\"s\");",
+			},
+			want: "<?php\nnamespace App\\X;\nclass Foo { public function __construct(int $a) {} }\nnew Foo(1);",
+		},
+		{
+			name:   "same-named class in the other namespace gets its own type",
+			target: "<?php\nnamespace App\\Y;\nclass Foo { public function __construct($a) {} }\nnew Foo(\"s\");",
+			callers: []string{
+				"<?php\nnamespace App\\X;\nclass Foo { public function __construct($a) {} }\nnew Foo(1);",
+			},
+			want: "<?php\nnamespace App\\Y;\nclass Foo { public function __construct(string $a) {} }\nnew Foo(\"s\");",
+		},
+		{
+			name:   "adds type from call on imported class",
+			target: "<?php\nnamespace App\\Entity;\n\nfinal class Lead {\n    public function rename($name) {}\n}",
+			callers: []string{
+				"<?php\nnamespace App;\n\nuse App\\Entity\\Lead;\n\nfunction go(Lead $lead) { $lead->rename('x'); }",
+			},
+			want: "<?php\nnamespace App\\Entity;\n\nfinal class Lead {\n    public function rename(string $name) {}\n}",
+		},
+		{
+			name:   "adds type from namespaced self class constant default",
+			target: "<?php\nnamespace App;\n\nfinal class Config {\n    const LIMIT = 5;\n    public function set($limit = self::LIMIT) {}\n}",
+			want:   "<?php\nnamespace App;\n\nfinal class Config {\n    const LIMIT = 5;\n    public function set(int $limit = self::LIMIT) {}\n}",
+		},
+		{
 			name:   "skips string literals doc on an already typed parameter",
 			target: "<?php\nfunction pick(string $v) {}",
 			callers: []string{

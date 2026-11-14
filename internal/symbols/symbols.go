@@ -13,9 +13,9 @@ import (
 
 // Table holds the project symbols gathered across every file.
 type Table struct {
-	enums       map[string]bool   // short enum name
+	enums       map[string]bool   // fully qualified enum name
 	consts      map[string]string // CONST name -> type
-	classConsts map[string]string // "Class\x00CONST" -> type
+	classConsts map[string]string // "Fqcn\x00CONST" -> type
 }
 
 // New returns an empty table ready for Collect.
@@ -39,21 +39,19 @@ func (t *Table) CollectSource(src []byte) {
 
 // Collect records the enums and constants declared in one parsed file.
 func (t *Table) Collect(root ast.Vertex) {
-	t.walk(root, "")
+	t.walk(root, "", phpast.ResolveNames(root))
 }
 
-func (t *Table) walk(node ast.Vertex, enclosing string) {
+func (t *Table) walk(node ast.Vertex, enclosing string, names map[ast.Vertex]string) {
 	if node == nil {
 		return
 	}
 
 	switch typed := node.(type) {
-	case *ast.StmtClass:
-		enclosing = phpast.ShortName(typed.Name)
-	case *ast.StmtTrait:
-		enclosing = phpast.ShortName(typed.Name)
+	case *ast.StmtClass, *ast.StmtTrait:
+		enclosing = phpast.ResolvedName(names, typed)
 	case *ast.StmtEnum:
-		enclosing = phpast.ShortName(typed.Name)
+		enclosing = phpast.ResolvedName(names, typed)
 		t.enums[enclosing] = true
 	case *ast.StmtConstList:
 		t.recordConsts(typed.Consts, enclosing)
@@ -64,7 +62,7 @@ func (t *Table) walk(node ast.Vertex, enclosing string) {
 	}
 
 	for _, child := range phpast.Children(node) {
-		t.walk(child, enclosing)
+		t.walk(child, enclosing, names)
 	}
 }
 
@@ -114,15 +112,16 @@ func (t *Table) recordDefine(call *ast.ExprFunctionCall) {
 
 // TypeOfExpr resolves the type of a value expression, using the table for
 // constants and enum cases and falling back to valuetype for everything else.
-// enclosing is the class the expression sits in, for `self::`/`static::`.
-func (t *Table) TypeOfExpr(expr ast.Vertex, enclosing string) string {
+// enclosing is the fully qualified class the expression sits in, for
+// `self::`/`static::`, and names is the ResolveNames map of its file.
+func (t *Table) TypeOfExpr(expr ast.Vertex, enclosing string, names map[ast.Vertex]string) string {
 	switch typed := expr.(type) {
 	case *ast.ExprConstFetch:
 		if name := phpast.ShortName(typed.Const); t.consts[name] != "" {
 			return t.consts[name]
 		}
 	case *ast.ExprClassConstFetch:
-		if resolved := t.classConst(typed, enclosing); resolved != "" {
+		if resolved := t.classConst(typed, enclosing, names); resolved != "" {
 			return resolved
 		}
 	}
@@ -130,18 +129,20 @@ func (t *Table) TypeOfExpr(expr ast.Vertex, enclosing string) string {
 }
 
 // classConst resolves `Class::CONST` and `Enum::Case` from the table.
-func (t *Table) classConst(fetch *ast.ExprClassConstFetch, enclosing string) string {
+func (t *Table) classConst(fetch *ast.ExprClassConstFetch, enclosing string, names map[ast.Vertex]string) string {
 	constName := phpast.ShortName(fetch.Const)
 	if constName == "" || strings.EqualFold(constName, "class") {
 		return ""
 	}
 
-	class := phpast.ShortName(fetch.Class)
-	switch strings.ToLower(class) {
+	var class string
+	switch strings.ToLower(phpast.ShortName(fetch.Class)) {
 	case "self", "static":
 		class = enclosing
 	case "parent":
 		return ""
+	default:
+		class = phpast.ResolvedName(names, fetch.Class)
 	}
 	if class == "" {
 		return ""

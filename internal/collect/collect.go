@@ -14,7 +14,7 @@ import (
 // Record is a single argument type observed at a call site.
 type Record struct {
 	IsFunction bool   // true for a plain function call, false for a method/constructor
-	Class      string // short class name for method/constructor calls
+	Class      string // fully qualified class name for method/constructor calls, short name when unresolved
 	Name       string // method or function name
 	Position   int    // zero-based positional argument index
 	Type       string // "int", "float", "string", "bool", "array", "null" or "object:Fqcn"; empty when unresolved
@@ -45,10 +45,9 @@ type collector struct {
 // scope carries the type information available at a call site: the enclosing
 // class name, its property types, the current function's parameter types and
 // local variables assigned a `new X()`, so `$this->prop` and typed `$param` or
-// `$local` variables resolve to a class. Class names are stored fully qualified
-// so a written type is absolute; call keys use the short name (see shortName).
+// `$local` variables resolve to a class. Class names are stored fully qualified,
+// both for written types and call keys.
 type scope struct {
-	class      string
 	classFQCN  string
 	properties map[string]string // property name -> fully qualified class name
 	params     map[string]string // parameter variable name -> fully qualified class name
@@ -63,12 +62,8 @@ func (c *collector) walk(node ast.Vertex, sc scope) {
 	}
 
 	switch typed := node.(type) {
-	case *ast.StmtClass:
-		sc = c.classScope(typed, typed.Name)
-	case *ast.StmtTrait:
-		sc = c.classScope(typed, typed.Name)
-	case *ast.StmtEnum:
-		sc = c.classScope(typed, typed.Name)
+	case *ast.StmtClass, *ast.StmtTrait, *ast.StmtEnum:
+		sc = c.classScope(typed)
 	case *ast.StmtFunction:
 		sc.params = c.paramClasses(typed.Params, sc.classFQCN)
 		sc.locals = c.localClasses(typed.Stmts, typed.Params)
@@ -92,7 +87,6 @@ func (c *collector) walk(node ast.Vertex, sc scope) {
 }
 
 func (c *collector) visit(node ast.Vertex, sc scope) {
-	class := sc.class
 	switch typed := node.(type) {
 	case *ast.ExprFunctionCall:
 		name := phpast.ShortName(typed.Function)
@@ -102,7 +96,7 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 		c.record(typed.Args, Record{IsFunction: true, Name: name}, sc)
 
 	case *ast.ExprNew:
-		name := phpast.ShortName(typed.Class)
+		name := phpast.ResolvedName(c.names, typed.Class)
 		if name == "" {
 			return
 		}
@@ -113,14 +107,14 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 		if !ok {
 			return
 		}
-		target := staticClassName(typed.Class, class)
+		target := c.staticClassName(typed.Class, sc.classFQCN)
 		if target == "" {
 			return
 		}
 		c.record(typed.Args, Record{Class: target, Name: string(method.Value)}, sc)
 
 	case *ast.ExprMethodCall:
-		target := callTarget(typed.Var, sc)
+		target := argClass(typed.Var, sc)
 		if target == "" {
 			return
 		}
@@ -131,7 +125,7 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 		c.record(typed.Args, Record{Class: target, Name: string(method.Value)}, sc)
 
 	case *ast.ExprNullsafeMethodCall:
-		target := callTarget(typed.Var, sc)
+		target := argClass(typed.Var, sc)
 		if target == "" {
 			return
 		}
@@ -143,53 +137,27 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 	}
 }
 
-// classScope builds the scope for a class/trait/enum: its short name for call
-// keys, its fully qualified name for typing `$this`, and its property types.
-func (c *collector) classScope(class ast.Vertex, nameNode ast.Vertex) scope {
+// classScope builds the scope for a class/trait/enum: its fully qualified name
+// for call keys and typing `$this`, and its property types.
+func (c *collector) classScope(class ast.Vertex) scope {
+	classFQCN := phpast.ResolvedName(c.names, class)
 	return scope{
-		class:      phpast.ShortName(nameNode),
-		classFQCN:  c.names[class],
-		properties: c.classProperties(class, c.names[class]),
+		classFQCN:  classFQCN,
+		properties: c.classProperties(class, classFQCN),
 	}
-}
-
-// callTarget resolves the short class name a method call is made on, used as the
-// method's lookup key: `$this` maps to the enclosing class, a typed parameter or
-// `new X()` local to its type, and a `$this->prop` fetch to the property type.
-func callTarget(varNode ast.Vertex, sc scope) string {
-	switch typed := varNode.(type) {
-	case *ast.ExprVariable:
-		name := phpast.VariableName(varNode)
-		if name == "this" {
-			return sc.class
-		}
-		if class := sc.params[name]; class != "" {
-			return shortName(class)
-		}
-		return shortName(sc.locals[name])
-	case *ast.ExprPropertyFetch:
-		if phpast.IsThisVariable(typed.Var) {
-			return shortName(sc.properties[phpast.ShortName(typed.Prop)])
-		}
-	case *ast.ExprNullsafePropertyFetch:
-		if phpast.IsThisVariable(typed.Var) {
-			return shortName(sc.properties[phpast.ShortName(typed.Prop)])
-		}
-	}
-	return ""
 }
 
 // staticClassName resolves the class of a static call: self/static map to the
-// enclosing class, parent is unresolvable, anything else is a plain name.
-func staticClassName(classNode ast.Vertex, enclosing string) string {
-	name := phpast.ShortName(classNode)
-	switch strings.ToLower(name) {
+// enclosing class, parent is unresolvable, anything else is resolved from the
+// file's namespace and imports.
+func (c *collector) staticClassName(classNode ast.Vertex, enclosing string) string {
+	switch strings.ToLower(phpast.ShortName(classNode)) {
 	case "self", "static":
 		return enclosing
 	case "parent":
 		return ""
 	default:
-		return name
+		return phpast.ResolvedName(c.names, classNode)
 	}
 }
 
@@ -307,15 +275,6 @@ func merge(base, over map[string]string) map[string]string {
 	return merged
 }
 
-// shortName returns the last segment of a fully qualified name, the form used
-// as a method lookup key.
-func shortName(fqcn string) string {
-	if index := strings.LastIndex(fqcn, "\\"); index >= 0 {
-		return fqcn[index+1:]
-	}
-	return fqcn
-}
-
 func (c *collector) record(args []ast.Vertex, base Record, sc scope) {
 	for position, argNode := range args {
 		arg, ok := argNode.(*ast.Argument)
@@ -369,7 +328,7 @@ func (c *collector) argType(expr ast.Vertex, sc scope) string {
 		}
 	}
 
-	typeName := c.symbols.TypeOfExpr(expr, sc.class)
+	typeName := c.symbols.TypeOfExpr(expr, sc.classFQCN, c.names)
 	if !strings.HasPrefix(typeName, "object:") {
 		return typeName
 	}
@@ -422,7 +381,8 @@ func (c *collector) newChainClass(expr ast.Vertex) string {
 }
 
 // argClass resolves the fully qualified class of a variable or `$this->prop`
-// argument: `$this`, a typed parameter, a `new X()` local, or a typed property.
+// argument or method-call target: `$this`, a typed parameter, a `new X()`
+// local, or a typed property.
 func argClass(expr ast.Vertex, sc scope) string {
 	switch typed := expr.(type) {
 	case *ast.ExprVariable:

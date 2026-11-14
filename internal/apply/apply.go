@@ -115,7 +115,7 @@ func (a *applier) applyFunction(function *ast.StmtFunction) {
 			}
 			continue
 		}
-		if resolved, ok := a.defaultType(param, "", ""); ok && a.options.allows(resolved, "") {
+		if resolved, ok := a.defaultType(param, ""); ok && a.options.allows(resolved, "") {
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
 		}
 	}
@@ -132,11 +132,9 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 		return
 	}
 
-	className := ""
 	classFQCN := ""
 	if class != nil {
-		className = phpast.ShortName(class.Name)
-		classFQCN = a.names[class]
+		classFQCN = phpast.ResolvedName(a.names, class)
 	}
 
 	added := map[string]string{}
@@ -147,7 +145,7 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 		if !ok || !typeable(param) {
 			continue
 		}
-		if resolved, ok := a.types.Method(className, name, position); ok {
+		if resolved, ok := a.types.Method(classFQCN, name, position); ok {
 			docType := literalDocType(param, resolved)
 			if !a.options.allows(resolved, docType) {
 				continue
@@ -159,7 +157,7 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 			}
 			continue
 		}
-		if resolved, ok := a.defaultType(param, className, classFQCN); ok && a.options.allows(resolved, "") {
+		if resolved, ok := a.defaultType(param, classFQCN); ok && a.options.allows(resolved, "") {
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
 		}
 	}
@@ -169,13 +167,13 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass)
 
 // defaultType infers a parameter type from its literal default value, so
 // `$page = 1` becomes `int $page = 1` even with no call site. A `null` default
-// carries no type of its own; enclosing (short name) resolves `self::` constants
-// and enclosingFQCN qualifies an object default such as an enum case.
-func (a *applier) defaultType(param *ast.Parameter, enclosing, enclosingFQCN string) (aggregate.Resolved, bool) {
+// carries no type of its own; enclosingFQCN resolves `self::` constants and
+// qualifies an object default such as an enum case.
+func (a *applier) defaultType(param *ast.Parameter, enclosingFQCN string) (aggregate.Resolved, bool) {
 	if param.DefaultValue == nil {
 		return aggregate.Resolved{}, false
 	}
-	typeName := a.symbols.TypeOfExpr(param.DefaultValue, enclosing)
+	typeName := a.symbols.TypeOfExpr(param.DefaultValue, enclosingFQCN, a.names)
 	if typeName == "" || typeName == "null" {
 		return aggregate.Resolved{}, false
 	}
