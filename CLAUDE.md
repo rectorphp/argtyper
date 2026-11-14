@@ -64,5 +64,41 @@ php-parser-in-go and pinned to Go `1.26.6`:
 
 - `build` - vet, build, test -race, `go mod tidy` check
 - `format` - `gofmt -s` and `go fix`
-- `analysis` - gopls modernize and golangci-lint
+- `analysis` - modernize and golangci-lint
 - `security` - govulncheck
+
+Pin every tool version in CI - never `@latest`. An unpinned modernize broke
+`main` when gopls dropped its `cmd/modernize` package; it now runs from
+`golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize@<version>`.
+Run the same command locally before pushing.
+
+## Internals worth knowing
+
+- **Type vocabulary** - types travel as plain strings: `int`, `float`, `string`,
+  `bool`, `array`, `null`, `callable`, or `object:Fqcn`. `null` becomes
+  nullability, `callable` (from a closure argument) poisons the parameter so it
+  is never typed. `apply.typeText` turns `object:X` into `\X`.
+- **Unresolved arguments** produce a record with an empty `Type`. It never adds
+  a type, but marks the group as not fully literal, which blocks the
+  `'a'|'b'` docblock (`aggregate.group.nonLiterals`).
+- **Lookup keys use short class names** (`Foo`, not `App\Foo`): records in
+  `collect`, `aggregate.Types` keys and `symbols` enums/consts. Fully qualified
+  names are only used for the written type text and the inheritance table.
+  Same-named classes in different namespaces therefore share records.
+- **Every file is parsed once per stage** (symbols, inherit, collect, apply);
+  vendor files only for inherit. All stages run sequentially.
+- **Printing** - `phpast.Print` reprints via tokens; edits work by swapping
+  nodes and moving `FreeFloating` whitespace tokens (see `apply.takeVarLeading`,
+  `phpast.AddDocParams`). Untouched code stays byte-for-byte.
+- **`phpast.Children`** walks any node via reflection, so new AST node types
+  need no traversal code.
+- **Default values** type a parameter even with no call site
+  (`$page = 1` -> `int $page = 1`), see `apply.defaultType`.
+- **`diff.Lines`** compares line by line and assumes equal line counts, so a
+  `--dry` run that adds or removes docblock lines prints a misaligned diff.
+
+## Testing
+
+Tests are table-style per package, feeding PHP source strings straight into
+`collect.FromSource` / `apply.Source` and asserting on the output. Add a case
+next to the closest existing one rather than a new test file.
