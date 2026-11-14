@@ -98,32 +98,10 @@ func (a *applier) walk(node ast.Vertex, class ast.Vertex) {
 
 func (a *applier) applyFunction(function *ast.StmtFunction) {
 	name := phpast.ShortName(function.Name)
-	added := map[string]string{}
-	docs := map[string]string{}
-	var order []string
-	for position, paramNode := range function.Params {
-		param, ok := paramNode.(*ast.Parameter)
-		if !ok || !typeable(param) {
-			continue
-		}
-		if resolved, ok := a.types.Function(name, position); ok {
-			docType := literalDocType(param, resolved)
-			if !a.options.allows(resolved, docType) {
-				continue
-			}
-			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
-			if docType != "" {
-				docs[phpast.VariableName(param.Var)] = docType
-				order = append(order, phpast.VariableName(param.Var))
-			}
-			continue
-		}
-		if resolved, ok := a.defaultType(param, ""); ok && a.options.allows(resolved, "") {
-			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
-		}
+	lookup := func(position int) (aggregate.Resolved, bool) {
+		return a.types.Function(name, position)
 	}
-	phpast.StripRedundantDocParams(function, added)
-	phpast.AddDocParams(function, docs, order)
+	a.applyParams(function, function.Params, lookup, "")
 }
 
 func (a *applier) applyMethod(method *ast.StmtClassMethod, class ast.Vertex) {
@@ -140,15 +118,25 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class ast.Vertex) {
 		classFQCN = phpast.ResolvedName(a.names, class)
 	}
 
+	lookup := func(position int) (aggregate.Resolved, bool) {
+		return a.types.Method(classFQCN, name, position)
+	}
+	a.applyParams(method, method.Params, lookup, classFQCN)
+}
+
+// applyParams types the params of a function or method node: from the call-site
+// type found by lookup, else from a literal default value. enclosingFQCN names
+// the class, empty for a plain function.
+func (a *applier) applyParams(node ast.Vertex, params []ast.Vertex, lookup func(position int) (aggregate.Resolved, bool), enclosingFQCN string) {
 	added := map[string]string{}
 	docs := map[string]string{}
 	var order []string
-	for position, paramNode := range method.Params {
+	for position, paramNode := range params {
 		param, ok := paramNode.(*ast.Parameter)
 		if !ok || !typeable(param) {
 			continue
 		}
-		if resolved, ok := a.types.Method(classFQCN, name, position); ok {
+		if resolved, ok := lookup(position); ok {
 			docType := literalDocType(param, resolved)
 			if !a.options.allows(resolved, docType) {
 				continue
@@ -160,12 +148,12 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class ast.Vertex) {
 			}
 			continue
 		}
-		if resolved, ok := a.defaultType(param, classFQCN); ok && a.options.allows(resolved, "") {
+		if resolved, ok := a.defaultType(param, enclosingFQCN); ok && a.options.allows(resolved, "") {
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
 		}
 	}
-	phpast.StripRedundantDocParams(method, added)
-	phpast.AddDocParams(method, docs, order)
+	phpast.StripRedundantDocParams(node, added)
+	phpast.AddDocParams(node, docs, order)
 }
 
 // defaultType infers a parameter type from its literal default value, so
@@ -181,7 +169,7 @@ func (a *applier) defaultType(param *ast.Parameter, enclosingFQCN string) (aggre
 		return aggregate.Resolved{}, false
 	}
 	if typeName.IsObject() {
-		if fqcn := a.objectFQCN(param.DefaultValue, enclosingFQCN); fqcn != "" {
+		if fqcn := phpast.ObjectFQCN(param.DefaultValue, a.names, enclosingFQCN); fqcn != "" {
 			typeName = valuetype.Object(fqcn)
 		}
 	}
@@ -211,22 +199,6 @@ func literalDocType(param *ast.Parameter, resolved aggregate.Resolved) string {
 		docType += "|null"
 	}
 	return docType
-}
-
-// objectFQCN qualifies the class of a `new X()` or `X::CASE` default value,
-// mapping self/static to the enclosing class. Empty when it cannot be resolved.
-func (a *applier) objectFQCN(expr ast.Vertex, enclosingFQCN string) string {
-	classNode := phpast.ObjectClassNode(expr)
-	if classNode == nil {
-		return ""
-	}
-	switch strings.ToLower(phpast.ShortName(classNode)) {
-	case "self", "static":
-		return enclosingFQCN
-	case "parent":
-		return ""
-	}
-	return a.names[classNode]
 }
 
 // setType writes the resolved type onto the parameter and returns the type text

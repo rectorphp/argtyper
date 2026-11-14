@@ -143,6 +143,23 @@ func ObjectClassNode(expr ast.Vertex) ast.Vertex {
 	return nil
 }
 
+// ObjectFQCN qualifies the class of a `new X()` or `X::CASE` value from the
+// resolved names, mapping self/static to enclosingFQCN. Empty when it cannot be
+// resolved.
+func ObjectFQCN(expr ast.Vertex, names map[ast.Vertex]string, enclosingFQCN string) string {
+	classNode := ObjectClassNode(expr)
+	if classNode == nil {
+		return ""
+	}
+	switch strings.ToLower(ShortName(classNode)) {
+	case "self", "static":
+		return enclosingFQCN
+	case "parent":
+		return ""
+	}
+	return names[classNode]
+}
+
 // StripRedundantDocParams removes `@param` lines from a function or method's doc
 // comment when the type they declare equals the type just added for that
 // parameter (added maps parameter name to the written type text). When nothing

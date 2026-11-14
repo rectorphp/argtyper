@@ -115,27 +115,25 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 		c.record(typed.Args, Record{Class: target, Name: string(method.Value)}, sc)
 
 	case *ast.ExprMethodCall:
-		target := argClass(typed.Var, sc)
-		if target == "" {
-			return
-		}
-		method, ok := typed.Method.(*ast.Identifier)
-		if !ok {
-			return
-		}
-		c.record(typed.Args, Record{Class: target, Name: string(method.Value)}, sc)
+		c.recordMethodCall(typed.Var, typed.Method, typed.Args, sc)
 
 	case *ast.ExprNullsafeMethodCall:
-		target := argClass(typed.Var, sc)
-		if target == "" {
-			return
-		}
-		method, ok := typed.Method.(*ast.Identifier)
-		if !ok {
-			return
-		}
-		c.record(typed.Args, Record{Class: target, Name: string(method.Value)}, sc)
+		c.recordMethodCall(typed.Var, typed.Method, typed.Args, sc)
 	}
+}
+
+// recordMethodCall records the arguments of a `$var->method()` call whose target
+// class and method name are statically known.
+func (c *collector) recordMethodCall(varNode, methodNode ast.Vertex, args []ast.Vertex, sc scope) {
+	target := argClass(varNode, sc)
+	if target == "" {
+		return
+	}
+	method, ok := methodNode.(*ast.Identifier)
+	if !ok {
+		return
+	}
+	c.record(args, Record{Class: target, Name: string(method.Value)}, sc)
 }
 
 // classScope builds the scope for a class/trait/enum: its fully qualified name
@@ -333,26 +331,10 @@ func (c *collector) argType(expr ast.Vertex, sc scope) valuetype.Type {
 	if !typeName.IsObject() {
 		return typeName
 	}
-	if fqcn := c.objectFQCN(expr, sc); fqcn != "" {
+	if fqcn := phpast.ObjectFQCN(expr, c.names, sc.classFQCN); fqcn != "" {
 		return valuetype.Object(fqcn)
 	}
 	return typeName
-}
-
-// objectFQCN qualifies the class of a `new X()` or `X::CASE` value, mapping
-// self/static to the enclosing class. Empty when it cannot be resolved.
-func (c *collector) objectFQCN(expr ast.Vertex, sc scope) string {
-	classNode := phpast.ObjectClassNode(expr)
-	if classNode == nil {
-		return ""
-	}
-	switch strings.ToLower(phpast.ShortName(classNode)) {
-	case "self", "static":
-		return sc.classFQCN
-	case "parent":
-		return ""
-	}
-	return c.names[classNode]
 }
 
 // newChainClass returns the fully qualified class of the object a method chain
@@ -396,15 +378,20 @@ func argClass(expr ast.Vertex, sc scope) string {
 		}
 		return sc.locals[name]
 	case *ast.ExprPropertyFetch:
-		if phpast.IsThisVariable(typed.Var) {
-			return sc.properties[phpast.ShortName(typed.Prop)]
-		}
+		return thisPropertyClass(typed.Var, typed.Prop, sc)
 	case *ast.ExprNullsafePropertyFetch:
-		if phpast.IsThisVariable(typed.Var) {
-			return sc.properties[phpast.ShortName(typed.Prop)]
-		}
+		return thisPropertyClass(typed.Var, typed.Prop, sc)
 	}
 	return ""
+}
+
+// thisPropertyClass resolves the class of a `$this->prop` fetch from the
+// enclosing class's property types. Empty for any other fetch.
+func thisPropertyClass(varNode, propNode ast.Vertex, sc scope) string {
+	if !phpast.IsThisVariable(varNode) {
+		return ""
+	}
+	return sc.properties[phpast.ShortName(propNode)]
 }
 
 // localClasses maps local variables assigned a `new X()` to their fully
