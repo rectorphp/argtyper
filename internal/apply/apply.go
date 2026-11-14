@@ -10,6 +10,7 @@ import (
 	"github.com/rectorphp/argtyper/internal/inherit"
 	"github.com/rectorphp/argtyper/internal/phpast"
 	"github.com/rectorphp/argtyper/internal/symbols"
+	"github.com/rectorphp/argtyper/internal/valuetype"
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
 	"github.com/rectorphp/php-parser-in-go/pkg/token"
 )
@@ -58,7 +59,7 @@ func (o Options) allows(resolved aggregate.Resolved, docType string) bool {
 
 func onlyObjects(resolved aggregate.Resolved) bool {
 	for _, member := range resolved.Types {
-		if !strings.HasPrefix(member, "object:") {
+		if !member.IsObject() {
 			return false
 		}
 	}
@@ -176,15 +177,15 @@ func (a *applier) defaultType(param *ast.Parameter, enclosingFQCN string) (aggre
 		return aggregate.Resolved{}, false
 	}
 	typeName := a.symbols.TypeOfExpr(param.DefaultValue, enclosingFQCN, a.names)
-	if typeName == "" || typeName == "null" {
+	if typeName == valuetype.Unknown || typeName == valuetype.Null {
 		return aggregate.Resolved{}, false
 	}
-	if strings.HasPrefix(typeName, "object:") {
+	if typeName.IsObject() {
 		if fqcn := a.objectFQCN(param.DefaultValue, enclosingFQCN); fqcn != "" {
-			typeName = "object:" + fqcn
+			typeName = valuetype.Object(fqcn)
 		}
 	}
-	return aggregate.Resolved{Types: []string{typeName}}, true
+	return aggregate.Resolved{Types: []valuetype.Type{typeName}}, true
 }
 
 // literalDocType returns a `'a'|'b'` doc type for a parameter that only ever
@@ -290,11 +291,11 @@ func takeVarLeading(param *ast.Parameter) []*token.Token {
 
 // typeText turns a resolved type into the text written into source. The trailing
 // space that separates the type from the variable is added by the caller.
-func typeText(resolved string) string {
-	if after, ok := strings.CutPrefix(resolved, "object:"); ok {
-		return "\\" + after
+func typeText(resolved valuetype.Type) string {
+	if resolved.IsObject() {
+		return "\\" + resolved.Class()
 	}
-	return resolved
+	return string(resolved)
 }
 
 // typeable reports whether a parameter can receive a type: none yet and not

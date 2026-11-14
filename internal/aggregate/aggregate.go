@@ -8,12 +8,13 @@ import (
 	"strconv"
 
 	"github.com/rectorphp/argtyper/internal/collect"
+	"github.com/rectorphp/argtyper/internal/valuetype"
 )
 
 // Resolved is the final type decision for one parameter position. Two or more
 // types observed for the same parameter become a union.
 type Resolved struct {
-	Types    []string // one or more source type keywords or "object:Fqcn", never "null"
+	Types    []valuetype.Type // one or more types, never Null
 	Nullable bool
 	Literals []string // sorted string literal values, set only for a plain string type, see literalValues
 }
@@ -25,7 +26,7 @@ const (
 
 // group collects everything observed for one parameter position.
 type group struct {
-	types    map[string]struct{}
+	types    map[valuetype.Type]struct{}
 	literals map[string]struct{}
 	// set when a string other than a plain literal, or an unresolved value, was
 	// passed - the literals then no longer cover every argument
@@ -77,20 +78,20 @@ func resolveGroups(groups map[string]*group) map[string]Resolved {
 	resolved := map[string]Resolved{}
 
 	for key, group := range groups {
-		types := make([]string, 0, len(group.types))
+		types := make([]valuetype.Type, 0, len(group.types))
 		for typeName := range group.types {
 			types = append(types, typeName)
 		}
-		sort.Strings(types)
+		slices.Sort(types)
 
 		// a callable argument (a closure) leaves the parameter untyped, since a
 		// callable can take many shapes that must not be narrowed
-		if contains(types, "callable") {
+		if contains(types, valuetype.Callable) {
 			continue
 		}
 
-		nullable := contains(types, "null")
-		members := without(types, "null")
+		nullable := contains(types, valuetype.Null)
+		members := without(types, valuetype.Null)
 		if len(members) == 0 {
 			continue
 		}
@@ -103,8 +104,8 @@ func resolveGroups(groups map[string]*group) map[string]Resolved {
 // literalValues returns the string literals passed into a plain string
 // parameter, when every argument was a string literal or null and there are a few
 // distinct ones - an enum-like set worth a `'a'|'b'` doc type.
-func literalValues(members []string, group *group) []string {
-	if len(members) != 1 || members[0] != "string" || group.nonLiterals {
+func literalValues(members []valuetype.Type, group *group) []string {
+	if len(members) != 1 || members[0] != valuetype.String || group.nonLiterals {
 		return nil
 	}
 	if len(group.literals) < minLiterals || len(group.literals) > maxLiterals {
@@ -120,17 +121,17 @@ func literalValues(members []string, group *group) []string {
 
 func addRecord(groups map[string]*group, key string, record collect.Record) {
 	if groups[key] == nil {
-		groups[key] = &group{types: map[string]struct{}{}, literals: map[string]struct{}{}}
+		groups[key] = &group{types: map[valuetype.Type]struct{}{}, literals: map[string]struct{}{}}
 	}
 	switch {
-	case record.Type == "":
+	case record.Type == valuetype.Unknown:
 		groups[key].nonLiterals = true
 	case record.IsLiteral:
 		groups[key].types[record.Type] = struct{}{}
 		groups[key].literals[record.Literal] = struct{}{}
 	default:
 		groups[key].types[record.Type] = struct{}{}
-		if record.Type == "string" {
+		if record.Type == valuetype.String {
 			groups[key].nonLiterals = true
 		}
 	}
@@ -144,12 +145,12 @@ func functionKey(name string, position int) string {
 	return name + "\x00" + strconv.Itoa(position)
 }
 
-func contains(values []string, needle string) bool {
+func contains(values []valuetype.Type, needle valuetype.Type) bool {
 	return slices.Contains(values, needle)
 }
 
-func without(values []string, needle string) []string {
-	kept := make([]string, 0, len(values))
+func without(values []valuetype.Type, needle valuetype.Type) []valuetype.Type {
+	kept := make([]valuetype.Type, 0, len(values))
 	for _, value := range values {
 		if value != needle {
 			kept = append(kept, value)

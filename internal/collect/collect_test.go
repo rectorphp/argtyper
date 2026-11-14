@@ -5,6 +5,7 @@ import (
 
 	"github.com/rectorphp/argtyper/internal/collect"
 	"github.com/rectorphp/argtyper/internal/symbols"
+	"github.com/rectorphp/argtyper/internal/valuetype"
 )
 
 func TestFromSource(t *testing.T) {
@@ -51,7 +52,7 @@ func TestFromSource(t *testing.T) {
 		{
 			name: "new as argument is object type",
 			src:  "<?php\nf(new Foo());",
-			want: []collect.Record{{IsFunction: true, Name: "f", Position: 0, Type: "object:Foo"}},
+			want: []collect.Record{{IsFunction: true, Name: "f", Position: 0, Type: valuetype.Object("Foo")}},
 		},
 		{
 			name: "variable argument is recorded as unresolved",
@@ -109,12 +110,12 @@ func TestFromSource(t *testing.T) {
 		{
 			name: "method chain rooted at new resolves to receiver class",
 			src:  "<?php\nclass A {\n  function go() { $this->set(new \\DateTime()->modify('+2 hours')); }\n}",
-			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: "object:DateTime"}},
+			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: valuetype.Object("DateTime")}},
 		},
 		{
 			name: "nullsafe method chain rooted at new resolves to receiver class",
 			src:  "<?php\nclass A {\n  function go() { $this->set(new \\DateTime()?->modify('+2 hours')); }\n}",
-			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: "object:DateTime"}},
+			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: valuetype.Object("DateTime")}},
 		},
 		{
 			name: "coalesce contributes both sides",

@@ -12,7 +12,7 @@ func TestOf(t *testing.T) {
 	tests := []struct {
 		name string
 		expr string // a single expression, wrapped as an argument below
-		want string
+		want valuetype.Type
 	}{
 		{"int literal", "1", "int"},
 		{"float literal", "1.5", "float"},
@@ -24,7 +24,7 @@ func TestOf(t *testing.T) {
 		{"closure", "function () {}", "callable"},
 		{"arrow function", "fn () => 1", "callable"},
 		{"class name fetch", "Foo::class", "string"},
-		{"new object", "new Money()", "object:Money"},
+		{"new object", "new Money()", valuetype.Object("Money")},
 		{"builtin int return", "strlen($x)", "int"},
 		{"builtin string return", "sprintf('%d', $n)", "string"},
 		{"builtin float return", "floor($n)", "float"},

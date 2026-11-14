@@ -8,18 +8,19 @@ import (
 
 	"github.com/rectorphp/argtyper/internal/phpast"
 	"github.com/rectorphp/argtyper/internal/symbols"
+	"github.com/rectorphp/argtyper/internal/valuetype"
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
 )
 
 // Record is a single argument type observed at a call site.
 type Record struct {
-	IsFunction bool   // true for a plain function call, false for a method/constructor
-	Class      string // fully qualified class name for method/constructor calls, short name when unresolved
-	Name       string // method or function name
-	Position   int    // zero-based positional argument index
-	Type       string // "int", "float", "string", "bool", "array", "null" or "object:Fqcn"; empty when unresolved
-	IsLiteral  bool   // true when the argument is a plain string literal, see phpast.StringLiteral
-	Literal    string // the string literal value, when IsLiteral
+	IsFunction bool           // true for a plain function call, false for a method/constructor
+	Class      string         // fully qualified class name for method/constructor calls, short name when unresolved
+	Name       string         // method or function name
+	Position   int            // zero-based positional argument index
+	Type       valuetype.Type // a scalar, callable or object of a fully qualified class; Unknown when unresolved
+	IsLiteral  bool           // true when the argument is a plain string literal, see phpast.StringLiteral
+	Literal    string         // the string literal value, when IsLiteral
 }
 
 // FromSource collects records from a single PHP source file. The symbols table
@@ -291,7 +292,7 @@ func (c *collector) record(args []ast.Vertex, base Record, sc scope) {
 			record := base
 			record.Position = position
 			record.Type = typeName
-			if isLiteral && typeName == "string" {
+			if isLiteral && typeName == valuetype.String {
 				record.IsLiteral = true
 				record.Literal = literal
 			}
@@ -305,35 +306,35 @@ func (c *collector) record(args []ast.Vertex, base Record, sc scope) {
 // parameter nullable; every other expression contributes one type. A value that
 // cannot be resolved contributes an empty type, so the aggregate knows not every
 // argument was seen.
-func (c *collector) argTypes(expr ast.Vertex, sc scope) []string {
+func (c *collector) argTypes(expr ast.Vertex, sc scope) []valuetype.Type {
 	if coalesce, ok := expr.(*ast.ExprBinaryCoalesce); ok {
 		return append(c.argTypes(coalesce.Left, sc), c.argTypes(coalesce.Right, sc)...)
 	}
-	return []string{c.argType(expr, sc)}
+	return []valuetype.Type{c.argType(expr, sc)}
 }
 
 // argType returns the type of an argument value as a fully qualified object
 // type or a scalar keyword. A typed variable or property resolves to its class;
 // otherwise the symbols table handles literals, constants and enum cases, and an
 // object result (`new X()`, an enum case) is qualified from the class node.
-func (c *collector) argType(expr ast.Vertex, sc scope) string {
+func (c *collector) argType(expr ast.Vertex, sc scope) valuetype.Type {
 	if class := argClass(expr, sc); class != "" {
-		return "object:" + class
+		return valuetype.Object(class)
 	}
 
 	switch expr.(type) {
 	case *ast.ExprMethodCall, *ast.ExprNullsafeMethodCall:
 		if class := c.newChainClass(expr); class != "" {
-			return "object:" + class
+			return valuetype.Object(class)
 		}
 	}
 
 	typeName := c.symbols.TypeOfExpr(expr, sc.classFQCN, c.names)
-	if !strings.HasPrefix(typeName, "object:") {
+	if !typeName.IsObject() {
 		return typeName
 	}
 	if fqcn := c.objectFQCN(expr, sc); fqcn != "" {
-		return "object:" + fqcn
+		return valuetype.Object(fqcn)
 	}
 	return typeName
 }

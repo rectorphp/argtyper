@@ -13,17 +13,17 @@ import (
 
 // Table holds the project symbols gathered across every file.
 type Table struct {
-	enums       map[string]bool   // fully qualified enum name
-	consts      map[string]string // CONST name -> type
-	classConsts map[string]string // "Fqcn\x00CONST" -> type
+	enums       map[string]bool           // fully qualified enum name
+	consts      map[string]valuetype.Type // CONST name -> type
+	classConsts map[string]valuetype.Type // "Fqcn\x00CONST" -> type
 }
 
 // New returns an empty table ready for Collect.
 func New() *Table {
 	return &Table{
 		enums:       map[string]bool{},
-		consts:      map[string]string{},
-		classConsts: map[string]string{},
+		consts:      map[string]valuetype.Type{},
+		classConsts: map[string]valuetype.Type{},
 	}
 }
 
@@ -75,7 +75,7 @@ func (t *Table) recordConsts(consts []ast.Vertex, enclosing string) {
 		}
 		name := phpast.ShortName(constant.Name)
 		typeName := valuetype.Of(constant.Expr)
-		if name == "" || typeName == "" || typeName == "null" {
+		if name == "" || typeName == valuetype.Unknown || typeName == valuetype.Null {
 			continue
 		}
 		if enclosing == "" {
@@ -104,7 +104,7 @@ func (t *Table) recordDefine(call *ast.ExprFunctionCall) {
 		return
 	}
 	typeName := valuetype.Of(valueArg.Expr)
-	if typeName == "" || typeName == "null" {
+	if typeName == valuetype.Unknown || typeName == valuetype.Null {
 		return
 	}
 	t.consts[name] = typeName
@@ -114,14 +114,14 @@ func (t *Table) recordDefine(call *ast.ExprFunctionCall) {
 // constants and enum cases and falling back to valuetype for everything else.
 // enclosing is the fully qualified class the expression sits in, for
 // `self::`/`static::`, and names is the ResolveNames map of its file.
-func (t *Table) TypeOfExpr(expr ast.Vertex, enclosing string, names map[ast.Vertex]string) string {
+func (t *Table) TypeOfExpr(expr ast.Vertex, enclosing string, names map[ast.Vertex]string) valuetype.Type {
 	switch typed := expr.(type) {
 	case *ast.ExprConstFetch:
-		if name := phpast.ShortName(typed.Const); t.consts[name] != "" {
+		if name := phpast.ShortName(typed.Const); t.consts[name] != valuetype.Unknown {
 			return t.consts[name]
 		}
 	case *ast.ExprClassConstFetch:
-		if resolved := t.classConst(typed, enclosing, names); resolved != "" {
+		if resolved := t.classConst(typed, enclosing, names); resolved != valuetype.Unknown {
 			return resolved
 		}
 	}
@@ -129,10 +129,10 @@ func (t *Table) TypeOfExpr(expr ast.Vertex, enclosing string, names map[ast.Vert
 }
 
 // classConst resolves `Class::CONST` and `Enum::Case` from the table.
-func (t *Table) classConst(fetch *ast.ExprClassConstFetch, enclosing string, names map[ast.Vertex]string) string {
+func (t *Table) classConst(fetch *ast.ExprClassConstFetch, enclosing string, names map[ast.Vertex]string) valuetype.Type {
 	constName := phpast.ShortName(fetch.Const)
 	if constName == "" || strings.EqualFold(constName, "class") {
-		return ""
+		return valuetype.Unknown
 	}
 
 	var class string
@@ -140,16 +140,16 @@ func (t *Table) classConst(fetch *ast.ExprClassConstFetch, enclosing string, nam
 	case "self", "static":
 		class = enclosing
 	case "parent":
-		return ""
+		return valuetype.Unknown
 	default:
 		class = phpast.ResolvedName(names, fetch.Class)
 	}
 	if class == "" {
-		return ""
+		return valuetype.Unknown
 	}
 
 	if t.enums[class] {
-		return "object:" + class
+		return valuetype.Object(class)
 	}
 	return t.classConsts[classConstKey(class, constName)]
 }

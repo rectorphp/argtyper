@@ -74,10 +74,11 @@ Run the same command locally before pushing.
 
 ## Internals worth knowing
 
-- **Type vocabulary** - types travel as plain strings: `int`, `float`, `string`,
-  `bool`, `array`, `null`, `callable`, or `object:Fqcn`. `null` becomes
-  nullability, `callable` (from a closure argument) poisons the parameter so it
-  is never typed. `apply.typeText` turns `object:X` into `\X`.
+- **Type vocabulary** - types travel as `valuetype.Type`: constants `Int`,
+  `Float`, `String`, `Bool`, `Array`, `Null`, `Callable`, `Unknown` (empty), or
+  `valuetype.Object(fqcn)` checked with `IsObject()` and read with `Class()`.
+  `Null` becomes nullability, `Callable` (from a closure argument) poisons the
+  parameter so it is never typed. `apply.typeText` turns an object into `\X`.
 - **Unresolved arguments** produce a record with an empty `Type`. It never adds
   a type, but marks the group as not fully literal, which blocks the
   `'a'|'b'` docblock (`aggregate.group.nonLiterals`).
