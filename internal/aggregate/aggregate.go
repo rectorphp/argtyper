@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/rectorphp/argtyper/internal/collect"
+	"github.com/rectorphp/argtyper/internal/phpast"
 	"github.com/rectorphp/argtyper/internal/valuetype"
 )
 
@@ -34,7 +35,7 @@ type group struct {
 }
 
 // Types holds resolved parameter types keyed for fast lookup during apply.
-// Method keys use the fully qualified class name.
+// Method keys use the lowercased fully qualified class name.
 type Types struct {
 	methods   map[string]Resolved // class \x00 method \x00 position
 	functions map[string]Resolved // function \x00 position
@@ -83,6 +84,7 @@ func resolveGroups(groups map[string]*group) map[string]Resolved {
 			types = append(types, typeName)
 		}
 		slices.Sort(types)
+		types = dedupeClasses(types)
 
 		// a callable argument (a closure) leaves the parameter untyped, since a
 		// callable can take many shapes that must not be narrowed
@@ -137,8 +139,27 @@ func addRecord(groups map[string]*group, key string, record collect.Record) {
 	}
 }
 
+// dedupeClasses drops object types naming the same class in another case, as
+// PHP class names are case-insensitive. Types are sorted, so the kept casing is
+// deterministic.
+func dedupeClasses(types []valuetype.Type) []valuetype.Type {
+	seen := map[string]bool{}
+	kept := make([]valuetype.Type, 0, len(types))
+	for _, typeName := range types {
+		if typeName.IsObject() {
+			key := phpast.ClassKey(typeName.Class())
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+		}
+		kept = append(kept, typeName)
+	}
+	return kept
+}
+
 func methodKey(class, method string, position int) string {
-	return class + "\x00" + method + "\x00" + strconv.Itoa(position)
+	return phpast.ClassKey(class) + "\x00" + method + "\x00" + strconv.Itoa(position)
 }
 
 func functionKey(name string, position int) string {

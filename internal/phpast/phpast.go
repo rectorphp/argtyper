@@ -131,6 +131,12 @@ func ResolvedName(names map[ast.Vertex]string, node ast.Vertex) string {
 	return ShortName(node)
 }
 
+// ClassKey returns a class name as a lookup key. PHP class names are
+// case-insensitive, so keys are lowercased; written type text keeps its case.
+func ClassKey(name string) string {
+	return strings.ToLower(name)
+}
+
 // ObjectClassNode returns the class-name node of a value that produces an
 // object - `new X()` or a `X::CASE` enum case - or nil for anything else.
 func ObjectClassNode(expr ast.Vertex) ast.Vertex {

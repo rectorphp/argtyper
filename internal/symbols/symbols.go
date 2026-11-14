@@ -14,9 +14,9 @@ import (
 
 // Table holds the project symbols gathered across every file.
 type Table struct {
-	enums       map[string]bool           // fully qualified enum name
+	enums       map[string]bool           // lowercased fully qualified enum name
 	consts      map[string]valuetype.Type // CONST name -> type
-	classConsts map[string]valuetype.Type // "Fqcn\x00CONST" -> type
+	classConsts map[string]valuetype.Type // "lowercased fqcn\x00CONST" -> type
 }
 
 // New returns an empty table ready for Collect.
@@ -60,7 +60,7 @@ func (t *Table) walk(node ast.Vertex, enclosing string, names map[ast.Vertex]str
 		enclosing = phpast.ResolvedName(names, typed)
 	case *ast.StmtEnum:
 		enclosing = phpast.ResolvedName(names, typed)
-		t.enums[enclosing] = true
+		t.enums[phpast.ClassKey(enclosing)] = true
 	case *ast.StmtConstList:
 		t.recordConsts(typed.Consts, enclosing)
 	case *ast.StmtClassConstList:
@@ -156,7 +156,7 @@ func (t *Table) classConst(fetch *ast.ExprClassConstFetch, enclosing string, nam
 		return valuetype.Unknown
 	}
 
-	if t.enums[class] {
+	if t.enums[phpast.ClassKey(class)] {
 		return valuetype.Object(class)
 	}
 	return t.classConsts[classConstKey(class, constName)]
@@ -171,5 +171,6 @@ func stringLiteral(expr ast.Vertex) string {
 }
 
 func classConstKey(class, name string) string {
-	return class + "\x00" + name
+	// constant names are case-sensitive, only the class part is normalized
+	return phpast.ClassKey(class) + "\x00" + name
 }
