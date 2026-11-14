@@ -17,6 +17,11 @@ const progressBarWidth = 28
 // in one column. It is the length of the widest label, "collecting".
 const labelColumnWidth = 10
 
+// maxSourceInFlight caps the bytes of source the workers hold at once. A parsed
+// AST takes ~40x its source, so a few generated multi-MB vendor files parsed
+// side by side would otherwise spike the heap; small files never hit the cap.
+const maxSourceInFlight = 2 << 20
+
 // stderrIsTerminal reports whether stderr is an interactive terminal. The live
 // bar redraws in place with a carriage return, which only reads correctly on a
 // terminal; a redirected or piped run stays plain.
@@ -66,6 +71,10 @@ func progressMap[T any](label string, files []string, fn func(file string, src [
 	var mutex sync.Mutex
 	done := 0
 
+	// a file larger than the cap still runs, once nothing else is in flight
+	inFlight := 0
+	budget := sync.NewCond(&mutex)
+
 	var wait sync.WaitGroup
 	for range min(runtime.NumCPU(), total) {
 		wait.Go(func() {
@@ -76,7 +85,19 @@ func progressMap[T any](label string, files []string, fn func(file string, src [
 				}
 				src, err := os.ReadFile(files[index])
 				if err == nil {
+					mutex.Lock()
+					for inFlight > 0 && inFlight+len(src) > maxSourceInFlight {
+						budget.Wait()
+					}
+					inFlight += len(src)
+					mutex.Unlock()
+
 					results[index], err = fn(files[index], src)
+
+					mutex.Lock()
+					inFlight -= len(src)
+					budget.Broadcast()
+					mutex.Unlock()
 				}
 				errs[index] = err
 
