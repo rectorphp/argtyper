@@ -86,8 +86,12 @@ Run the same command locally before pushing.
   `collect`, `aggregate.Types` keys and `symbols` enums/consts. Fully qualified
   names are only used for the written type text and the inheritance table.
   Same-named classes in different namespaces therefore share records.
-- **Every file is parsed once per stage** (symbols, inherit, collect, apply);
-  vendor files only for inherit. All stages run sequentially.
+- **Stages run one after another, files within a stage run in parallel** on
+  `runtime.NumCPU()` workers (`progressMap` in `progress.go`); results are
+  merged in file order, so output is deterministic. Project files are parsed
+  once for symbols + inherit (per-file tables, then `Merge`), once for collect
+  and once for apply; vendor files only for inherit. ASTs are not kept between
+  stages - apply mutates its AST.
 - **Printing** - `phpast.Print` reprints via tokens; edits work by swapping
   nodes and moving `FreeFloating` whitespace tokens (see `apply.takeVarLeading`,
   `phpast.AddDocParams`). Untouched code stays byte-for-byte.

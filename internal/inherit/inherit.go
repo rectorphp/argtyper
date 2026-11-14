@@ -5,6 +5,7 @@
 package inherit
 
 import (
+	"maps"
 	"strings"
 
 	"github.com/rectorphp/argtyper/internal/phpast"
@@ -35,8 +36,17 @@ func (t *Table) CollectSource(src []byte) {
 	if err != nil || root == nil {
 		return
 	}
-	names := phpast.ResolveNames(root)
-	t.walk(root, names)
+	t.Collect(root)
+}
+
+// Collect records the classes and interfaces declared in one parsed file.
+func (t *Table) Collect(root ast.Vertex) {
+	t.walk(root, phpast.ResolveNames(root))
+}
+
+// Merge copies every class of other into t; a class already in t is replaced.
+func (t *Table) Merge(other *Table) {
+	maps.Copy(t.classes, other.classes)
 }
 
 func (t *Table) walk(node ast.Vertex, names map[ast.Vertex]string) {

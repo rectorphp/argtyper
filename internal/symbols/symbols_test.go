@@ -74,6 +74,24 @@ func TestTypeOfExprNamespaced(t *testing.T) {
 	}
 }
 
+func TestMerge(t *testing.T) {
+	table := symbols.New()
+	table.CollectSource([]byte("<?php\nconst MAX = 10;"))
+
+	other := symbols.New()
+	other.CollectSource([]byte("<?php\nnamespace App;\nconst MAX = 'ten';\nenum Status {\n    case Active;\n}"))
+	table.Merge(other)
+
+	expr, names := firstArg(t, "", "MAX")
+	if got := table.TypeOfExpr(expr, "", names); got != "string" {
+		t.Errorf("TypeOfExpr(MAX) = %q, want %q", got, "string")
+	}
+	expr, names = firstArg(t, "namespace App;", "Status::Active")
+	if got := table.TypeOfExpr(expr, "", names); got != "object:App\\Status" {
+		t.Errorf("TypeOfExpr(Status::Active) = %q, want %q", got, "object:App\\Status")
+	}
+}
+
 // firstArg parses `call(<expr>);` after an optional header (namespace or use
 // statement) and returns the argument with the file's resolved names.
 func firstArg(t *testing.T, header, expr string) (ast.Vertex, map[ast.Vertex]string) {
