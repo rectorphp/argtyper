@@ -416,8 +416,8 @@ func indentation(tokens []*token.Token) string {
 			continue
 		}
 		value := string(free.Value)
-		if index := strings.LastIndex(value, "\n"); index >= 0 {
-			return value[index+1:]
+		if _, after, found := strings.CutLast(value, "\n"); found {
+			return after
 		}
 	}
 	return ""
