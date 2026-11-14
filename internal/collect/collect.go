@@ -183,7 +183,7 @@ func (c *collector) classProperties(class ast.Vertex, enclosing string) map[stri
 				}
 			}
 		case *ast.StmtClassMethod:
-			if phpast.ShortName(typed.Name) != "__construct" {
+			if !strings.EqualFold(phpast.ShortName(typed.Name), "__construct") {
 				continue
 			}
 			maps.Copy(properties, c.promotedProperties(typed.Params, enclosing))

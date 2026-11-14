@@ -6,6 +6,7 @@ import (
 	"slices"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/rectorphp/argtyper/internal/collect"
 	"github.com/rectorphp/argtyper/internal/phpast"
@@ -158,12 +159,13 @@ func dedupeClasses(types []valuetype.Type) []valuetype.Type {
 	return kept
 }
 
+// PHP method and function names are case-insensitive, so keys lowercase them.
 func methodKey(class, method string, position int) string {
-	return phpast.ClassKey(class) + "\x00" + method + "\x00" + strconv.Itoa(position)
+	return phpast.ClassKey(class) + "\x00" + strings.ToLower(method) + "\x00" + strconv.Itoa(position)
 }
 
 func functionKey(name string, position int) string {
-	return name + "\x00" + strconv.Itoa(position)
+	return strings.ToLower(name) + "\x00" + strconv.Itoa(position)
 }
 
 func contains(values []valuetype.Type, needle valuetype.Type) bool {

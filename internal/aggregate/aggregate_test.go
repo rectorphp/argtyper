@@ -119,6 +119,23 @@ func TestResolveFunctionAndPositionIsolation(t *testing.T) {
 	}
 }
 
+func TestResolveMatchesNamesCaseInsensitively(t *testing.T) {
+	records := []collect.Record{
+		{Class: "A", Name: "Room", Position: 0, Type: "int"},
+		{IsFunction: true, Name: "Greet", Position: 0, Type: "string"},
+	}
+	types := aggregate.Resolve(records)
+
+	method, ok := types.Method("A", "room", 0)
+	if !ok || join(method.Types) != "int" {
+		t.Errorf("method: got %+v ok=%v", method, ok)
+	}
+	function, ok := types.Function("greet", 0)
+	if !ok || join(function.Types) != "string" {
+		t.Errorf("function: got %+v ok=%v", function, ok)
+	}
+}
+
 func TestResolveLiterals(t *testing.T) {
 	literal := func(value string) collect.Record {
 		return collect.Record{Class: "A", Name: "m", Type: "string", IsLiteral: true, Literal: value}

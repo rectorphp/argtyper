@@ -90,6 +90,11 @@ func TestFromSource(t *testing.T) {
 			want: []collect.Record{{Class: "Repo", Name: "find", Position: 0, Type: "int"}},
 		},
 		{
+			name: "promoted property of constructor in different case resolves this-property call",
+			src:  "<?php\nclass A {\n  function __Construct(private Repo $repo) {}\n  function go() { $this->repo->find(1); }\n}",
+			want: []collect.Record{{Class: "Repo", Name: "find", Position: 0, Type: "int"}},
+		},
+		{
 			name: "nullsafe property call resolves target class",
 			src:  "<?php\nclass A {\n  private Repo $repo;\n  function go() { $this->repo?->find(1); }\n}",
 			want: []collect.Record{{Class: "Repo", Name: "find", Position: 0, Type: "int"}},

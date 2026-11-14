@@ -285,7 +285,7 @@ func typeable(param *ast.Parameter) bool {
 // never saw) is treated as unsafe. Other trait methods are skipped, since the
 // class using the trait may override a parent method with them.
 func (a *applier) methodTypeable(method *ast.StmtClassMethod, class ast.Vertex) bool {
-	if phpast.ShortName(method.Name) == "__construct" {
+	if strings.EqualFold(phpast.ShortName(method.Name), "__construct") {
 		return true
 	}
 	for _, modifierNode := range method.Modifiers {
@@ -320,7 +320,7 @@ func (a *applier) methodTypeable(method *ast.StmtClassMethod, class ast.Vertex) 
 }
 
 func isMagicExceptConstructor(name string) bool {
-	return name != "__construct" && strings.HasPrefix(name, "__")
+	return !strings.EqualFold(name, "__construct") && strings.HasPrefix(name, "__")
 }
 
 func hasNullDefault(param *ast.Parameter) bool {
