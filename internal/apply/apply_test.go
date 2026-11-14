@@ -40,6 +40,11 @@ func TestApply(t *testing.T) {
 			want:   "<?php\nfinal class Hotel {\n    public function room(int $number) {}\n    public function go() { $this->room(5); }\n}",
 		},
 		{
+			name:   "adds int to method called in different case",
+			target: "<?php\nfinal class Hotel {\n    public function room($number) {}\n    public function go() { $this->Room(5); }\n}",
+			want:   "<?php\nfinal class Hotel {\n    public function room(int $number) {}\n    public function go() { $this->Room(5); }\n}",
+		},
+		{
 			name:   "adds string to function",
 			target: "<?php\nfunction greet($who) {}",
 			callers: []string{
@@ -54,6 +59,22 @@ func TestApply(t *testing.T) {
 				"<?php\nnew Money(100);",
 			},
 			want: "<?php\nclass Money {\n    public function __construct(int $amount) {}\n}",
+		},
+		{
+			name:   "adds string to function called in different case",
+			target: "<?php\nfunction greet($who) {}",
+			callers: []string{
+				"<?php\nGreet(\"hi\");",
+			},
+			want: "<?php\nfunction greet(string $who) {}",
+		},
+		{
+			name:   "adds type to constructor declared in different case",
+			target: "<?php\nclass Money extends Base {\n    public function __Construct($amount) {}\n}",
+			callers: []string{
+				"<?php\nnew Money(100);",
+			},
+			want: "<?php\nclass Money extends Base {\n    public function __Construct(int $amount) {}\n}",
 		},
 		{
 			name:   "adds type from static call",
