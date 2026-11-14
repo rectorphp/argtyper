@@ -94,8 +94,8 @@ Run the same command locally before pushing.
   need no traversal code.
 - **Default values** type a parameter even with no call site
   (`$page = 1` -> `int $page = 1`), see `apply.defaultType`.
-- **`diff.Lines`** compares line by line and assumes equal line counts, so a
-  `--dry` run that adds or removes docblock lines prints a misaligned diff.
+- **`diff.Lines`** is a Myers line diff, so `--dry` shows inserted and removed
+  docblock lines correctly. Line numbers refer to the original file.
 
 ## Testing
 
