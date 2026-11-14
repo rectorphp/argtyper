@@ -75,3 +75,50 @@ func TestStripRedundantDocParams(t *testing.T) {
 		})
 	}
 }
+
+func TestAddDocParamsSkipsExistingTag(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "keeps an existing tag with a description",
+			src:  "<?php\n/**\n * @param string $v the value\n */\nfunction m($v) {}",
+			want: "<?php\n/**\n * @param string $v the value\n */\nfunction m($v) {}",
+		},
+		{
+			name: "adds a tag when only a longer name is documented",
+			src:  "<?php\n/**\n * @param string $value\n */\nfunction m($v) {}",
+			want: "<?php\n/**\n * @param string $value\n * @param 'a'|'b' $v\n */\nfunction m($v) {}",
+		},
+		{
+			name: "adds a tag when the name only follows a longer tag",
+			src:  "<?php\n/**\n * @params $v\n */\nfunction m($v) {}",
+			want: "<?php\n/**\n * @params $v\n * @param 'a'|'b' $v\n */\nfunction m($v) {}",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root, err := phpast.Parse([]byte(test.src))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var walk func(ast.Vertex)
+			walk = func(node ast.Vertex) {
+				if function, ok := node.(*ast.StmtFunction); ok {
+					phpast.AddDocParams(function, map[string]string{"v": "'a'|'b'"}, []string{"v"})
+				}
+				for _, child := range phpast.Children(node) {
+					walk(child)
+				}
+			}
+			walk(root)
+
+			if got := phpast.Print(root); got != test.want {
+				t.Errorf("\n got: %q\nwant: %q", got, test.want)
+			}
+		})
+	}
+}
