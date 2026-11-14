@@ -60,7 +60,7 @@ Dev tasks via `Makefile`:
 ## CI
 
 `.github/workflows/build.yaml` runs four required jobs, mirroring
-php-parser-in-go and pinned to Go `1.26.6`:
+php-parser-in-go and pinned to Go `1.27.4`:
 
 - `build` - vet, build, test -race, `go mod tidy` check
 - `format` - `gofmt -s` and `go fix`
