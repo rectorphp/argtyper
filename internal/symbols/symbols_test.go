@@ -5,6 +5,7 @@ import (
 
 	"github.com/rectorphp/argtyper/internal/phpast"
 	"github.com/rectorphp/argtyper/internal/symbols"
+	"github.com/rectorphp/argtyper/internal/valuetype"
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
 )
 
@@ -16,14 +17,14 @@ func TestTypeOfExpr(t *testing.T) {
 		name      string
 		expr      string
 		enclosing string
-		want      string
+		want      valuetype.Type
 	}{
 		{"global const", "MAX", "", "int"},
 		{"defined const", "LABEL", "", "string"},
 		{"class const", "Config::LIMIT", "", "float"},
 		{"self const", "LIMIT", "", ""}, // bare name, not the const fetch form
 		{"self class const", "self::LIMIT", "Config", "float"},
-		{"enum case", "Status::Active", "", "object:Status"},
+		{"enum case", "Status::Active", "", valuetype.Object("Status")},
 		{"class name stays string", "Status::class", "", "string"},
 		{"unknown const", "NOPE", "", ""},
 		{"unknown class const", "Other::THING", "", ""},
@@ -51,14 +52,14 @@ func TestTypeOfExprNamespaced(t *testing.T) {
 		header    string
 		expr      string
 		enclosing string
-		want      string
+		want      valuetype.Type
 	}{
 		{"class const in same namespace", "namespace App\\X;", "Config::LIMIT", "", "float"},
 		{"same-named class in other namespace", "namespace App\\Y;", "Config::LIMIT", "", "string"},
 		{"imported class const", "use App\\Y\\Config;", "Config::LIMIT", "", "string"},
 		{"fully qualified class const", "", "\\App\\X\\Config::LIMIT", "", "float"},
 		{"self resolves to enclosing class", "", "self::LIMIT", "App\\Y\\Config", "string"},
-		{"enum case is fully qualified", "namespace App\\X;", "Status::Active", "", "object:App\\X\\Status"},
+		{"enum case is fully qualified", "namespace App\\X;", "Status::Active", "", valuetype.Object("App\\X\\Status")},
 		{"short name outside the namespace is unknown", "", "Config::LIMIT", "", ""},
 	}
 

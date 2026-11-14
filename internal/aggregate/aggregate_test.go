@@ -6,6 +6,7 @@ import (
 
 	"github.com/rectorphp/argtyper/internal/aggregate"
 	"github.com/rectorphp/argtyper/internal/collect"
+	"github.com/rectorphp/argtyper/internal/valuetype"
 )
 
 func TestResolveMethod(t *testing.T) {
@@ -79,7 +80,7 @@ func TestResolveMethod(t *testing.T) {
 			if found != test.wantFound {
 				t.Fatalf("found=%v want %v", found, test.wantFound)
 			}
-			if found && (strings.Join(resolved.Types, "|") != test.wantType || resolved.Nullable != test.wantNullable) {
+			if found && (join(resolved.Types) != test.wantType || resolved.Nullable != test.wantNullable) {
 				t.Errorf("got %+v want type=%s nullable=%v", resolved, test.wantType, test.wantNullable)
 			}
 		})
@@ -94,11 +95,11 @@ func TestResolveFunctionAndPositionIsolation(t *testing.T) {
 	types := aggregate.Resolve(records)
 
 	first, ok := types.Function("f", 0)
-	if !ok || strings.Join(first.Types, "|") != "int" {
+	if !ok || join(first.Types) != "int" {
 		t.Errorf("position 0: got %+v ok=%v", first, ok)
 	}
 	second, ok := types.Function("f", 1)
-	if !ok || strings.Join(second.Types, "|") != "string" {
+	if !ok || join(second.Types) != "string" {
 		t.Errorf("position 1: got %+v ok=%v", second, ok)
 	}
 }
@@ -161,4 +162,12 @@ func TestResolveLiterals(t *testing.T) {
 			}
 		})
 	}
+}
+
+func join(types []valuetype.Type) string {
+	members := make([]string, len(types))
+	for i, member := range types {
+		members[i] = string(member)
+	}
+	return strings.Join(members, "|")
 }
