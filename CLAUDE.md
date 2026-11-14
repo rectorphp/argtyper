@@ -82,10 +82,14 @@ Run the same command locally before pushing.
 - **Unresolved arguments** produce a record with an empty `Type`. It never adds
   a type, but marks the group as not fully literal, which blocks the
   `'a'|'b'` docblock (`aggregate.group.nonLiterals`).
-- **Lookup keys use short class names** (`Foo`, not `App\Foo`): records in
-  `collect`, `aggregate.Types` keys and `symbols` enums/consts. Fully qualified
-  names are only used for the written type text and the inheritance table.
-  Same-named classes in different namespaces therefore share records.
+- **Lookup keys use fully qualified, lowercased class names**
+  (`app\entity\foo`, via `phpast.ClassKey`): `collect` records carry the fully
+  qualified name, and `aggregate.Types` keys, `symbols` enums/class consts and
+  the `inherit` table lowercase it. Names are resolved from the file's namespace and `use` imports
+  (`phpast.ResolvedName`), `self`/`static` map to the enclosing class. Written
+  type text keeps the source casing. Plain functions and global constants are
+  still keyed by short name, since PHP falls back from a namespaced function or
+  constant to the global one. Constant and enum case names stay case-sensitive.
 - **Stages run one after another, files within a stage run in parallel** on
   `runtime.NumCPU()` workers (`progressMap` in `progress.go`); results are
   merged in file order, so output is deterministic. Project files are parsed
