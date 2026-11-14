@@ -184,6 +184,44 @@ func TestFromSource(t *testing.T) {
 			src:  "<?php\nclass A {\n  function go() { parent::set(1); }\n}",
 			want: nil,
 		},
+		{
+			name: "new self and new static use fully qualified enclosing class",
+			src:  "<?php\nnamespace App;\nclass A {\n  static function make() { new self(5); new static('s'); }\n}",
+			want: []collect.Record{
+				{Class: "App\\A", Name: "__construct", Position: 0, Type: "int"},
+				{Class: "App\\A", Name: "__construct", Position: 0, Type: "string", IsLiteral: true, Literal: "s"},
+			},
+		},
+		{
+			name: "skips new parent",
+			src:  "<?php\nclass A extends B {\n  function go() { new parent(1); }\n}",
+			want: nil,
+		},
+		{
+			name: "skips new self and self call outside a class",
+			src:  "<?php\nnew self(1);\nself::make(1);\nfunction f() { new static(1); }",
+			want: nil,
+		},
+		{
+			name: "new self as argument is enclosing class object",
+			src:  "<?php\nnamespace App;\nclass A {\n  function go() { $this->set(new self()); }\n}",
+			want: []collect.Record{{Class: "App\\A", Name: "set", Position: 0, Type: valuetype.Object("App\\A")}},
+		},
+		{
+			name: "new parent as argument is unresolved",
+			src:  "<?php\nclass A extends B {\n  function go() { $this->set(new parent()); }\n}",
+			want: []collect.Record{{Class: "A", Name: "set", Position: 0}},
+		},
+		{
+			name: "method chain rooted at new static resolves to enclosing class",
+			src:  "<?php\nclass A {\n  function go() { $this->set(new static()->with()); }\n}",
+			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: valuetype.Object("A")}},
+		},
+		{
+			name: "local assigned new self resolves call target",
+			src:  "<?php\nclass A {\n  function go() { $copy = new self(); $copy->set(1); }\n}",
+			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: "int"}},
+		},
 	}
 
 	for _, test := range tests {
