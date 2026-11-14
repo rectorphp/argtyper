@@ -53,6 +53,20 @@ func TestResolveMethod(t *testing.T) {
 			wantFound:    true,
 		},
 		{
+			name: "unresolved argument keeps the resolved type",
+			records: []collect.Record{
+				{Class: "A", Name: "m", Type: "int"},
+				{Class: "A", Name: "m"},
+			},
+			wantType:  "int",
+			wantFound: true,
+		},
+		{
+			name:      "only unresolved resolves to nothing",
+			records:   []collect.Record{{Class: "A", Name: "m"}},
+			wantFound: false,
+		},
+		{
 			name:      "only null resolves to nothing",
 			records:   []collect.Record{{Class: "A", Name: "m", Type: "null"}},
 			wantFound: false,
@@ -125,6 +139,11 @@ func TestResolveLiterals(t *testing.T) {
 		{
 			name:    "non-literal string drops the literals",
 			records: []collect.Record{literal("eq"), literal("neq"), {Class: "A", Name: "m", Type: "string"}},
+			want:    "",
+		},
+		{
+			name:    "unresolved argument drops the literals",
+			records: []collect.Record{literal("eq"), literal("neq"), {Class: "A", Name: "m"}},
 			want:    "",
 		},
 		{
