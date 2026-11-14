@@ -33,6 +33,7 @@ type group struct {
 }
 
 // Types holds resolved parameter types keyed for fast lookup during apply.
+// Method keys use the fully qualified class name.
 type Types struct {
 	methods   map[string]Resolved // class \x00 method \x00 position
 	functions map[string]Resolved // function \x00 position

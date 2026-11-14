@@ -151,6 +151,34 @@ func TestFromSource(t *testing.T) {
 			want: []collect.Record{{IsFunction: true, Name: "f", Position: 0, Type: "string"}},
 		},
 		{
+			name: "new in namespace uses fully qualified class",
+			src:  "<?php\nnamespace App\\X;\nnew Foo(1);",
+			want: []collect.Record{{Class: "App\\X\\Foo", Name: "__construct", Position: 0, Type: "int"}},
+		},
+		{
+			name: "new of imported class uses fully qualified class",
+			src:  "<?php\nnamespace App;\nuse App\\Y\\Foo;\nnew Foo('s');",
+			want: []collect.Record{{Class: "App\\Y\\Foo", Name: "__construct", Position: 0, Type: "string", IsLiteral: true, Literal: "s"}},
+		},
+		{
+			name: "this and self calls use fully qualified enclosing class",
+			src:  "<?php\nnamespace App;\nclass A {\n  function go() { $this->set(1); self::make(2); }\n}",
+			want: []collect.Record{
+				{Class: "App\\A", Name: "set", Position: 0, Type: "int"},
+				{Class: "App\\A", Name: "make", Position: 0, Type: "int"},
+			},
+		},
+		{
+			name: "static call in namespace uses fully qualified class",
+			src:  "<?php\nnamespace App;\nFactory::make(1);",
+			want: []collect.Record{{Class: "App\\Factory", Name: "make", Position: 0, Type: "int"}},
+		},
+		{
+			name: "typed parameter call uses fully qualified class",
+			src:  "<?php\nnamespace App;\nuse Lib\\Repo;\nclass A {\n  function go(Repo $repo) { $repo->find(1); }\n}",
+			want: []collect.Record{{Class: "Lib\\Repo", Name: "find", Position: 0, Type: "int"}},
+		},
+		{
 			name: "skips parent static call",
 			src:  "<?php\nclass A {\n  function go() { parent::set(1); }\n}",
 			want: nil,

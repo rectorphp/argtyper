@@ -113,6 +113,24 @@ func ResolveNames(root ast.Vertex) map[ast.Vertex]string {
 	return resolver.ResolvedNames
 }
 
+// ResolvedName returns the fully qualified name of a class-name node or a class,
+// trait or enum declaration from the ResolveNames map, falling back to its short
+// name when the node was not resolved.
+func ResolvedName(names map[ast.Vertex]string, node ast.Vertex) string {
+	if name := names[node]; name != "" {
+		return name
+	}
+	switch typed := node.(type) {
+	case *ast.StmtClass:
+		return ShortName(typed.Name)
+	case *ast.StmtTrait:
+		return ShortName(typed.Name)
+	case *ast.StmtEnum:
+		return ShortName(typed.Name)
+	}
+	return ShortName(node)
+}
+
 // ObjectClassNode returns the class-name node of a value that produces an
 // object - `new X()` or a `X::CASE` enum case - or nil for anything else.
 func ObjectClassNode(expr ast.Vertex) ast.Vertex {

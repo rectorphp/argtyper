@@ -32,7 +32,8 @@ func TestTypeOfExpr(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := table.TypeOfExpr(firstArg(t, test.expr), test.enclosing)
+			expr, names := firstArg(t, "", test.expr)
+			got := table.TypeOfExpr(expr, test.enclosing, names)
 			if got != test.want {
 				t.Errorf("TypeOfExpr(%s) = %q, want %q", test.expr, got, test.want)
 			}
@@ -40,9 +41,43 @@ func TestTypeOfExpr(t *testing.T) {
 	}
 }
 
-func firstArg(t *testing.T, expr string) ast.Vertex {
+func TestTypeOfExprNamespaced(t *testing.T) {
+	table := symbols.New()
+	table.CollectSource([]byte("<?php\nnamespace App\\X;\nenum Status {\n    case Active;\n}\nclass Config {\n    const LIMIT = 1.5;\n}"))
+	table.CollectSource([]byte("<?php\nnamespace App\\Y;\nclass Config {\n    const LIMIT = 'high';\n}"))
+
+	tests := []struct {
+		name      string
+		header    string
+		expr      string
+		enclosing string
+		want      string
+	}{
+		{"class const in same namespace", "namespace App\\X;", "Config::LIMIT", "", "float"},
+		{"same-named class in other namespace", "namespace App\\Y;", "Config::LIMIT", "", "string"},
+		{"imported class const", "use App\\Y\\Config;", "Config::LIMIT", "", "string"},
+		{"fully qualified class const", "", "\\App\\X\\Config::LIMIT", "", "float"},
+		{"self resolves to enclosing class", "", "self::LIMIT", "App\\Y\\Config", "string"},
+		{"enum case is fully qualified", "namespace App\\X;", "Status::Active", "", "object:App\\X\\Status"},
+		{"short name outside the namespace is unknown", "", "Config::LIMIT", "", ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			expr, names := firstArg(t, test.header, test.expr)
+			got := table.TypeOfExpr(expr, test.enclosing, names)
+			if got != test.want {
+				t.Errorf("TypeOfExpr(%s) = %q, want %q", test.expr, got, test.want)
+			}
+		})
+	}
+}
+
+// firstArg parses `call(<expr>);` after an optional header (namespace or use
+// statement) and returns the argument with the file's resolved names.
+func firstArg(t *testing.T, header, expr string) (ast.Vertex, map[ast.Vertex]string) {
 	t.Helper()
-	root, err := phpast.Parse([]byte("<?php\ncall(" + expr + ");"))
+	root, err := phpast.Parse([]byte("<?php\n" + header + "\ncall(" + expr + ");"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,5 +98,5 @@ func firstArg(t *testing.T, expr string) ast.Vertex {
 	if found == nil {
 		t.Fatalf("no argument found in %q", expr)
 	}
-	return found
+	return found, phpast.ResolveNames(root)
 }
