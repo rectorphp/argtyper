@@ -64,6 +64,21 @@ func TestApply(t *testing.T) {
 			want: "<?php\nfinal class Factory {\n    public static function make(string $label) {}\n}",
 		},
 		{
+			name:   "adds type to constructor from new self",
+			target: "<?php\nnamespace App;\n\nfinal class Foo {\n    public function __construct($a) {}\n    public static function make() { return new self(5); }\n}",
+			want:   "<?php\nnamespace App;\n\nfinal class Foo {\n    public function __construct(int $a) {}\n    public static function make() { return new self(5); }\n}",
+		},
+		{
+			name:   "adds type to constructor from new static",
+			target: "<?php\nclass Foo {\n    public function __construct($a) {}\n    public static function make() { return new static('x'); }\n}",
+			want:   "<?php\nclass Foo {\n    public function __construct(string $a) {}\n    public static function make() { return new static('x'); }\n}",
+		},
+		{
+			name:   "adds enclosing class type from new self argument",
+			target: "<?php\nnamespace App;\n\nfinal class Node {\n    public function link($other) {}\n    public function go() { $this->link(new self()); }\n}",
+			want:   "<?php\nnamespace App;\n\nfinal class Node {\n    public function link(\\App\\Node $other) {}\n    public function go() { $this->link(new self()); }\n}",
+		},
+		{
 			name:   "nullable when null also passed",
 			target: "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(1); $this->set(null); }\n}",
 			want:   "<?php\nfinal class A {\n    public function set(?int $v) {}\n    public function go() { $this->set(1); $this->set(null); }\n}",

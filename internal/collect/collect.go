@@ -67,13 +67,13 @@ func (c *collector) walk(node ast.Vertex, sc scope) {
 		sc = c.classScope(typed)
 	case *ast.StmtFunction:
 		sc.params = c.paramClasses(typed.Params, sc.classFQCN)
-		sc.locals = c.localClasses(typed.Stmts, typed.Params)
+		sc.locals = c.localClasses(typed.Stmts, typed.Params, sc.classFQCN)
 	case *ast.StmtClassMethod:
 		sc.params = c.paramClasses(typed.Params, sc.classFQCN)
-		sc.locals = c.localClasses(phpast.Children(typed.Stmt), typed.Params)
+		sc.locals = c.localClasses(phpast.Children(typed.Stmt), typed.Params, sc.classFQCN)
 	case *ast.ExprClosure:
 		sc.params = c.paramClasses(typed.Params, sc.classFQCN)
-		sc.locals = c.localClasses(typed.Stmts, typed.Params)
+		sc.locals = c.localClasses(typed.Stmts, typed.Params, sc.classFQCN)
 	case *ast.ExprArrowFunction:
 		// arrow functions capture outer variables, so keep the inherited params
 		// and locals and overlay the arrow's own typed parameters.
@@ -97,7 +97,7 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 		c.record(typed.Args, Record{IsFunction: true, Name: name}, sc)
 
 	case *ast.ExprNew:
-		name := phpast.ResolvedName(c.names, typed.Class)
+		name := c.staticClassName(typed.Class, sc.classFQCN)
 		if name == "" {
 			return
 		}
@@ -146,9 +146,9 @@ func (c *collector) classScope(class ast.Vertex) scope {
 	}
 }
 
-// staticClassName resolves the class of a static call: self/static map to the
-// enclosing class, parent is unresolvable, anything else is resolved from the
-// file's namespace and imports.
+// staticClassName resolves the class of a static call or `new`: self/static map
+// to the enclosing class, parent is unresolvable, anything else is resolved from
+// the file's namespace and imports.
 func (c *collector) staticClassName(classNode ast.Vertex, enclosing string) string {
 	switch strings.ToLower(phpast.ShortName(classNode)) {
 	case "self", "static":
@@ -322,7 +322,7 @@ func (c *collector) argType(expr ast.Vertex, sc scope) valuetype.Type {
 
 	switch expr.(type) {
 	case *ast.ExprMethodCall, *ast.ExprNullsafeMethodCall:
-		if class := c.newChainClass(expr); class != "" {
+		if class := c.newChainClass(expr, sc.classFQCN); class != "" {
 			return valuetype.Object(class)
 		}
 	}
@@ -334,14 +334,19 @@ func (c *collector) argType(expr ast.Vertex, sc scope) valuetype.Type {
 	if fqcn := phpast.ObjectFQCN(expr, c.names, sc.classFQCN); fqcn != "" {
 		return valuetype.Object(fqcn)
 	}
+	// `new parent()`, or `new self()` outside a class, has no known class
+	if newExpr, ok := expr.(*ast.ExprNew); ok && c.staticClassName(newExpr.Class, sc.classFQCN) == "" {
+		return valuetype.Unknown
+	}
 	return typeName
 }
 
 // newChainClass returns the fully qualified class of the object a method chain
 // is rooted at, when that root is a `new X()`. Fluent methods are assumed to
-// return their receiver, so `new X()->modify(...)` has type X. Empty when the
-// chain is not rooted at a new, or the class is self/static/parent.
-func (c *collector) newChainClass(expr ast.Vertex) string {
+// return their receiver, so `new X()->modify(...)` has type X, and self/static
+// map to the enclosing class. Empty when the chain is not rooted at a new, or
+// the class is parent.
+func (c *collector) newChainClass(expr ast.Vertex, enclosing string) string {
 	for {
 		switch typed := expr.(type) {
 		case *ast.ExprMethodCall:
@@ -349,14 +354,7 @@ func (c *collector) newChainClass(expr ast.Vertex) string {
 		case *ast.ExprNullsafeMethodCall:
 			expr = typed.Var
 		case *ast.ExprNew:
-			switch strings.ToLower(phpast.ShortName(typed.Class)) {
-			case "", "self", "static", "parent":
-				return ""
-			}
-			if fqcn := c.names[typed.Class]; fqcn != "" {
-				return fqcn
-			}
-			return phpast.ShortName(typed.Class)
+			return c.staticClassName(typed.Class, enclosing)
 		default:
 			return ""
 		}
@@ -398,32 +396,31 @@ func thisPropertyClass(varNode, propNode ast.Vertex, sc scope) string {
 // qualified name, so those variables resolve as arguments and call targets.
 // Parameters are excluded: a reassignment like `$param = new X()` must not
 // retype the parameter's earlier uses, since the tracking is not flow sensitive.
-func (c *collector) localClasses(stmts, params []ast.Vertex) map[string]string {
+// enclosing is the class that `new self()`/`new static()` resolve to.
+func (c *collector) localClasses(stmts, params []ast.Vertex, enclosing string) map[string]string {
 	excluded := paramNames(params)
 	locals := map[string]string{}
 	for _, stmt := range stmts {
-		c.collectLocals(stmt, locals, excluded)
+		c.collectLocals(stmt, locals, excluded, enclosing)
 	}
 	return locals
 }
 
-func (c *collector) collectLocals(node ast.Vertex, locals map[string]string, excluded map[string]bool) {
+func (c *collector) collectLocals(node ast.Vertex, locals map[string]string, excluded map[string]bool, enclosing string) {
 	if node == nil {
 		return
 	}
 	if assign, ok := node.(*ast.ExprAssign); ok {
 		if name := phpast.VariableName(assign.Var); name != "" && !excluded[name] {
 			if newExpr, ok := assign.Expr.(*ast.ExprNew); ok {
-				if fqcn := c.names[newExpr.Class]; fqcn != "" {
-					locals[name] = fqcn
-				} else if class := phpast.ShortName(newExpr.Class); class != "" {
+				if class := c.staticClassName(newExpr.Class, enclosing); class != "" {
 					locals[name] = class
 				}
 			}
 		}
 	}
 	for _, child := range phpast.Children(node) {
-		c.collectLocals(child, locals, excluded)
+		c.collectLocals(child, locals, excluded, enclosing)
 	}
 }
 
