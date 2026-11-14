@@ -11,6 +11,7 @@ func TestOverrides(t *testing.T) {
 	table.CollectSource([]byte("<?php\nnamespace App;\n\nclass Base {\n    public function save($v) {}\n}"))
 	table.CollectSource([]byte("<?php\nnamespace App;\n\ninterface Contract {\n    public function handle($v);\n}"))
 	table.CollectSource([]byte("<?php\nnamespace App;\n\nclass Child extends Base implements Contract {\n    public function save($v) {}\n    public function handle($v) {}\n    public function own($v) {}\n}"))
+	table.CollectSource([]byte("<?php\nnamespace App;\n\nclass Loud {\n    public function Shout($v) {}\n}\n\nclass Quiet extends Loud {}"))
 	table.CollectSource([]byte("<?php\nnamespace App;\n\nclass Orphan extends \\Vendor\\Base {\n    public function run($v) {}\n}"))
 
 	tests := []struct {
@@ -22,6 +23,9 @@ func TestOverrides(t *testing.T) {
 		{"inherited from parent class", "App\\Child", "save", true, true},
 		{"inherited from interface", "App\\Child", "handle", true, true},
 		{"declared only on child", "App\\Child", "own", false, true},
+		{"inherited with different case", "App\\Child", "SAVE", true, true},
+		{"looked up in different case on interface", "App\\Child", "Handle", true, true},
+		{"declared with different case on ancestor", "App\\Quiet", "shout", true, true},
 		{"parent chain reaches vendor", "App\\Orphan", "run", false, false},
 		{"unknown class", "App\\Missing", "x", false, false},
 	}

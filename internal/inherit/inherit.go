@@ -5,6 +5,8 @@
 package inherit
 
 import (
+	"strings"
+
 	"github.com/rectorphp/argtyper/internal/phpast"
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
 )
@@ -49,6 +51,8 @@ func (t *Table) walk(node ast.Vertex, names map[ast.Vertex]string) {
 		// interface parents are declared with `extends`; treat them like
 		// implemented interfaces so method lookups walk them too.
 		t.add(names[typed], "", typed.Extends, typed, names)
+	case *ast.StmtEnum:
+		t.add(names[typed], "", typed.Implements, typed, names)
 	}
 
 	for _, child := range phpast.Children(node) {
@@ -70,7 +74,7 @@ func (t *Table) add(fqcn, parent string, interfaces []ast.Vertex, body ast.Verte
 	for _, member := range phpast.Children(body) {
 		if method, ok := member.(*ast.StmtClassMethod); ok {
 			if name := phpast.ShortName(method.Name); name != "" {
-				entry.methods[name] = true
+				entry.methods[strings.ToLower(name)] = true
 			}
 		}
 	}
@@ -88,6 +92,8 @@ func (t *Table) Overrides(fqcn, method string) (overrides bool, resolved bool) {
 	if !ok {
 		return false, false
 	}
+	// PHP method names are case-insensitive
+	method = strings.ToLower(method)
 
 	resolved = true
 	seen := map[string]bool{}

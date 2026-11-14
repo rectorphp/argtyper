@@ -362,6 +362,29 @@ func TestApply(t *testing.T) {
 			want:   "<?php\nnamespace App;\n\nfinal class Config {\n    const LIMIT = 5;\n    public function set(int $limit = self::LIMIT) {}\n}",
 		},
 		{
+			name:   "adds int to enum method from this call",
+			target: "<?php\nenum Status {\n    case Active;\n    public function label($size) {}\n    public function go() { $this->label(5); }\n}",
+			want:   "<?php\nenum Status {\n    case Active;\n    public function label(int $size) {}\n    public function go() { $this->label(5); }\n}",
+		},
+		{
+			name:   "adds int to namespaced enum method from static call",
+			target: "<?php\nnamespace App;\n\nenum Status {\n    case Active;\n    public static function make($size) {}\n}",
+			callers: []string{
+				"<?php\nnamespace Other;\n\nuse App\\Status;\n\nStatus::make(5);",
+			},
+			want: "<?php\nnamespace App;\n\nenum Status {\n    case Active;\n    public static function make(int $size) {}\n}",
+		},
+		{
+			name:   "adds int to enum method not declared by its interface",
+			target: "<?php\ninterface HasLabel {\n    public function label($size);\n}\nenum Status implements HasLabel {\n    case Active;\n    public function label($size) {}\n    public function color($shade) {}\n    public function go() { $this->label(5); $this->color(3); }\n}",
+			want:   "<?php\ninterface HasLabel {\n    public function label($size);\n}\nenum Status implements HasLabel {\n    case Active;\n    public function label($size) {}\n    public function color(int $shade) {}\n    public function go() { $this->label(5); $this->color(3); }\n}",
+		},
+		{
+			name:   "adds int to private trait method only",
+			target: "<?php\ntrait Greets {\n    private function wave($times) {}\n    public function nod($times) {}\n    public function go() { $this->wave(2); $this->nod(2); }\n}",
+			want:   "<?php\ntrait Greets {\n    private function wave(int $times) {}\n    public function nod($times) {}\n    public function go() { $this->wave(2); $this->nod(2); }\n}",
+		},
+		{
 			name:   "skips string literals doc on an already typed parameter",
 			target: "<?php\nfunction pick(string $v) {}",
 			callers: []string{

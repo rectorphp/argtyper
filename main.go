@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/rectorphp/argtyper/internal/aggregate"
 	"github.com/rectorphp/argtyper/internal/apply"
@@ -45,21 +46,27 @@ func run(args []string) error {
 
 	dry := false
 	options := apply.Options{}
-	projectPath := "."
+	projectPath := ""
 	for _, arg := range args[1:] {
-		if arg == "--dry" {
+		switch {
+		case arg == "--dry":
 			dry = true
-			continue
-		}
-		if arg == "--literals" {
+		case arg == "--literals":
 			options.Literals = true
-			continue
-		}
-		if arg == "--objects" {
+		case arg == "--objects":
 			options.Objects = true
-			continue
+		case strings.HasPrefix(arg, "-"):
+			fmt.Println(usage)
+			return fmt.Errorf("unknown option %q", arg)
+		case projectPath != "":
+			fmt.Println(usage)
+			return fmt.Errorf("only one project path is allowed, got %q and %q", projectPath, arg)
+		default:
+			projectPath = arg
 		}
-		projectPath = arg
+	}
+	if projectPath == "" {
+		projectPath = "."
 	}
 
 	files, err := finder.PHPFiles(projectPath)

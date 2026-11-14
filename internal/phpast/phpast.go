@@ -333,7 +333,42 @@ func AddDocParams(node ast.Vertex, params map[string]string, order []string) {
 // hasDocParam reports whether a doc comment already has a @param line for the
 // named parameter, whatever its type or description.
 func hasDocParam(doc, name string) bool {
-	return regexp.MustCompile(`@param\b[^\n]*\$` + regexp.QuoteMeta(name) + `\b`).MatchString(doc)
+	for line := range strings.SplitSeq(doc, "\n") {
+		rest, ok := afterParamTag(line)
+		if !ok {
+			continue
+		}
+		for {
+			index := strings.Index(rest, "$"+name)
+			if index < 0 {
+				break
+			}
+			rest = rest[index+1+len(name):]
+			if rest == "" || !isWordByte(rest[0]) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// afterParamTag returns the rest of a line after its first `@param` tag that
+// is not part of a longer word, such as `@params`.
+func afterParamTag(line string) (string, bool) {
+	for {
+		index := strings.Index(line, "@param")
+		if index < 0 {
+			return "", false
+		}
+		line = line[index+len("@param"):]
+		if line == "" || !isWordByte(line[0]) {
+			return line, true
+		}
+	}
+}
+
+func isWordByte(char byte) bool {
+	return char == '_' || '0' <= char && char <= '9' || 'a' <= char && char <= 'z' || 'A' <= char && char <= 'Z'
 }
 
 // appendDocTags inserts tag lines right before the closing `*/`, turning a

@@ -74,13 +74,15 @@ type applier struct {
 	options     Options
 }
 
-func (a *applier) walk(node ast.Vertex, class *ast.StmtClass) {
+// walk tracks the enclosing class, enum or trait, the scopes collect records
+// method calls under.
+func (a *applier) walk(node ast.Vertex, class ast.Vertex) {
 	if node == nil {
 		return
 	}
 
 	switch typed := node.(type) {
-	case *ast.StmtClass:
+	case *ast.StmtClass, *ast.StmtEnum, *ast.StmtTrait:
 		class = typed
 	case *ast.StmtFunction:
 		a.applyFunction(typed)
@@ -123,7 +125,7 @@ func (a *applier) applyFunction(function *ast.StmtFunction) {
 	phpast.AddDocParams(function, docs, order)
 }
 
-func (a *applier) applyMethod(method *ast.StmtClassMethod, class *ast.StmtClass) {
+func (a *applier) applyMethod(method *ast.StmtClassMethod, class ast.Vertex) {
 	name := phpast.ShortName(method.Name)
 	if isMagicExceptConstructor(name) {
 		return
@@ -303,12 +305,13 @@ func typeable(param *ast.Parameter) bool {
 
 // methodTypeable reports whether typing this method is safe: it must not change
 // the signature of a method inherited from an ancestor. Constructors and private
-// methods never override, and a class with no parent or interface has nothing to
-// override. Otherwise the inheritance table is consulted, and the method is only
-// typed when the whole ancestor chain is resolved and none of it declares the
-// method - an unresolved chain (an ancestor in /vendor the scan never saw) is
-// treated as unsafe.
-func (a *applier) methodTypeable(method *ast.StmtClassMethod, class *ast.StmtClass) bool {
+// methods never override, and a class or enum with no parent or interface has
+// nothing to override. Otherwise the inheritance table is consulted, and the
+// method is only typed when the whole ancestor chain is resolved and none of it
+// declares the method - an unresolved chain (an ancestor in /vendor the scan
+// never saw) is treated as unsafe. Other trait methods are skipped, since the
+// class using the trait may override a parent method with them.
+func (a *applier) methodTypeable(method *ast.StmtClassMethod, class ast.Vertex) bool {
 	if phpast.ShortName(method.Name) == "__construct" {
 		return true
 	}
@@ -319,11 +322,19 @@ func (a *applier) methodTypeable(method *ast.StmtClassMethod, class *ast.StmtCla
 			}
 		}
 	}
-	if class == nil {
+	switch typed := class.(type) {
+	case nil:
 		return true
-	}
-	if class.Extends == nil && len(class.Implements) == 0 {
-		return true
+	case *ast.StmtTrait:
+		return false
+	case *ast.StmtClass:
+		if typed.Extends == nil && len(typed.Implements) == 0 {
+			return true
+		}
+	case *ast.StmtEnum:
+		if len(typed.Implements) == 0 {
+			return true
+		}
 	}
 
 	classFQCN := a.names[class]
