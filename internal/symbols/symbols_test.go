@@ -25,6 +25,9 @@ func TestTypeOfExpr(t *testing.T) {
 		{"self const", "LIMIT", "", ""}, // bare name, not the const fetch form
 		{"self class const", "self::LIMIT", "Config", "float"},
 		{"enum case", "Status::Active", "", valuetype.Object("Status")},
+		{"class const with different class case", "config::LIMIT", "", "float"},
+		{"class const name stays case-sensitive", "Config::limit", "", ""},
+		{"enum case with different class case", "status::Active", "", valuetype.Object("status")},
 		{"class name stays string", "Status::class", "", "string"},
 		{"unknown const", "NOPE", "", ""},
 		{"unknown class const", "Other::THING", "", ""},

@@ -14,12 +14,12 @@ import (
 
 // class holds the ancestors and declared methods of one class or interface.
 type class struct {
-	parent     string   // fully qualified parent class, "" if none
-	interfaces []string // fully qualified implemented/extended interfaces
+	parent     string   // lowercased fully qualified parent class, "" if none
+	interfaces []string // lowercased fully qualified implemented/extended interfaces
 	methods    map[string]bool
 }
 
-// Table maps a fully qualified class name to its inheritance data.
+// Table maps a lowercased fully qualified class name to its inheritance data.
 type Table struct {
 	classes map[string]*class
 }
@@ -75,10 +75,10 @@ func (t *Table) add(fqcn, parent string, interfaces []ast.Vertex, body ast.Verte
 		return
 	}
 
-	entry := &class{parent: parent, methods: map[string]bool{}}
+	entry := &class{parent: phpast.ClassKey(parent), methods: map[string]bool{}}
 	for _, interfaceNode := range interfaces {
 		if name := names[interfaceNode]; name != "" {
-			entry.interfaces = append(entry.interfaces, name)
+			entry.interfaces = append(entry.interfaces, phpast.ClassKey(name))
 		}
 	}
 	for _, member := range phpast.Children(body) {
@@ -89,7 +89,7 @@ func (t *Table) add(fqcn, parent string, interfaces []ast.Vertex, body ast.Verte
 		}
 	}
 
-	t.classes[fqcn] = entry
+	t.classes[phpast.ClassKey(fqcn)] = entry
 }
 
 // Overrides reports whether a method of the given class is also declared by an
@@ -98,11 +98,11 @@ func (t *Table) add(fqcn, parent string, interfaces []ast.Vertex, body ast.Verte
 // class the scan never saw, typically in /vendor - may still declare it, so the
 // caller should treat the method as unsafe to change.
 func (t *Table) Overrides(fqcn, method string) (overrides bool, resolved bool) {
-	entry, ok := t.classes[fqcn]
+	// PHP class and method names are case-insensitive
+	entry, ok := t.classes[phpast.ClassKey(fqcn)]
 	if !ok {
 		return false, false
 	}
-	// PHP method names are case-insensitive
 	method = strings.ToLower(method)
 
 	resolved = true

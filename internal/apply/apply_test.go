@@ -364,6 +364,39 @@ func TestApply(t *testing.T) {
 			want: "<?php\nnamespace App\\Y;\nclass Foo { public function __construct(string $a) {} }\nnew Foo(\"s\");",
 		},
 		{
+			name:   "adds type from constructor called with different class case",
+			target: "<?php\nclass Money {\n    public function __construct($amount) {}\n}",
+			callers: []string{
+				"<?php\nnew money(100);",
+			},
+			want: "<?php\nclass Money {\n    public function __construct(int $amount) {}\n}",
+		},
+		{
+			name:   "adds type from call on class imported in different case",
+			target: "<?php\nnamespace App\\Entity;\n\nfinal class Lead {\n    public function rename($name) {}\n}",
+			callers: []string{
+				"<?php\nnamespace App;\n\nuse App\\entity\\lead;\n\nfunction go(Lead $lead) { $lead->rename('x'); }",
+			},
+			want: "<?php\nnamespace App\\Entity;\n\nfinal class Lead {\n    public function rename(string $name) {}\n}",
+		},
+		{
+			name:   "keeps written case of object type from different-case callers",
+			target: "<?php\nfunction handle($item) {}",
+			callers: []string{
+				"<?php\nhandle(new Lead());",
+				"<?php\nhandle(new lead());",
+			},
+			want: "<?php\nfunction handle(\\Lead $item) {}",
+		},
+		{
+			name:   "types method whose parent in different class case does not declare it",
+			target: "<?php\nclass A extends base {\n    public function set($v) {}\n    public function go() { $this->set(1); }\n}",
+			callers: []string{
+				"<?php\nclass Base {\n    public function other() {}\n}",
+			},
+			want: "<?php\nclass A extends base {\n    public function set(int $v) {}\n    public function go() { $this->set(1); }\n}",
+		},
+		{
 			name:   "adds type from call on imported class",
 			target: "<?php\nnamespace App\\Entity;\n\nfinal class Lead {\n    public function rename($name) {}\n}",
 			callers: []string{

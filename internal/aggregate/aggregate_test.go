@@ -63,6 +63,21 @@ func TestResolveMethod(t *testing.T) {
 			wantFound: true,
 		},
 		{
+			name:      "class name differing in case shares the key",
+			records:   []collect.Record{{Class: "a", Name: "m", Type: "int"}},
+			wantType:  "int",
+			wantFound: true,
+		},
+		{
+			name: "same class in another case is one object type",
+			records: []collect.Record{
+				{Class: "A", Name: "m", Type: valuetype.Object("App\\Foo")},
+				{Class: "A", Name: "m", Type: valuetype.Object("App\\foo")},
+			},
+			wantType:  "object:App\\Foo",
+			wantFound: true,
+		},
+		{
 			name:      "only unresolved resolves to nothing",
 			records:   []collect.Record{{Class: "A", Name: "m"}},
 			wantFound: false,
