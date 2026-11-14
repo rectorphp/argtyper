@@ -55,7 +55,7 @@ func Children(node ast.Vertex) []ast.Vertex {
 		switch field.Kind() {
 		case reflect.Interface:
 			if !field.IsNil() {
-				if child, ok := field.Interface().(ast.Vertex); ok {
+				if child, ok := reflect.TypeAssert[ast.Vertex](field); ok {
 					children = append(children, child)
 				}
 			}
