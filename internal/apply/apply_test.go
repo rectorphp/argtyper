@@ -130,6 +130,47 @@ func TestApply(t *testing.T) {
 			want:   "<?php\nfinal class A {\n    /**\n     * @param string $v the value\n     */\n    public function set(string $v) {}\n    public function go() { $this->set(\"x\"); }\n}",
 		},
 		{
+			name:   "skips type when the param doc is a union",
+			target: "<?php\nfinal class A {\n    /**\n     * @param int|string|null $v\n     */\n    public function set($v) {}\n    public function go() { $this->set(\"x\"); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @param int|string|null $v\n     */\n    public function set($v) {}\n    public function go() { $this->set(\"x\"); }\n}",
+		},
+		{
+			name:   "skips type when the param doc names another type",
+			target: "<?php\nfinal class A {\n    /**\n     * @param array $v\n     */\n    public function set($v) {}\n    public function go() { $this->set(\"x\"); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @param array $v\n     */\n    public function set($v) {}\n    public function go() { $this->set(\"x\"); }\n}",
+		},
+		{
+			name:   "skips default type when the param doc is a union",
+			target: "<?php\n/**\n * @param string|int $v\n */\nfunction take($v = '') {}",
+			want:   "<?php\n/**\n * @param string|int $v\n */\nfunction take($v = '') {}",
+		},
+		{
+			name:   "types when the param doc is the same type plus null",
+			target: "<?php\nfinal class A {\n    /**\n     * @param int|null $v the value\n     */\n    public function set($v) {}\n    public function go() { $this->set(1); }\n}",
+			want:   "<?php\nfinal class A {\n    /**\n     * @param int|null $v the value\n     */\n    public function set(int $v) {}\n    public function go() { $this->set(1); }\n}",
+		},
+		{
+			name:   "types when the param doc narrows the same type",
+			target: "<?php\n/**\n * @param array<string, int|float> $items\n * @param non-empty-string $name\n */\nfunction take($items, $name) {}",
+			callers: []string{
+				"<?php\ntake([1], 'a');",
+			},
+			want: "<?php\n/**\n * @param array<string, int|float> $items\n * @param non-empty-string $name\n */\nfunction take(array $items, string $name) {}",
+		},
+		{
+			name:   "types when the param doc is the same class",
+			target: "<?php\nnamespace App;\nfinal class Foo {}\nfinal class A {\n    /**\n     * @param \\App\\Foo $v the foo\n     */\n    public function set($v) {}\n    public function go() { $this->set(new Foo()); }\n}",
+			want:   "<?php\nnamespace App;\nfinal class Foo {}\nfinal class A {\n    /**\n     * @param \\App\\Foo $v the foo\n     */\n    public function set(\\App\\Foo $v) {}\n    public function go() { $this->set(new Foo()); }\n}",
+		},
+		{
+			name:   "skips type when a property-call site passes an unresolved value",
+			target: "<?php\nfinal class CookieHelper {\n    public function setCookie($name, $value) {}\n    public function deleteCookie() { $this->setCookie('a', ''); }\n}",
+			callers: []string{
+				"<?php\nfinal class Tracker {\n    public function __construct(private CookieHelper $cookieHelper) {}\n    public function track($lead) { $this->cookieHelper->setCookie('mtc_id', $lead->getId()); }\n}",
+			},
+			want: "<?php\nfinal class CookieHelper {\n    /**\n     * @param 'a'|'mtc_id' $name\n     */\n    public function setCookie(string $name, $value) {}\n    public function deleteCookie() { $this->setCookie('a', ''); }\n}",
+		},
+		{
 			name:   "skips multiple observed types",
 			target: "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); }\n}",
 			want:   "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); }\n}",
@@ -399,12 +440,12 @@ func TestApply(t *testing.T) {
 			want: "<?php\nfunction pick(string $v) {}",
 		},
 		{
-			name:   "skips string literals doc when an unresolved value is passed",
+			name:   "skips type when an unresolved value is passed",
 			target: "<?php\nfunction pick($v) {}",
 			callers: []string{
 				"<?php\npick('a');\npick('b');\npick($value);",
 			},
-			want: "<?php\nfunction pick(string $v) {}",
+			want: "<?php\nfunction pick($v) {}",
 		},
 		{
 			name:   "same-named class in another namespace does not share types",
