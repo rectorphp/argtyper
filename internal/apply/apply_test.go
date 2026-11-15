@@ -207,6 +207,44 @@ func TestApply(t *testing.T) {
 			want: "<?php\nfunction run($cb) {}",
 		},
 		{
+			name:   "leaves a param checked with is_array untyped",
+			target: "<?php\nfinal class SmsModel {\n    public function send($sendTo) { $sendTo = is_array($sendTo) ? $sendTo : [$sendTo]; }\n}",
+			callers: []string{
+				"<?php\nfinal class Caller {\n    public function __construct(private SmsModel $model) {}\n    public function go(Lead $lead) { $this->model->send($lead); }\n}",
+				"<?php\n$model = getModel();\n$model->send([$lead1, $lead2]);",
+			},
+			want: "<?php\nfinal class SmsModel {\n    public function send($sendTo) { $sendTo = is_array($sendTo) ? $sendTo : [$sendTo]; }\n}",
+		},
+		{
+			name:   "leaves a param checked with is_string untyped in a function",
+			target: "<?php\nfunction run($value) { if (is_string($value)) { return; } }",
+			callers: []string{
+				"<?php\nrun(5);",
+			},
+			want: "<?php\nfunction run($value) { if (is_string($value)) { return; } }",
+		},
+		{
+			name:   "leaves a param with a literal default checked with gettype untyped",
+			target: "<?php\nfunction run($value = 1) { return gettype($value); }",
+			want:   "<?php\nfunction run($value = 1) { return gettype($value); }",
+		},
+		{
+			name:   "types a param when another variable is type checked",
+			target: "<?php\nfunction run($value) { if (is_array($other)) { return; } }",
+			callers: []string{
+				"<?php\nrun(5);",
+			},
+			want: "<?php\nfunction run(int $value) { if (is_array($other)) { return; } }",
+		},
+		{
+			name:   "types a param checked with is_null",
+			target: "<?php\nfunction run($value) { if (is_null($value)) { return; } }",
+			callers: []string{
+				"<?php\nrun(5);",
+			},
+			want: "<?php\nfunction run(int $value) { if (is_null($value)) { return; } }",
+		},
+		{
 			name:   "leaves an arrow function argument untyped",
 			target: "<?php\nfunction run($cb) {}",
 			callers: []string{
