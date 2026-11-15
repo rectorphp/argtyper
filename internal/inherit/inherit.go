@@ -1,12 +1,15 @@
 // Package inherit builds a class inheritance table - each class's parent,
-// interfaces and declared method names - so apply can tell whether typing a
-// method would change the signature of a method it inherits from an ancestor
-// (including one in /vendor), which must be left alone.
+// interfaces, used traits and declared method names - so apply can tell whether
+// typing a method would change the signature of a method it inherits from an
+// ancestor (including one in /vendor), or one a child class overrides, which
+// must be left alone.
 package inherit
 
 import (
+	"fmt"
 	"maps"
 	"strings"
+	"sync"
 
 	"github.com/rectorphp/argtyper/internal/phpast"
 	"github.com/rectorphp/php-parser-in-go/pkg/ast"
@@ -16,12 +19,16 @@ import (
 type class struct {
 	parent     string   // lowercased fully qualified parent class, "" if none
 	interfaces []string // lowercased fully qualified implemented/extended interfaces
+	traits     []string // lowercased fully qualified used traits
 	methods    map[string]bool
 }
 
 // Table maps a lowercased fully qualified class name to its inheritance data.
 type Table struct {
 	classes map[string]*class
+
+	childrenOnce sync.Once
+	children     map[string][]string // ancestor -> classes that extend, implement or use it
 }
 
 // New returns an empty table ready for CollectSource.
@@ -56,13 +63,20 @@ func (t *Table) walk(node ast.Vertex, names map[ast.Vertex]string) {
 
 	switch typed := node.(type) {
 	case *ast.StmtClass:
-		t.add(names[typed], names[typed.Extends], typed.Implements, typed, names)
+		name := names[typed]
+		if typed.Name == nil {
+			// an anonymous class has no name, but may still override a method
+			name = fmt.Sprintf("class@anonymous%p", typed)
+		}
+		t.add(name, names[typed.Extends], typed.Implements, typed, names)
 	case *ast.StmtInterface:
 		// interface parents are declared with `extends`; treat them like
 		// implemented interfaces so method lookups walk them too.
 		t.add(names[typed], "", typed.Extends, typed, names)
 	case *ast.StmtEnum:
 		t.add(names[typed], "", typed.Implements, typed, names)
+	case *ast.StmtTrait:
+		t.add(names[typed], "", nil, typed, names)
 	}
 
 	for _, child := range phpast.Children(node) {
@@ -82,9 +96,16 @@ func (t *Table) add(fqcn, parent string, interfaces []ast.Vertex, body ast.Verte
 		}
 	}
 	for _, member := range phpast.Children(body) {
-		if method, ok := member.(*ast.StmtClassMethod); ok {
-			if name := phpast.ShortName(method.Name); name != "" {
+		switch typed := member.(type) {
+		case *ast.StmtClassMethod:
+			if name := phpast.ShortName(typed.Name); name != "" {
 				entry.methods[strings.ToLower(name)] = true
+			}
+		case *ast.StmtTraitUse:
+			for _, traitNode := range typed.Traits {
+				if name := names[traitNode]; name != "" {
+					entry.traits = append(entry.traits, phpast.ClassKey(name))
+				}
 			}
 		}
 	}
@@ -93,7 +114,7 @@ func (t *Table) add(fqcn, parent string, interfaces []ast.Vertex, body ast.Verte
 }
 
 // Overrides reports whether a method of the given class is also declared by an
-// ancestor (a parent class or interface, transitively), and whether the whole
+// ancestor (a parent class, interface or used trait, transitively), and whether the whole
 // ancestor chain was resolved. When resolved is false, an unknown ancestor - a
 // class the scan never saw, typically in /vendor - may still declare it, so the
 // caller should treat the method as unsafe to change.
@@ -122,15 +143,98 @@ func (t *Table) Overrides(fqcn, method string) (overrides bool, resolved bool) {
 		if ancestor.methods[method] {
 			overrides = true
 		}
-		visit(ancestor.parent)
-		for _, interfaceName := range ancestor.interfaces {
-			visit(interfaceName)
-		}
+		visitAncestors(ancestor, visit)
 	}
 
+	visitAncestors(entry, visit)
+	return overrides, resolved
+}
+
+func visitAncestors(entry *class, visit func(name string)) {
 	visit(entry.parent)
 	for _, interfaceName := range entry.interfaces {
 		visit(interfaceName)
 	}
-	return overrides, resolved
+	for _, traitName := range entry.traits {
+		visit(traitName)
+	}
+}
+
+// OverriddenByChild reports whether a class that extends, implements or uses the
+// given class, transitively, declares the method again. Typing the method would
+// then change a signature the child relies on.
+func (t *Table) OverriddenByChild(fqcn, method string) bool {
+	t.childrenOnce.Do(t.buildChildren)
+	method = strings.ToLower(method)
+
+	seen := map[string]bool{}
+	var visit func(name string) bool
+	visit = func(name string) bool {
+		for _, childName := range t.children[name] {
+			if seen[childName] {
+				continue
+			}
+			seen[childName] = true
+			if t.declares(childName, method, map[string]bool{}) || visit(childName) {
+				return true
+			}
+		}
+		return false
+	}
+	return visit(phpast.ClassKey(fqcn))
+}
+
+// DeclaringClass returns the class that declares a method called on fqcn: fqcn
+// itself, a used trait or the closest parent class. A call on a child class
+// then counts for the method its parent declares. Unknown ones return fqcn.
+func (t *Table) DeclaringClass(fqcn, method string) string {
+	method = strings.ToLower(method)
+	seen := map[string]bool{}
+	for name := phpast.ClassKey(fqcn); name != "" && !seen[name]; {
+		seen[name] = true
+		entry, ok := t.classes[name]
+		if !ok {
+			break
+		}
+		if entry.methods[method] {
+			return name
+		}
+		for _, traitName := range entry.traits {
+			if t.declares(traitName, method, map[string]bool{}) {
+				return traitName
+			}
+		}
+		name = entry.parent
+	}
+	return fqcn
+}
+
+// declares reports whether a class or trait declares a method itself or through
+// the traits it uses.
+func (t *Table) declares(name, method string, seen map[string]bool) bool {
+	entry, ok := t.classes[name]
+	if !ok || seen[name] {
+		return false
+	}
+	seen[name] = true
+	if entry.methods[method] {
+		return true
+	}
+	for _, traitName := range entry.traits {
+		if t.declares(traitName, method, seen) {
+			return true
+		}
+	}
+	return false
+}
+
+func (t *Table) buildChildren() {
+	t.children = map[string][]string{}
+	for name, entry := range t.classes {
+		visitAncestors(entry, func(ancestor string) {
+			if ancestor != "" {
+				t.children[ancestor] = append(t.children[ancestor], name)
+			}
+		})
+	}
 }

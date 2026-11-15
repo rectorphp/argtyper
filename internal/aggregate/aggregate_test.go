@@ -15,7 +15,7 @@ func TestResolveMethod(t *testing.T) {
 		records      []collect.Record
 		wantType     string // members joined by "|"
 		wantNullable bool
-		wantFound    bool
+		wantFound    bool // found with an empty wantType means blocked
 	}{
 		{
 			name:      "single type",
@@ -39,7 +39,7 @@ func TestResolveMethod(t *testing.T) {
 				{Class: "A", Name: "m", Type: "int"},
 				{Class: "A", Name: "m", Type: "string"},
 			},
-			wantFound: false,
+			wantFound: true,
 		},
 		{
 			name: "two real types with null are skipped",
@@ -48,15 +48,15 @@ func TestResolveMethod(t *testing.T) {
 				{Class: "A", Name: "m", Type: "string"},
 				{Class: "A", Name: "m", Type: "null"},
 			},
-			wantFound: false,
+			wantFound: true,
 		},
 		{
-			name: "unresolved argument is skipped",
+			name: "unresolved argument blocks the type",
 			records: []collect.Record{
 				{Class: "A", Name: "m", Type: "int"},
 				{Class: "A", Name: "m"},
 			},
-			wantFound: false,
+			wantFound: true,
 		},
 		{
 			name:      "class name differing in case shares the key",
@@ -74,27 +74,42 @@ func TestResolveMethod(t *testing.T) {
 			wantFound: true,
 		},
 		{
-			name:      "DateTime is skipped",
+			name:      "DateTime blocks the type",
 			records:   []collect.Record{{Class: "A", Name: "m", Type: valuetype.Object("DateTime")}},
-			wantFound: false,
+			wantFound: true,
 		},
 		{
-			name: "DateTimeImmutable with null is skipped",
+			name: "DateTimeImmutable with null blocks the type",
 			records: []collect.Record{
 				{Class: "A", Name: "m", Type: valuetype.Object("DateTimeImmutable")},
 				{Class: "A", Name: "m", Type: "null"},
 			},
-			wantFound: false,
+			wantFound: true,
 		},
 		{
-			name:      "only unresolved resolves to nothing",
+			name:      "only unresolved blocks the type",
 			records:   []collect.Record{{Class: "A", Name: "m"}},
-			wantFound: false,
+			wantFound: true,
 		},
 		{
-			name:      "only null resolves to nothing",
+			name:      "only test call sites block the type",
+			records:   []collect.Record{{Class: "A", Name: "m", Type: "int", InTest: true}},
+			wantFound: true,
+		},
+		{
+			name: "test call site adds to a production one",
+			records: []collect.Record{
+				{Class: "A", Name: "m", Type: "int"},
+				{Class: "A", Name: "m", Type: "null", InTest: true},
+			},
+			wantType:     "int",
+			wantNullable: true,
+			wantFound:    true,
+		},
+		{
+			name:      "only null blocks the type",
 			records:   []collect.Record{{Class: "A", Name: "m", Type: "null"}},
-			wantFound: false,
+			wantFound: true,
 		},
 	}
 

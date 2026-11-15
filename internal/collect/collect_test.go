@@ -60,9 +60,9 @@ func TestFromSource(t *testing.T) {
 			want: []collect.Record{{IsFunction: true, Name: "f", Position: 0}},
 		},
 		{
-			name: "skips method call on untyped variable",
+			name: "method call on untyped variable records by name only",
 			src:  "<?php\nclass A {\n  function go($other) { $other->set(1); }\n}",
-			want: nil,
+			want: []collect.Record{{Name: "set", Position: 0, Type: "int"}},
 		},
 		{
 			name: "typed parameter variable resolves target class",
@@ -77,7 +77,7 @@ func TestFromSource(t *testing.T) {
 		{
 			name: "scalar typed parameter is not a call target",
 			src:  "<?php\nclass A {\n  function go(string $name) { $name->set(1); }\n}",
-			want: nil,
+			want: []collect.Record{{Name: "set", Position: 0, Type: "int"}},
 		},
 		{
 			name: "declared property resolves this-property call",
@@ -115,12 +115,18 @@ func TestFromSource(t *testing.T) {
 		{
 			name: "method chain rooted at new resolves to receiver class",
 			src:  "<?php\nclass A {\n  function go() { $this->set(new \\DateTime()->modify('+2 hours')); }\n}",
-			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: valuetype.Object("DateTime")}},
+			want: []collect.Record{
+				{Class: "A", Name: "set", Position: 0, Type: valuetype.Object("DateTime")},
+				{Name: "modify", Position: 0, Type: "string"},
+			},
 		},
 		{
 			name: "nullsafe method chain rooted at new resolves to receiver class",
 			src:  "<?php\nclass A {\n  function go() { $this->set(new \\DateTime()?->modify('+2 hours')); }\n}",
-			want: []collect.Record{{Class: "A", Name: "set", Position: 0, Type: valuetype.Object("DateTime")}},
+			want: []collect.Record{
+				{Class: "A", Name: "set", Position: 0, Type: valuetype.Object("DateTime")},
+				{Name: "modify", Position: 0, Type: "string"},
+			},
 		},
 		{
 			name: "coalesce contributes both sides",
@@ -185,9 +191,9 @@ func TestFromSource(t *testing.T) {
 			want: []collect.Record{{Class: "Lib\\Repo", Name: "find", Position: 0, Type: "int"}},
 		},
 		{
-			name: "skips parent static call",
+			name: "parent static call records by name only",
 			src:  "<?php\nclass A {\n  function go() { parent::set(1); }\n}",
-			want: nil,
+			want: []collect.Record{{Name: "set", Position: 0, Type: "int"}},
 		},
 		{
 			name: "new self and new static use fully qualified enclosing class",
@@ -203,9 +209,9 @@ func TestFromSource(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "skips new self and self call outside a class",
+			name: "new self outside a class is skipped, self call records by name only",
 			src:  "<?php\nnew self(1);\nself::make(1);\nfunction f() { new static(1); }",
-			want: nil,
+			want: []collect.Record{{Name: "make", Position: 0, Type: "int"}},
 		},
 		{
 			name: "new self as argument is enclosing class object",

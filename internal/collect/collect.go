@@ -15,12 +15,13 @@ import (
 // Record is a single argument type observed at a call site.
 type Record struct {
 	IsFunction bool           // true for a plain function call, false for a method/constructor
-	Class      string         // fully qualified class name for method/constructor calls, short name when unresolved
+	Class      string         // fully qualified class name for method/constructor calls; empty when the receiver is unresolved
 	Name       string         // method or function name
 	Position   int            // zero-based positional argument index
 	Type       valuetype.Type // a scalar, callable or object of a fully qualified class; Unknown when unresolved
 	IsLiteral  bool           // true when the argument is a plain string literal, see phpast.StringLiteral
 	Literal    string         // the string literal value, when IsLiteral
+	InTest     bool           // true when the call site lies in a test file
 }
 
 // FromSource collects records from a single PHP source file. The symbols table
@@ -108,10 +109,8 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 		if !ok {
 			return
 		}
+		// an unresolved class (parent::, $class::) records by method name only
 		target := c.staticClassName(typed.Class, sc.classFQCN)
-		if target == "" {
-			return
-		}
 		c.record(typed.Args, Record{Class: target, Name: string(method.Value)}, sc)
 
 	case *ast.ExprMethodCall:
@@ -124,11 +123,11 @@ func (c *collector) visit(node ast.Vertex, sc scope) {
 
 // recordMethodCall records the arguments of a `$var->method()` call whose target
 // class and method name are statically known.
+// recordMethodCall records a call by its receiver class; an unresolved receiver
+// records by method name only, so the call still counts for every method of
+// that name.
 func (c *collector) recordMethodCall(varNode, methodNode ast.Vertex, args []ast.Vertex, sc scope) {
 	target := argClass(varNode, sc)
-	if target == "" {
-		return
-	}
 	method, ok := methodNode.(*ast.Identifier)
 	if !ok {
 		return

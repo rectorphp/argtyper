@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -122,8 +123,14 @@ func run(args []string) error {
 
 	// 1. collect literal argument types across the whole project
 	fmt.Println("1. Collecting argument types...")
-	fileRecords, err := progressMap("collecting", files, func(_ string, src []byte) ([]collect.Record, error) {
-		return collect.FromSource(src, table), nil
+	fileRecords, err := progressMap("collecting", files, func(path string, src []byte) ([]collect.Record, error) {
+		records := collect.FromSource(src, table)
+		if relative, err := filepath.Rel(projectPath, path); err == nil && finder.IsTest(relative) {
+			for i := range records {
+				records[i].InTest = true
+			}
+		}
+		return records, nil
 	})
 	if err != nil {
 		return err
@@ -131,6 +138,12 @@ func run(args []string) error {
 	var records []collect.Record
 	for _, recordsOfFile := range fileRecords {
 		records = append(records, recordsOfFile...)
+	}
+	// a call on a child class counts for the parent method it inherits
+	for i, record := range records {
+		if !record.IsFunction && record.Class != "" {
+			records[i].Class = inheritance.DeclaringClass(record.Class, record.Name)
+		}
 	}
 	resolvedCount := 0
 	for _, record := range records {
