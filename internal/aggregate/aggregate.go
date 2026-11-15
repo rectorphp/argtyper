@@ -14,7 +14,8 @@ import (
 )
 
 // Resolved is the final type decision for one parameter position. Two or more
-// types observed for the same parameter are ambiguous and left unresolved.
+// types observed for the same parameter are ambiguous and left unresolved, as is
+// a parameter with any argument whose type could not be resolved.
 type Resolved struct {
 	Types    []valuetype.Type // exactly one type, never Null
 	Nullable bool
@@ -33,6 +34,9 @@ type group struct {
 	// set when a string other than a plain literal, or an unresolved value, was
 	// passed - the literals then no longer cover every argument
 	nonLiterals bool
+	// set when an argument type could not be resolved - it may be any type, so
+	// the parameter is left untyped
+	unresolved bool
 }
 
 // Types holds resolved parameter types keyed for fast lookup during apply.
@@ -55,7 +59,8 @@ func (t Types) Function(name string, position int) (Resolved, bool) {
 }
 
 // Resolve groups records per parameter into a resolved type: a single observed
-// type, with null captured as nullability. Unions are skipped.
+// type, with null captured as nullability. Unions and parameters with an
+// unresolved argument are skipped.
 func Resolve(records []collect.Record) Types {
 	methodTypes := map[string]*group{}
 	functionTypes := map[string]*group{}
@@ -80,6 +85,12 @@ func resolveGroups(groups map[string]*group) map[string]Resolved {
 	resolved := map[string]Resolved{}
 
 	for key, group := range groups {
+		// an unresolved argument may pass any type, narrowing to the literal
+		// ones seen elsewhere would break that call site
+		if group.unresolved {
+			continue
+		}
+
 		types := make([]valuetype.Type, 0, len(group.types))
 		for typeName := range group.types {
 			types = append(types, typeName)
@@ -130,6 +141,7 @@ func addRecord(groups map[string]*group, key string, record collect.Record) {
 	switch {
 	case record.Type == valuetype.Unknown:
 		groups[key].nonLiterals = true
+		groups[key].unresolved = true
 	case record.IsLiteral:
 		groups[key].types[record.Type] = struct{}{}
 		groups[key].literals[record.Literal] = struct{}{}

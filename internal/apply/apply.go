@@ -4,6 +4,7 @@ package apply
 
 import (
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/rectorphp/argtyper/internal/aggregate"
@@ -138,6 +139,9 @@ func (a *applier) applyParams(node ast.Vertex, params []ast.Vertex, lookup func(
 			continue
 		}
 		if resolved, ok := lookup(position); ok {
+			if !docAllows(node, param, resolved) {
+				continue
+			}
 			docType := literalDocType(param, resolved)
 			if !a.options.allows(resolved, docType) {
 				continue
@@ -149,7 +153,7 @@ func (a *applier) applyParams(node ast.Vertex, params []ast.Vertex, lookup func(
 			}
 			continue
 		}
-		if resolved, ok := a.defaultType(param, enclosingFQCN); ok && a.options.allows(resolved, "") {
+		if resolved, ok := a.defaultType(param, enclosingFQCN); ok && a.options.allows(resolved, "") && docAllows(node, param, resolved) {
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
 		}
 	}
@@ -308,6 +312,86 @@ func takeVarLeading(param *ast.Parameter) []*token.Token {
 	leading := leadingToken.FreeFloating
 	leadingToken.FreeFloating = []*token.Token{{Value: []byte(" ")}}
 	return leading
+}
+
+// docPseudoTypes maps doc-only types onto the native type they narrow.
+var docPseudoTypes = map[string]string{
+	"integer":          "int",
+	"positive-int":     "int",
+	"negative-int":     "int",
+	"non-positive-int": "int",
+	"non-negative-int": "int",
+	"non-zero-int":     "int",
+	"double":           "float",
+	"boolean":          "bool",
+	"true":             "bool",
+	"false":            "bool",
+	"non-empty-string": "string",
+	"non-falsy-string": "string",
+	"truthy-string":    "string",
+	"numeric-string":   "string",
+	"literal-string":   "string",
+	"lowercase-string": "string",
+	"uppercase-string": "string",
+	"class-string":     "string",
+	"interface-string": "string",
+	"trait-string":     "string",
+	"enum-string":      "string",
+	"list":             "array",
+	"non-empty-list":   "array",
+	"non-empty-array":  "array",
+}
+
+// docAllows reports whether an existing `@param` doc type agrees with the
+// resolved type. A doc type naming another type, or a union, says the parameter
+// takes more than the call sites show, so it is left untyped. No doc tag, or
+// `mixed`, carries no such information.
+func docAllows(node ast.Vertex, param *ast.Parameter, resolved aggregate.Resolved) bool {
+	docType, ok := phpast.DocParamType(node, phpast.VariableName(param.Var))
+	if !ok {
+		return true
+	}
+	want := docTypeBase(typeText(resolved.Types[0]))
+	for _, member := range phpast.SplitDocUnion(strings.TrimPrefix(strings.TrimSpace(docType), "?")) {
+		base := docTypeBase(member)
+		if base == "mixed" {
+			return true
+		}
+		if base != "null" && base != want {
+			return false
+		}
+	}
+	return true
+}
+
+// docTypeBase reduces a single doc type to the native type it narrows:
+// generics and shapes are cut, literals and pseudo types map to their scalar,
+// and class names to their lowercased short name.
+func docTypeBase(member string) string {
+	member = strings.TrimSpace(member)
+	if index := strings.IndexAny(member, "<{("); index >= 0 {
+		member = member[:index]
+	}
+	if member == "" {
+		return ""
+	}
+	if member[0] == '\'' || member[0] == '"' {
+		return "string"
+	}
+	if _, err := strconv.ParseInt(member, 10, 64); err == nil {
+		return "int"
+	}
+	if _, err := strconv.ParseFloat(member, 64); err == nil {
+		return "float"
+	}
+	if index := strings.LastIndex(member, "\\"); index >= 0 {
+		member = member[index+1:]
+	}
+	member = strings.ToLower(member)
+	if native, ok := docPseudoTypes[member]; ok {
+		return native
+	}
+	return member
 }
 
 // typeText turns a resolved type into the text written into source. The trailing

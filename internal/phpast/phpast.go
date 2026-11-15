@@ -471,3 +471,72 @@ func VariableName(node ast.Vertex) string {
 	}
 	return strings.TrimPrefix(string(identifier.Value), "$")
 }
+
+// DocParamType returns the type of the `@param` tag for the named parameter in
+// a function or method's doc comment, e.g. `array<string, int>` or `int|null`.
+func DocParamType(node ast.Vertex, name string) (string, bool) {
+	leading := leadingToken(node)
+	if leading == nil {
+		return "", false
+	}
+	for _, free := range leading.FreeFloating {
+		if free.ID != token.T_DOC_COMMENT {
+			continue
+		}
+		for line := range strings.SplitSeq(string(free.Value), "\n") {
+			rest, ok := afterParamTag(line)
+			if !ok {
+				continue
+			}
+			docType, variable := splitDocType(strings.TrimSpace(rest))
+			if strings.TrimPrefix(variable, "...") == "$"+name {
+				return docType, true
+			}
+		}
+	}
+	return "", false
+}
+
+// splitDocType splits `<type> $name ...` into the type and the word after it,
+// keeping spaces inside generics and shapes like `array<string, int>`.
+func splitDocType(text string) (string, string) {
+	depth := 0
+	for i, char := range text {
+		switch char {
+		case '<', '{', '(':
+			depth++
+		case '>', '}', ')':
+			depth--
+		case ' ', '\t':
+			if depth == 0 {
+				fields := strings.Fields(text[i:])
+				if len(fields) == 0 {
+					return text[:i], ""
+				}
+				return text[:i], fields[0]
+			}
+		}
+	}
+	return text, ""
+}
+
+// SplitDocUnion splits a doc type into its top-level union members, leaving
+// `|` inside generics and shapes alone.
+func SplitDocUnion(docType string) []string {
+	var members []string
+	depth, start := 0, 0
+	for i, char := range docType {
+		switch char {
+		case '<', '{', '(':
+			depth++
+		case '>', '}', ')':
+			depth--
+		case '|':
+			if depth == 0 {
+				members = append(members, docType[start:i])
+				start = i + 1
+			}
+		}
+	}
+	return append(members, docType[start:])
+}

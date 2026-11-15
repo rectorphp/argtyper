@@ -51,13 +51,12 @@ func TestResolveMethod(t *testing.T) {
 			wantFound: false,
 		},
 		{
-			name: "unresolved argument keeps the resolved type",
+			name: "unresolved argument is skipped",
 			records: []collect.Record{
 				{Class: "A", Name: "m", Type: "int"},
 				{Class: "A", Name: "m"},
 			},
-			wantType:  "int",
-			wantFound: true,
+			wantFound: false,
 		},
 		{
 			name:      "class name differing in case shares the key",
