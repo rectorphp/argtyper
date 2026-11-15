@@ -14,10 +14,10 @@ import (
 )
 
 // Resolved is the final type decision for one parameter position. Two or more
-// types observed for the same parameter are ambiguous and left unresolved, as is
-// a parameter with any argument whose type could not be resolved.
+// types, a callable or an unresolved argument leave Types empty: the parameter
+// was seen at a call site but must stay untyped.
 type Resolved struct {
-	Types    []valuetype.Type // exactly one type, never Null
+	Types    []valuetype.Type // exactly one type, never Null; empty when blocked
 	Nullable bool
 	Literals []string // sorted string literal values, set only for a plain string type, see literalValues
 }
@@ -34,9 +34,12 @@ type group struct {
 	// set when a string other than a plain literal, or an unresolved value, was
 	// passed - the literals then no longer cover every argument
 	nonLiterals bool
-	// set when an argument type could not be resolved - it may be any type, so
-	// the parameter is left untyped
+	// set when an argument type could not be resolved, e.g. a variable - it may
+	// be anything, so the parameter must stay untyped
 	unresolved bool
+	// set when a call site lies outside tests; tests pass fixture values while
+	// production may call through a container, form or hydrator instead
+	production bool
 }
 
 // Types holds resolved parameter types keyed for fast lookup during apply.
@@ -46,10 +49,19 @@ type Types struct {
 	functions map[string]Resolved // function \x00 position
 }
 
-// Method returns the resolved type for a method/constructor parameter.
+// Method returns the resolved type for a method/constructor parameter. Calls on
+// an unresolved receiver, recorded by method name only, may target this method
+// too, so they must agree with its type, else the parameter is blocked.
 func (t Types) Method(class, method string, position int) (Resolved, bool) {
 	resolved, ok := t.methods[methodKey(class, method, position)]
-	return resolved, ok
+	byName, byNameOK := t.methods[methodKey("", method, position)]
+	if !byNameOK {
+		return resolved, ok
+	}
+	if !ok || len(resolved.Types) == 0 || len(byName.Types) == 0 || resolved.Types[0] != byName.Types[0] {
+		return Resolved{}, true
+	}
+	return Resolved{Types: resolved.Types, Nullable: resolved.Nullable || byName.Nullable}, true
 }
 
 // Function returns the resolved type for a function parameter.
@@ -60,7 +72,7 @@ func (t Types) Function(name string, position int) (Resolved, bool) {
 
 // Resolve groups records per parameter into a resolved type: a single observed
 // type, with null captured as nullability. Unions and parameters with an
-// unresolved argument are skipped.
+// unresolved argument are blocked.
 func Resolve(records []collect.Record) Types {
 	methodTypes := map[string]*group{}
 	functionTypes := map[string]*group{}
@@ -85,12 +97,6 @@ func resolveGroups(groups map[string]*group) map[string]Resolved {
 	resolved := map[string]Resolved{}
 
 	for key, group := range groups {
-		// an unresolved argument may pass any type, narrowing to the literal
-		// ones seen elsewhere would break that call site
-		if group.unresolved {
-			continue
-		}
-
 		types := make([]valuetype.Type, 0, len(group.types))
 		for typeName := range group.types {
 			types = append(types, typeName)
@@ -98,15 +104,18 @@ func resolveGroups(groups map[string]*group) map[string]Resolved {
 		slices.Sort(types)
 		types = dedupeClasses(types)
 
-		// a callable argument (a closure) leaves the parameter untyped, since a
-		// callable can take many shapes that must not be narrowed
-		if contains(types, valuetype.Callable) {
+		// an unresolved argument may be anything, a parameter seen only from
+		// tests may get other values in production, and a callable argument (a
+		// closure) can take many shapes - all leave the parameter untyped
+		if group.unresolved || !group.production || contains(types, valuetype.Callable) {
+			resolved[key] = Resolved{}
 			continue
 		}
 
 		// a DateTime argument leaves the parameter untyped, as it often accepts a
 		// string or any DateTimeInterface too
 		if slices.ContainsFunc(types, isDateTime) {
+			resolved[key] = Resolved{}
 			continue
 		}
 
@@ -114,6 +123,7 @@ func resolveGroups(groups map[string]*group) map[string]Resolved {
 		members := without(types, valuetype.Null)
 		// only a single type is added, unions are left untyped
 		if len(members) != 1 {
+			resolved[key] = Resolved{}
 			continue
 		}
 		resolved[key] = Resolved{Types: members, Nullable: nullable, Literals: literalValues(members, group)}
@@ -143,6 +153,9 @@ func literalValues(members []valuetype.Type, group *group) []string {
 func addRecord(groups map[string]*group, key string, record collect.Record) {
 	if groups[key] == nil {
 		groups[key] = &group{types: map[valuetype.Type]struct{}{}, literals: map[string]struct{}{}}
+	}
+	if !record.InTest {
+		groups[key].production = true
 	}
 	switch {
 	case record.Type == valuetype.Unknown:

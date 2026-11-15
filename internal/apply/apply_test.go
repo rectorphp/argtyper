@@ -22,6 +22,11 @@ func run(target string, sources ...string) (string, int) {
 	for _, source := range sources {
 		records = append(records, collect.FromSource([]byte(source), table)...)
 	}
+	for i, record := range records {
+		if !record.IsFunction && record.Class != "" {
+			records[i].Class = inheritance.DeclaringClass(record.Class, record.Name)
+		}
+	}
 	types := aggregate.Resolve(records)
 	output, added, _ := apply.Source([]byte(target), types, table, inheritance, apply.Options{})
 	return output, len(added)
@@ -446,6 +451,96 @@ func TestApply(t *testing.T) {
 				"<?php\npick('a');\npick('b');\npick($value);",
 			},
 			want: "<?php\nfunction pick($v) {}",
+		},
+		{
+			name:   "skips method a child class overrides",
+			target: "<?php\nclass Base {\n    public function save($v) {}\n    public function load($v) {}\n    public function go() { $this->save(1); $this->load(1); }\n}\nclass Child extends Base {\n    public function save($v) {}\n}",
+			want:   "<?php\nclass Base {\n    public function save($v) {}\n    public function load(int $v) {}\n    public function go() { $this->save(1); $this->load(1); }\n}\nclass Child extends Base {\n    public function save($v) {}\n}",
+		},
+		{
+			name:   "skips interface method an implementation overrides",
+			target: "<?php\ninterface Random {\n    public function generate($length = 10);\n}\nclass Helper implements Random {\n    public function generate($length = 10) {}\n}",
+			want:   "<?php\ninterface Random {\n    public function generate($length = 10);\n}\nclass Helper implements Random {\n    public function generate($length = 10) {}\n}",
+		},
+		{
+			name:   "skips method an anonymous class overrides",
+			target: "<?php\nclass Base {\n    public function save($v) {}\n    public function go() { $this->save(1); }\n}\nnew class extends Base {\n    public function save($v) {}\n};",
+			want:   "<?php\nclass Base {\n    public function save($v) {}\n    public function go() { $this->save(1); }\n}\nnew class extends Base {\n    public function save($v) {}\n};",
+		},
+		{
+			name:   "skips method a child class gets from a trait",
+			target: "<?php\ntrait Saves {\n    public function save($v) {}\n}\nclass Base {\n    public function save($v) {}\n    public function go() { $this->save(1); }\n}\nclass Child extends Base {\n    use Saves;\n}",
+			want:   "<?php\ntrait Saves {\n    public function save($v) {}\n}\nclass Base {\n    public function save($v) {}\n    public function go() { $this->save(1); }\n}\nclass Child extends Base {\n    use Saves;\n}",
+		},
+		{
+			name:   "call on a child class counts for the parent method",
+			target: "<?php\nabstract class Base {\n    protected function property($name) {}\n    public function go() { $this->property('label'); }\n}\nclass Child extends Base {\n    public function run() { $this->property(5); }\n}",
+			want:   "<?php\nabstract class Base {\n    protected function property($name) {}\n    public function go() { $this->property('label'); }\n}\nclass Child extends Base {\n    public function run() { $this->property(5); }\n}",
+		},
+		{
+			name:   "call on an unresolved receiver blocks a conflicting type",
+			target: "<?php\nfinal class Handler {\n    public function handle($error) {}\n    public function go() { $this->handle(new Fatal()); }\n}\nfunction run($handler) { $handler->handle(new Runtime()); }",
+			want:   "<?php\nfinal class Handler {\n    public function handle($error) {}\n    public function go() { $this->handle(new Fatal()); }\n}\nfunction run($handler) { $handler->handle(new Runtime()); }",
+		},
+		{
+			name:   "call on an unresolved receiver adds null",
+			target: "<?php\nfinal class Box {\n    public function put($v) {}\n    public function go() { $this->put(1); }\n}\nfunction run($box) { $box->put(null); $box->put(2); }",
+			want:   "<?php\nfinal class Box {\n    public function put(?int $v) {}\n    public function go() { $this->put(1); }\n}\nfunction run($box) { $box->put(null); $box->put(2); }",
+		},
+		{
+			name:   "skips parameter checked with instanceof",
+			target: "<?php\nfunction cleanup($error) { if ($error instanceof Exception) {} }\ncleanup(true);",
+			want:   "<?php\nfunction cleanup($error) { if ($error instanceof Exception) {} }\ncleanup(true);",
+		},
+		{
+			name:   "skips parameter compared to false",
+			target: "<?php\nfunction find($id) { if (false === $id) {} }\nfind(5);",
+			want:   "<?php\nfunction find($id) { if (false === $id) {} }\nfind(5);",
+		},
+		{
+			name:   "skips parameter whose doc type is wider",
+			target: "<?php\n/**\n * @param bool|Exception $error the failure\n */\nfunction cleanup($error) {}\ncleanup(true);",
+			want:   "<?php\n/**\n * @param bool|Exception $error the failure\n */\nfunction cleanup($error) {}\ncleanup(true);",
+		},
+		{
+			name:   "adds type matching a doc list of objects",
+			target: "<?php\n/**\n * @param Lead[] $leads\n */\nfunction save($leads) {}\nsave([]);",
+			want:   "<?php\n/**\n * @param Lead[] $leads\n */\nfunction save(array $leads) {}\nsave([]);",
+		},
+		{
+			name:   "adds type matching a nullable doc type",
+			target: "<?php\n/**\n * @param array<string, int>|null $map\n */\nfunction load($map) {}\nload([]);",
+			want:   "<?php\n/**\n * @param array<string, int>|null $map\n */\nfunction load(array $map) {}\nload([]);",
+		},
+		{
+			name:   "skips type when the default value conflicts with call sites",
+			target: "<?php\nfunction hit($code = '200') {}\nhit(404);",
+			want:   "<?php\nfunction hit($code = '200') {}\nhit(404);",
+		},
+		{
+			name:   "adds float with an int default value",
+			target: "<?php\nfunction scale($ratio = 1) {}\nscale(1.5);",
+			want:   "<?php\nfunction scale(float $ratio = 1) {}\nscale(1.5);",
+		},
+		{
+			name:   "skips default value type when call sites pass mixed types",
+			target: "<?php\nfunction page($number = 1) {}\npage('a');\npage(2);",
+			want:   "<?php\nfunction page($number = 1) {}\npage('a');\npage(2);",
+		},
+		{
+			name:   "adds nullable type to entity setter with attribute",
+			target: "<?php\n#[ORM\\Entity(repositoryClass: LeadRepository::class)]\nclass Lead {\n    public function setTitle($title) {}\n    public function rename($title) {}\n    public function go() { $this->setTitle('Mr'); $this->rename('Mr'); }\n}",
+			want:   "<?php\n#[ORM\\Entity(repositoryClass: LeadRepository::class)]\nclass Lead {\n    public function setTitle(?string $title) {}\n    public function rename(string $title) {}\n    public function go() { $this->setTitle('Mr'); $this->rename('Mr'); }\n}",
+		},
+		{
+			name:   "adds nullable type to entity setter with annotation and default value",
+			target: "<?php\n/**\n * @ORM\\Entity\n */\nclass Lead {\n    public function setActive($active = true) {}\n}",
+			want:   "<?php\n/**\n * @ORM\\Entity\n */\nclass Lead {\n    public function setActive(?bool $active = true) {}\n}",
+		},
+		{
+			name:   "adds non-nullable type to setter outside an entity",
+			target: "<?php\n#[EntityEvent]\n/**\n * @ORM\\EntityListeners\n */\nclass Lead {\n    public function setTitle($title) {}\n    public function go() { $this->setTitle('Mr'); }\n}",
+			want:   "<?php\n#[EntityEvent]\n/**\n * @ORM\\EntityListeners\n */\nclass Lead {\n    public function setTitle(string $title) {}\n    public function go() { $this->setTitle('Mr'); }\n}",
 		},
 		{
 			name:   "same-named class in another namespace does not share types",

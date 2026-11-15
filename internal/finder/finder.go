@@ -19,6 +19,17 @@ var codeDirectories = []string{"app", "lib", "plugins", "src", "test", "tests"}
 // skipDirectories hold third-party code that should never be typed.
 var skipDirectories = map[string]bool{"vendor": true, "node_modules": true}
 
+// IsTest reports whether a file path, relative to the project, lies in a test
+// directory such as tests/ or src/Tests/.
+func IsTest(path string) bool {
+	for part := range strings.SplitSeq(filepath.ToSlash(path), "/") {
+		if strings.EqualFold(part, "test") || strings.EqualFold(part, "tests") {
+			return true
+		}
+	}
+	return false
+}
+
 // CodeDirectories returns the code directories that exist in the project,
 // relative to it, sorted by name.
 func CodeDirectories(projectPath string) []string {

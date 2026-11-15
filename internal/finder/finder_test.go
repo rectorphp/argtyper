@@ -55,6 +55,21 @@ func TestPHPFilesSkipsVendorAndNodeModules(t *testing.T) {
 	}
 }
 
+func TestIsTest(t *testing.T) {
+	tests := map[string]bool{
+		"tests/FooTest.php":                      true,
+		"app/bundles/Core/Tests/Unit/A.php":      true,
+		"test/A.php":                             true,
+		"src/Testing/A.php":                      false,
+		"app/bundles/Core/Helper/TestHelper.php": false,
+	}
+	for path, want := range tests {
+		if got := finder.IsTest(path); got != want {
+			t.Errorf("IsTest(%q) = %v, want %v", path, got, want)
+		}
+	}
+}
+
 func write(t *testing.T, root, rel string) {
 	t.Helper()
 	path := filepath.Join(root, rel)

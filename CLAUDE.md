@@ -23,9 +23,17 @@ The run in `main.go` is a three-stage pipeline over the project's PHP files:
    reprint the file, leaving untouched code byte-for-byte.
 
 Skip rules: parameters that already have a type; parameters with conflicting
-types (ambiguous); parameters passed into a type check like `is_array($param)`
-or `gettype($param)` in the body, as they accept more than one type; magic methods except `__construct`; methods that may override
-a parent or interface (including vendor), unless private or a constructor.
+types (ambiguous) or any unresolved argument (a variable); parameters seen only
+from call sites in tests; a default value of another type; a wider `@param` doc
+type; parameters type checked in the body (`is_array($param)`, `gettype()`,
+`instanceof`, `=== false`), as they accept more than one type; magic methods
+except `__construct`; methods that may override a parent, interface or trait
+(including vendor), or that a child class overrides, unless private or a
+constructor.
+
+Setters (`set*`) of Doctrine entities, marked by `#[ORM\Entity]` or
+`@ORM\Entity`, always get a nullable type, since forms and hydrators may pass
+null.
 
 ## Packages (`internal/`)
 
@@ -80,9 +88,15 @@ Run the same command locally before pushing.
   `valuetype.Object(fqcn)` checked with `IsObject()` and read with `Class()`.
   `Null` becomes nullability, `Callable` (from a closure argument) poisons the
   parameter so it is never typed. `apply.typeText` turns an object into `\X`.
-- **Unresolved arguments** produce a record with an empty `Type`. It never adds
-  a type, but marks the group as not fully literal, which blocks the
-  `'a'|'b'` docblock (`aggregate.group.nonLiterals`).
+- **Unresolved arguments** produce a record with an empty `Type`. It blocks
+  the parameter: `aggregate.Types` returns it found with no `Types`, so apply
+  skips it and does not fall back to the default value type either.
+- **Unresolved receivers** (`$x->m(1)`, `parent::m(1)`) record by method name
+  only (empty `Class`). `aggregate.Types.Method` requires them to agree with
+  the class type, else the parameter is blocked.
+- **Inherited calls** - `main.go` rewrites a record's class to the class that
+  declares the method (`inherit.DeclaringClass`), so `$this->m()` in a child
+  counts for the parent method.
 - **Lookup keys use fully qualified, lowercased class names**
   (`app\entity\foo`, via `phpast.ClassKey`): `collect` records carry the fully
   qualified name, and `aggregate.Types` keys, `symbols` enums/class consts and

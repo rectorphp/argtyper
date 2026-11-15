@@ -84,7 +84,7 @@ func (a *applier) walk(node ast.Vertex, class ast.Vertex) {
 	}
 
 	switch typed := node.(type) {
-	case *ast.StmtClass, *ast.StmtEnum, *ast.StmtTrait:
+	case *ast.StmtClass, *ast.StmtEnum, *ast.StmtTrait, *ast.StmtInterface:
 		class = typed
 	case *ast.StmtFunction:
 		a.applyFunction(typed)
@@ -102,7 +102,7 @@ func (a *applier) applyFunction(function *ast.StmtFunction) {
 	lookup := func(position int) (aggregate.Resolved, bool) {
 		return a.types.Function(name, position)
 	}
-	a.applyParams(function, function.Params, lookup, "")
+	a.applyParams(function, function.Params, lookup, "", false)
 }
 
 func (a *applier) applyMethod(method *ast.StmtClassMethod, class ast.Vertex) {
@@ -122,13 +122,14 @@ func (a *applier) applyMethod(method *ast.StmtClassMethod, class ast.Vertex) {
 	lookup := func(position int) (aggregate.Resolved, bool) {
 		return a.types.Method(classFQCN, name, position)
 	}
-	a.applyParams(method, method.Params, lookup, classFQCN)
+	a.applyParams(method, method.Params, lookup, classFQCN, isEntitySetter(name, class))
 }
 
 // applyParams types the params of a function or method node: from the call-site
 // type found by lookup, else from a literal default value. enclosingFQCN names
-// the class, empty for a plain function.
-func (a *applier) applyParams(node ast.Vertex, params []ast.Vertex, lookup func(position int) (aggregate.Resolved, bool), enclosingFQCN string) {
+// the class, empty for a plain function. nullable makes every added type
+// nullable.
+func (a *applier) applyParams(node ast.Vertex, params []ast.Vertex, lookup func(position int) (aggregate.Resolved, bool), enclosingFQCN string, nullable bool) {
 	added := map[string]string{}
 	docs := map[string]string{}
 	var order []string
@@ -139,6 +140,12 @@ func (a *applier) applyParams(node ast.Vertex, params []ast.Vertex, lookup func(
 			continue
 		}
 		if resolved, ok := lookup(position); ok {
+			// call sites passed mixed or unresolved values, or one that
+			// conflicts with the default value
+			if len(resolved.Types) == 0 || a.defaultConflicts(param, resolved, enclosingFQCN) {
+				continue
+			}
+			resolved.Nullable = resolved.Nullable || nullable
 			if !docAllows(node, param, resolved) {
 				continue
 			}
@@ -154,6 +161,7 @@ func (a *applier) applyParams(node ast.Vertex, params []ast.Vertex, lookup func(
 			continue
 		}
 		if resolved, ok := a.defaultType(param, enclosingFQCN); ok && a.options.allows(resolved, "") && docAllows(node, param, resolved) {
+			resolved.Nullable = nullable
 			added[phpast.VariableName(param.Var)] = a.setType(param, resolved)
 		}
 	}
@@ -162,8 +170,9 @@ func (a *applier) applyParams(node ast.Vertex, params []ast.Vertex, lookup func(
 }
 
 // typeCheckFunctions inspect the type of a value at runtime. A parameter passed
-// into one of them is expected to take more than one type, even when every
-// resolved call site passes the same one.
+// into one of them, checked with instanceof or compared to true or false, is
+// expected to take more than one type, even when every resolved call site
+// passes the same one.
 var typeCheckFunctions = map[string]bool{
 	"is_array":       true,
 	"is_bool":        true,
@@ -183,8 +192,9 @@ var typeCheckFunctions = map[string]bool{
 	"get_debug_type": true,
 }
 
-// typeCheckedVariables returns the names of variables passed directly into a
-// type check function anywhere in the node, e.g. `is_array($sendTo)`.
+// typeCheckedVariables returns the names of variables type checked anywhere in
+// the node, e.g. `is_array($sendTo)`, `$error instanceof Exception` or
+// `false === $id`.
 func typeCheckedVariables(node ast.Vertex) map[string]bool {
 	checked := map[string]bool{}
 	var walk func(node ast.Vertex)
@@ -192,14 +202,21 @@ func typeCheckedVariables(node ast.Vertex) map[string]bool {
 		if node == nil {
 			return
 		}
-		if call, ok := node.(*ast.ExprFunctionCall); ok && typeCheckFunctions[strings.ToLower(phpast.ShortName(call.Function))] {
-			for _, argNode := range call.Args {
-				if arg, ok := argNode.(*ast.Argument); ok {
-					if name := phpast.VariableName(arg.Expr); name != "" {
-						checked[name] = true
+		switch typed := node.(type) {
+		case *ast.ExprFunctionCall:
+			if typeCheckFunctions[strings.ToLower(phpast.ShortName(typed.Function))] {
+				for _, argNode := range typed.Args {
+					if arg, ok := argNode.(*ast.Argument); ok {
+						markVariable(checked, arg.Expr)
 					}
 				}
 			}
+		case *ast.ExprInstanceOf:
+			markVariable(checked, typed.Expr)
+		case *ast.ExprBinaryIdentical:
+			markBoolCompared(checked, typed.Left, typed.Right)
+		case *ast.ExprBinaryNotIdentical:
+			markBoolCompared(checked, typed.Left, typed.Right)
 		}
 		for _, child := range phpast.Children(node) {
 			walk(child)
@@ -207,6 +224,31 @@ func typeCheckedVariables(node ast.Vertex) map[string]bool {
 	}
 	walk(node)
 	return checked
+}
+
+func markVariable(checked map[string]bool, expr ast.Vertex) {
+	if name := phpast.VariableName(expr); name != "" {
+		checked[name] = true
+	}
+}
+
+// markBoolCompared marks a variable compared to true or false, the other side.
+func markBoolCompared(checked map[string]bool, left, right ast.Vertex) {
+	if isBoolLiteral(right) {
+		markVariable(checked, left)
+	}
+	if isBoolLiteral(left) {
+		markVariable(checked, right)
+	}
+}
+
+func isBoolLiteral(node ast.Vertex) bool {
+	constFetch, ok := node.(*ast.ExprConstFetch)
+	if !ok {
+		return false
+	}
+	name := strings.ToLower(phpast.ShortName(constFetch.Const))
+	return name == "true" || name == "false"
 }
 
 // defaultType infers a parameter type from its literal default value, so
@@ -227,6 +269,39 @@ func (a *applier) defaultType(param *ast.Parameter, enclosingFQCN string) (aggre
 		}
 	}
 	return aggregate.Resolved{Types: []valuetype.Type{typeName}}, true
+}
+
+// defaultConflicts reports whether a literal default value has another type than
+// the call sites pass, e.g. `$code = '200'` with `int` from calls. An int
+// default still fits a float type.
+func (a *applier) defaultConflicts(param *ast.Parameter, resolved aggregate.Resolved, enclosingFQCN string) bool {
+	fromDefault, ok := a.defaultType(param, enclosingFQCN)
+	if !ok {
+		return false
+	}
+	defaultType, callType := fromDefault.Types[0], resolved.Types[0]
+	switch {
+	case defaultType == callType:
+		return false
+	case defaultType == valuetype.Int && callType == valuetype.Float:
+		return false
+	case defaultType.IsObject() && callType.IsObject():
+		return phpast.ClassKey(defaultType.Class()) != phpast.ClassKey(callType.Class())
+	}
+	return true
+}
+
+// isEntitySetter reports whether a method is a setter of a Doctrine entity.
+// Entity setters are also called by forms, serializers and hydrators, which may
+// pass null, so their types are always nullable.
+func isEntitySetter(method string, class ast.Vertex) bool {
+	if len(method) < 4 || !strings.EqualFold(method[:3], "set") {
+		return false
+	}
+	if next := method[3]; next < 'A' || next > 'Z' {
+		return false
+	}
+	return phpast.IsEntity(class)
 }
 
 // literalDocType returns a `'a'|'b'` doc type for a parameter that only ever
@@ -340,6 +415,7 @@ var docPseudoTypes = map[string]string{
 	"list":             "array",
 	"non-empty-list":   "array",
 	"non-empty-array":  "array",
+	"callable-string":  "string",
 }
 
 // docAllows reports whether an existing `@param` doc type agrees with the
@@ -365,10 +441,13 @@ func docAllows(node ast.Vertex, param *ast.Parameter, resolved aggregate.Resolve
 }
 
 // docTypeBase reduces a single doc type to the native type it narrows:
-// generics and shapes are cut, literals and pseudo types map to their scalar,
+// generics and shapes are cut, `int[]` is an array, literals and pseudo types map to their scalar,
 // and class names to their lowercased short name.
 func docTypeBase(member string) string {
 	member = strings.TrimSpace(member)
+	if strings.HasSuffix(member, "[]") {
+		return "array"
+	}
 	if index := strings.IndexAny(member, "<{("); index >= 0 {
 		member = member[:index]
 	}
@@ -410,8 +489,9 @@ func typeable(param *ast.Parameter) bool {
 }
 
 // methodTypeable reports whether typing this method is safe: it must not change
-// the signature of a method inherited from an ancestor. Constructors and private
-// methods never override, and a class or enum with no parent or interface has
+// the signature of a method inherited from an ancestor, nor of one a child class
+// overrides. Constructors and private methods never override, and a class or
+// enum with no parent or interface has
 // nothing to override. Otherwise the inheritance table is consulted, and the
 // method is only typed when the whole ancestor chain is resolved and none of it
 // declares the method - an unresolved chain (an ancestor in /vendor the scan
@@ -427,6 +507,9 @@ func (a *applier) methodTypeable(method *ast.StmtClassMethod, class ast.Vertex) 
 				return true
 			}
 		}
+	}
+	if classFQCN := a.names[class]; classFQCN != "" && a.inheritance.OverriddenByChild(classFQCN, phpast.ShortName(method.Name)) {
+		return false
 	}
 	switch typed := class.(type) {
 	case nil:
