@@ -91,8 +91,9 @@ $this->setLocale(null);
  }
 ```
 
-**Union types** when two or more different types reach the same parameter -
-instead of guessing or giving up, it writes them all:
+**No union types** - when two or more different types reach the same
+parameter, it is ambiguous and left untyped. Only a single type, or a single
+type plus `null` (nullable), is added:
 
 ```php
 $this->handle(1);      // int
@@ -100,16 +101,12 @@ $this->handle("text"); // string
 ```
 
 ```diff
--public function handle($value)
-+public function handle(int|string $value)
+ public function handle($value)
  {
  }
 ```
 
-There is no cap on the number of union members, and they are sorted
-alphabetically. A nullable union is written with a trailing `|null` (since `?`
-only works for a single type). The one type it will not accept is `callable`
-(a closure or arrow function) - that poisons the parameter and it is left
+A `callable` argument (a closure or arrow function) also leaves the parameter
 untyped.
 
 **Default values** are typed too, even without a call site:
@@ -201,9 +198,8 @@ Only add the string literal docblocks, and no other types, with `--literals`:
 argtyper add-types . --literals
 ```
 
-Only add object types with `--objects` - a single class, a nullable one, or a
-union made only of classes (`\Foo|\Bar`). A union with a scalar, like
-`int|\Money`, is skipped. Both options can be combined:
+Only add object types with `--objects` - a single class or a nullable one.
+Both options can be combined:
 
 ```bash
 argtyper add-types . --objects
@@ -219,8 +215,8 @@ argtyper add-types . --literals --objects
    objects, `Foo::class`, enum cases, constants, and a few built-in function
    returns.
 2. **Resolve** - it groups the recorded types per parameter position. A single
-   type is used directly; two or more distinct types become a union; `null`
-   becomes the nullable flag rather than a union member.
+   type is used directly; two or more distinct types are ambiguous and skipped;
+   `null` becomes the nullable flag.
 3. **Apply** - it adds each resolved type to the definitions that are still
    missing one, removes any now-redundant `@param` docblock, and reprints the
    file. Unchanged code keeps its exact formatting.

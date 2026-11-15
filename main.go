@@ -25,7 +25,7 @@ parameter type declarations. Defaults to the current directory.
 
   --dry        Print the diff of the types that would be added, without writing.
   --literals   Only add string types with a @param 'a'|'b' literal docblock.
-  --objects    Only add object types, including unions made only of objects.
+  --objects    Only add object types.
 
 --literals and --objects can be combined.`
 

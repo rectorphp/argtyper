@@ -14,9 +14,9 @@ import (
 )
 
 // Resolved is the final type decision for one parameter position. Two or more
-// types observed for the same parameter become a union.
+// types observed for the same parameter are ambiguous and left unresolved.
 type Resolved struct {
-	Types    []valuetype.Type // one or more types, never Null
+	Types    []valuetype.Type // exactly one type, never Null
 	Nullable bool
 	Literals []string // sorted string literal values, set only for a plain string type, see literalValues
 }
@@ -54,8 +54,8 @@ func (t Types) Function(name string, position int) (Resolved, bool) {
 	return resolved, ok
 }
 
-// Resolve groups records per parameter into a resolved type: the observed types
-// as a union, with null captured as nullability rather than a member.
+// Resolve groups records per parameter into a resolved type: a single observed
+// type, with null captured as nullability. Unions are skipped.
 func Resolve(records []collect.Record) Types {
 	methodTypes := map[string]*group{}
 	functionTypes := map[string]*group{}
@@ -95,7 +95,8 @@ func resolveGroups(groups map[string]*group) map[string]Resolved {
 
 		nullable := contains(types, valuetype.Null)
 		members := without(types, valuetype.Null)
-		if len(members) == 0 {
+		// only a single type is added, unions are left untyped
+		if len(members) != 1 {
 			continue
 		}
 		resolved[key] = Resolved{Types: members, Nullable: nullable, Literals: literalValues(members, group)}
