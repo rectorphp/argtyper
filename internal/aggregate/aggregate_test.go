@@ -74,6 +74,19 @@ func TestResolveMethod(t *testing.T) {
 			wantFound: true,
 		},
 		{
+			name:      "DateTime is skipped",
+			records:   []collect.Record{{Class: "A", Name: "m", Type: valuetype.Object("DateTime")}},
+			wantFound: false,
+		},
+		{
+			name: "DateTimeImmutable with null is skipped",
+			records: []collect.Record{
+				{Class: "A", Name: "m", Type: valuetype.Object("DateTimeImmutable")},
+				{Class: "A", Name: "m", Type: "null"},
+			},
+			wantFound: false,
+		},
+		{
 			name:      "only unresolved resolves to nothing",
 			records:   []collect.Record{{Class: "A", Name: "m"}},
 			wantFound: false,

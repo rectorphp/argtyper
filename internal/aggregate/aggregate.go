@@ -104,6 +104,12 @@ func resolveGroups(groups map[string]*group) map[string]Resolved {
 			continue
 		}
 
+		// a DateTime argument leaves the parameter untyped, as it often accepts a
+		// string or any DateTimeInterface too
+		if slices.ContainsFunc(types, isDateTime) {
+			continue
+		}
+
 		nullable := contains(types, valuetype.Null)
 		members := without(types, valuetype.Null)
 		// only a single type is added, unions are left untyped
@@ -170,6 +176,14 @@ func dedupeClasses(types []valuetype.Type) []valuetype.Type {
 		kept = append(kept, typeName)
 	}
 	return kept
+}
+
+func isDateTime(typeName valuetype.Type) bool {
+	switch phpast.ClassKey(strings.TrimPrefix(typeName.Class(), "\\")) {
+	case "datetime", "datetimeimmutable":
+		return true
+	}
+	return false
 }
 
 // PHP method and function names are case-insensitive, so keys lowercase them.
