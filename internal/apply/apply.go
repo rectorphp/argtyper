@@ -131,9 +131,10 @@ func (a *applier) applyParams(node ast.Vertex, params []ast.Vertex, lookup func(
 	added := map[string]string{}
 	docs := map[string]string{}
 	var order []string
+	checked := typeCheckedVariables(node)
 	for position, paramNode := range params {
 		param, ok := paramNode.(*ast.Parameter)
-		if !ok || !typeable(param) {
+		if !ok || !typeable(param) || checked[phpast.VariableName(param.Var)] {
 			continue
 		}
 		if resolved, ok := lookup(position); ok {
@@ -154,6 +155,54 @@ func (a *applier) applyParams(node ast.Vertex, params []ast.Vertex, lookup func(
 	}
 	phpast.StripRedundantDocParams(node, added)
 	phpast.AddDocParams(node, docs, order)
+}
+
+// typeCheckFunctions inspect the type of a value at runtime. A parameter passed
+// into one of them is expected to take more than one type, even when every
+// resolved call site passes the same one.
+var typeCheckFunctions = map[string]bool{
+	"is_array":       true,
+	"is_bool":        true,
+	"is_callable":    true,
+	"is_countable":   true,
+	"is_double":      true,
+	"is_float":       true,
+	"is_int":         true,
+	"is_integer":     true,
+	"is_iterable":    true,
+	"is_long":        true,
+	"is_numeric":     true,
+	"is_object":      true,
+	"is_scalar":      true,
+	"is_string":      true,
+	"gettype":        true,
+	"get_debug_type": true,
+}
+
+// typeCheckedVariables returns the names of variables passed directly into a
+// type check function anywhere in the node, e.g. `is_array($sendTo)`.
+func typeCheckedVariables(node ast.Vertex) map[string]bool {
+	checked := map[string]bool{}
+	var walk func(node ast.Vertex)
+	walk = func(node ast.Vertex) {
+		if node == nil {
+			return
+		}
+		if call, ok := node.(*ast.ExprFunctionCall); ok && typeCheckFunctions[strings.ToLower(phpast.ShortName(call.Function))] {
+			for _, argNode := range call.Args {
+				if arg, ok := argNode.(*ast.Argument); ok {
+					if name := phpast.VariableName(arg.Expr); name != "" {
+						checked[name] = true
+					}
+				}
+			}
+		}
+		for _, child := range phpast.Children(node) {
+			walk(child)
+		}
+	}
+	walk(node)
+	return checked
 }
 
 // defaultType infers a parameter type from its literal default value, so

@@ -23,7 +23,8 @@ The run in `main.go` is a three-stage pipeline over the project's PHP files:
    reprint the file, leaving untouched code byte-for-byte.
 
 Skip rules: parameters that already have a type; parameters with conflicting
-types (ambiguous); magic methods except `__construct`; methods that may override
+types (ambiguous); parameters passed into a type check like `is_array($param)`
+or `gettype($param)` in the body, as they accept more than one type; magic methods except `__construct`; methods that may override
 a parent or interface (including vendor), unless private or a constructor.
 
 ## Packages (`internal/`)
