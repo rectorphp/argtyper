@@ -34,24 +34,21 @@ func TestResolveMethod(t *testing.T) {
 			wantFound:    true,
 		},
 		{
-			name: "two real types become a union",
+			name: "two real types are skipped",
 			records: []collect.Record{
 				{Class: "A", Name: "m", Type: "int"},
 				{Class: "A", Name: "m", Type: "string"},
 			},
-			wantType:  "int|string",
-			wantFound: true,
+			wantFound: false,
 		},
 		{
-			name: "union with null",
+			name: "two real types with null are skipped",
 			records: []collect.Record{
 				{Class: "A", Name: "m", Type: "int"},
 				{Class: "A", Name: "m", Type: "string"},
 				{Class: "A", Name: "m", Type: "null"},
 			},
-			wantType:     "int|string",
-			wantNullable: true,
-			wantFound:    true,
+			wantFound: false,
 		},
 		{
 			name: "unresolved argument keeps the resolved type",

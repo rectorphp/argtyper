@@ -42,7 +42,7 @@ func Source(src []byte, types aggregate.Types, table *symbols.Table, inheritance
 // added; with one or more set, only the chosen kinds are.
 type Options struct {
 	Literals bool // string types that get a `'a'|'b'` literal doc type
-	Objects  bool // object types, including unions made only of objects
+	Objects  bool // object types
 }
 
 // allows reports whether a resolved type passes the options; docType is its

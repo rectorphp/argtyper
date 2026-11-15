@@ -130,19 +130,19 @@ func TestApply(t *testing.T) {
 			want:   "<?php\nfinal class A {\n    /**\n     * @param string $v the value\n     */\n    public function set(string $v) {}\n    public function go() { $this->set(\"x\"); }\n}",
 		},
 		{
-			name:   "unions multiple observed types",
+			name:   "skips multiple observed types",
 			target: "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); }\n}",
-			want:   "<?php\nfinal class A {\n    public function set(int|string $v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); }\n}",
+			want:   "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); }\n}",
 		},
 		{
-			name:   "unions multiple types with null as a member",
+			name:   "skips multiple types with null",
 			target: "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); $this->set(null); }\n}",
-			want:   "<?php\nfinal class A {\n    public function set(int|string|null $v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); $this->set(null); }\n}",
+			want:   "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(1); $this->set(\"x\"); $this->set(null); }\n}",
 		},
 		{
-			name:   "unions object and scalar types",
+			name:   "skips object and scalar types",
 			target: "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(new Money()); $this->set(1); }\n}",
-			want:   "<?php\nfinal class A {\n    public function set(int|\\Money $v) {}\n    public function go() { $this->set(new Money()); $this->set(1); }\n}",
+			want:   "<?php\nfinal class A {\n    public function set($v) {}\n    public function go() { $this->set(new Money()); $this->set(1); }\n}",
 		},
 		{
 			name:   "skips magic method",
@@ -502,8 +502,8 @@ func TestObjectsOnly(t *testing.T) {
 
 	output, added, _ := apply.Source([]byte(src), types, table, inherit.New(), apply.Options{Objects: true})
 
-	want := "<?php\nfunction save(?\\User $user, \\Item|\\Order $item, $count, $mixed, \\Status $status = Status::Active) {}\nenum Status {\n    case Active;\n}\nsave(new User(), new Item(), 1, new Money());\nsave(null, new Order(), 2, 5);"
-	if output != want || len(added) != 3 {
+	want := "<?php\nfunction save(?\\User $user, $item, $count, $mixed, \\Status $status = Status::Active) {}\nenum Status {\n    case Active;\n}\nsave(new User(), new Item(), 1, new Money());\nsave(null, new Order(), 2, 5);"
+	if output != want || len(added) != 2 {
 		t.Errorf("\n got: %q (%d added)\nwant: %q", output, len(added), want)
 	}
 }
